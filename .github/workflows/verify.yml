@@ -41,14 +41,30 @@ jobs:
         run: |
           sed -i '/maven.aliyun.com/d' settings.gradle
 
-      - name: Run tests, lint, architecture check, and debug build
+      # Reader semantic golden/contract/consumer/file tests are discovered by the
+      # same unfiltered JVM task, preserving per-class Robolectric isolation.
+      # core / full 分两次调用：两个变体同时编译 Kotlin 会把 runner 内存打满
+      # （OutOfMemoryError: Java heap space），串行后各自独占一次构建。
+      - name: Run semantic compatibility, unit tests, lint, architecture check, and debug build (core)
         run: |
           chmod +x gradlew
           ./gradlew \
-            testAppDebugUnitTest \
-            lintAppDebug \
+            testAppCoreDebugUnitTest \
+            lintAppCoreDebug \
             verifyConfigArchitecture \
-            assembleAppDebug \
+            assembleAppCoreDebug \
+            compileAppCoreDebugAndroidTestKotlin \
+            --continue \
+            --no-daemon \
+            --no-configuration-cache
+
+      - name: Run unit tests, lint and debug build (full)
+        run: |
+          ./gradlew \
+            testAppFullDebugUnitTest \
+            lintAppFullDebug \
+            assembleAppFullDebug \
+            compileAppFullDebugAndroidTestKotlin \
             --continue \
             --no-daemon \
             --no-configuration-cache
@@ -60,8 +76,10 @@ jobs:
           name: verify-unit-test-reports
           if-no-files-found: warn
           path: |
-            app/build/test-results/testAppDebugUnitTest/**
-            app/build/reports/tests/testAppDebugUnitTest/**
+            app/build/test-results/testAppCoreDebugUnitTest/**
+            app/build/test-results/testAppFullDebugUnitTest/**
+            app/build/reports/tests/testAppCoreDebugUnitTest/**
+            app/build/reports/tests/testAppFullDebugUnitTest/**
 
       - name: Upload lint reports
         if: ${{ always() }}
@@ -70,7 +88,11 @@ jobs:
           name: verify-lint-reports
           if-no-files-found: warn
           path: |
-            app/build/reports/lint-results-appDebug.html
-            app/build/reports/lint-results-appDebug.xml
-            app/build/reports/lint-results-appDebug.txt
-            app/build/reports/lint-results-appDebug.sarif
+            app/build/reports/lint-results-appCoreDebug.html
+            app/build/reports/lint-results-appCoreDebug.xml
+            app/build/reports/lint-results-appCoreDebug.txt
+            app/build/reports/lint-results-appCoreDebug.sarif
+            app/build/reports/lint-results-appFullDebug.html
+            app/build/reports/lint-results-appFullDebug.xml
+            app/build/reports/lint-results-appFullDebug.txt
+            app/build/reports/lint-results-appFullDebug.sarif

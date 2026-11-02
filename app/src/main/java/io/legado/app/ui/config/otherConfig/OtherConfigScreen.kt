@@ -156,11 +156,6 @@ fun OtherConfigScreen(
                     onCheckedChange = { onIntent(OtherConfigIntent.ShowAddToShelfAlertChanged(it)) }
                 )
 
-                SwitchSettingItem(
-                    title = stringResource(R.string.show_manga_ui),
-                    checked = state.showMangaUi,
-                    onCheckedChange = { onIntent(OtherConfigIntent.ShowMangaUiChanged(it)) }
-                )
             }
 
                 SplicedColumnGroup(title = stringResource(R.string.other_setting)) {
@@ -205,6 +200,13 @@ fun OtherConfigScreen(
                     description = stringResource(R.string.clear_webview_data_summary),
                     onClick = { onIntent(OtherConfigIntent.ShowOverlay(OtherConfigOverlay.ClearWebViewConfirmation)) }
                 )
+
+                    SwitchSettingItem(
+                        title = stringResource(R.string.block_source_browser),
+                        description = stringResource(R.string.block_source_browser_summary),
+                        checked = state.blockSourceBrowser,
+                        onCheckedChange = { onIntent(OtherConfigIntent.BlockSourceBrowserChanged(it)) }
+                    )
 
                 SwitchSettingItem(
                     title = stringResource(R.string.add_to_text_context_menu_t),

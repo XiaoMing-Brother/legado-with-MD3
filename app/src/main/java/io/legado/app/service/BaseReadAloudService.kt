@@ -34,7 +34,6 @@ import io.legado.app.R
 import io.legado.app.base.BaseService
 import io.legado.app.constant.AppConst
 import io.legado.app.constant.AppLog
-import io.legado.app.constant.AppPattern
 import io.legado.app.constant.EventBus
 import io.legado.app.constant.IntentAction
 import io.legado.app.constant.NotificationId
@@ -62,6 +61,7 @@ import io.legado.app.domain.usecase.BuildSpeechPlanUseCase
 import io.legado.app.domain.usecase.PrepareChapterSpeechPlanUseCase
 import io.legado.app.feature.reader.core.cast.CastMarkers
 import io.legado.app.feature.reader.core.readaloud.ReaderReadAloudChapter
+import io.legado.app.feature.reader.core.readaloud.isBlankReadAloudUnit
 import io.legado.app.help.MediaHelp
 import io.legado.app.help.config.AppConfigStore
 import io.legado.app.help.coroutine.Coroutine
@@ -583,7 +583,7 @@ abstract class BaseReadAloudService : BaseService(),
                 bookUrl = prepared.book?.bookUrl.orEmpty(),
                 chapterIndex = preparedChapter.chapterIndex,
                 positions = io.legado.app.help.readaloud.cast.BgmSceneStore.positionsToOrdinals(
-                    input.source.semanticContent,
+                    input.source,
                 ),
             )
             contentList = preparedContentList
@@ -1069,7 +1069,7 @@ abstract class BaseReadAloudService : BaseService(),
                 readAloudNumber -= contentList[nowSpeak].length + 1 + paragraphStartPos
                 paragraphStartPos = 0
                 foundPreviousReadableParagraph =
-                    !contentList[nowSpeak].matches(AppPattern.notReadAloudRegex)
+                    !contentList[nowSpeak].isBlankReadAloudUnit()
             } while (!foundPreviousReadableParagraph && nowSpeak > 0)
             if (!foundPreviousReadableParagraph) {
                 toLast = true

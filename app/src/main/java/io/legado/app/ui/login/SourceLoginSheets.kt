@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.dp
 import io.legado.app.R
 import io.legado.app.constant.AppConst
 import io.legado.app.data.entities.rule.ExploreKind
-import io.legado.app.ui.about.MarkdownSheet
+import io.legado.app.ui.widget.components.modalBottomSheet.MarkdownSheet
 import io.legado.app.ui.rss.read.VisibleWebViewCompose
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.ThemeResolver

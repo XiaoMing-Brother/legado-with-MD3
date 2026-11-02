@@ -49,11 +49,11 @@ import io.legado.app.feature.reader.core.transition.ReaderTurnDirection
 import io.legado.app.feature.reader.legacy.LegacyReaderChapterLayoutIdentity
 import io.legado.app.feature.reader.legacy.LegacyReaderChapterPaginationResult
 import io.legado.app.feature.reader.legacy.LegacyReaderChapterPaginator
+import io.legado.app.feature.reader.legacy.LegacyReaderImageOptionsResolver
 import io.legado.app.feature.reader.legacy.LegacyReaderPageDecorationFactory
 import io.legado.app.feature.reader.legacy.ReaderPageDecorationContext
 import io.legado.app.feature.reader.legacy.LegacyReaderPaginationBatch
 import io.legado.app.feature.reader.legacy.LegacyReaderPaginationStyleFactory
-import io.legado.app.feature.reader.legacy.LegacyReaderImageOptionsResolver
 import io.legado.app.feature.reader.legacy.collectLegacyReaderPaginationBatch
 import io.legado.app.feature.reader.legacy.failureReasonFor
 import io.legado.app.feature.reader.legacy.paginateLegacyReaderChapterSafely
@@ -67,17 +67,19 @@ import io.legado.app.help.storage.Backup
 import io.legado.app.lib.dialogs.SelectItem
 import io.legado.app.model.CacheBook
 import io.legado.app.model.ImageProvider
+import io.legado.app.model.ParagraphBubbleRenderer
 import io.legado.app.model.ReadBook
 import io.legado.app.model.ReadSessionState
 import io.legado.app.model.analyzeRule.AnalyzeRule
 import io.legado.app.model.analyzeRule.AnalyzeRule.Companion.setChapter
 import io.legado.app.model.analyzeRule.AnalyzeRule.Companion.setCoroutineContext
 import io.legado.app.model.analyzeRule.AnalyzeUrl.Companion.paramPattern
+import io.legado.app.model.localBook.LocalBookSemanticHtml
+import io.legado.app.help.book.isLocal
 import io.legado.app.model.reader.ReaderChapterInput
 import io.legado.app.receiver.NetworkChangedListener
 import io.legado.app.receiver.TimeBatteryReceiver
 import io.legado.app.service.BaseReadAloudService
-import io.legado.app.ui.association.OpenUrlConfirmActivity
 import io.legado.app.ui.book.read.page.entities.PageDirection
 import io.legado.app.ui.login.SourceLoginJsExtensions
 import io.legado.app.ui.widget.PopupAction
@@ -418,8 +420,13 @@ class ReadBookController(
 
     private fun directReaderPageContext(index: Int): ReaderPageContext? {
         val page = directReaderPages.getOrNull(index) ?: return null
+        val input = ReadBook.readerChapterInputFor(page.id.chapterIndex) ?: return null
+        val owner = if (page.id.chapterIndex in directReaderStreamingChapters) {
+            readerChapterPaginationJobs[page.id.chapterIndex]?.identity
+        } else paginatedChapterIdentities[page.id.chapterIndex]
+        if (owner != null && owner.sourceHash != input.sourceHash) return null
         return directReaderPageContexts.getOrPut(page.id) {
-            ReaderPageNavigator.pageContext(directReaderPages, index) ?: return null
+            ReaderPageNavigator.pageContext(directReaderPages, index, input.source.semanticContent) ?: return null
         }
     }
     private var directReaderChapterPageCounts = emptyMap<Int, Int>()
@@ -595,7 +602,7 @@ class ReadBookController(
         is ReaderElement.Text -> when {
             element.markingId != null -> { onMarkingClick(element.markingId); true }
             element.link != null -> {
-                activity.startActivity(Intent(activity, OpenUrlConfirmActivity::class.java).putExtra("uri", element.link))
+                handleComposeLinkClick(element.link)
                 true
             }
             else -> false
@@ -618,6 +625,21 @@ class ReadBookController(
         is ReaderElement.Spacer -> false
         is ReaderElement.ParagraphMarker -> false
         is ReaderElement.Rule -> false
+    }
+
+    private fun handleComposeLinkClick(rawLink: String) {
+        val book = ReadBook.book ?: return
+        val link = LocalBookSemanticHtml.resolveReaderLink(rawLink, book.isLocal,
+            ReadBook.readerChapterInputWindow.current?.chapter?.url.orEmpty()) ?: return
+        if (LocalBookSemanticHtml.isExternalLink(link)) {
+            viewModel.onIntent(
+                ReadBookIntent.ShowDialog(ReadBookDialog.ConfirmOpenExternalUrl(if (link.startsWith("//")) "https:$link" else link))
+            )
+            return
+        }
+        if (LocalBookSemanticHtml.classifyLink(link) == LocalBookSemanticHtml.LinkKind.INTERNAL) {
+            viewModel.openInternalBookLink(link)
+        }
     }
 
     fun onComposeReaderElementLongPress(element: ReaderElement, x: Float, y: Float): Boolean {
@@ -667,7 +689,14 @@ class ReadBookController(
         composeImageClickAt = now
         composeImageDoubleClick = if (debounce) !composeImageDoubleClick else false
         return when (readSettingsGateway.currentSettings.clickImgWay) {
-            "1" -> { viewModel.onIntent(ReadBookIntent.ShowSheet(ReadBookSheet.Photo(image.source))); true }
+            // 气泡没有磁盘文件，放进大图预览只会是一张错误占位图：有动作就执行动作，否则吞掉点击
+            "1" -> if (ParagraphBubbleRenderer.isBubbleSrc(image.source)) {
+                image.action?.takeIf(String::isNotBlank)?.let { clickImg(it, image.source) }
+                true
+            } else {
+                viewModel.onIntent(ReadBookIntent.ShowSheet(ReadBookSheet.Photo(image.source)))
+                true
+            }
             "2" -> if (!debounce && ReadBook.book?.isOnLineTxt == true) {
                 image.action?.takeIf(String::isNotBlank)?.let { clickImg(it, image.source); true }
                     ?: oldClickImg(image.source)
@@ -990,12 +1019,10 @@ class ReadBookController(
             val streamed = directReaderStreamedPages.getOrPut(chapterIndex) { mutableListOf() }
             if (streamed.any { it.id == page.id }) return@launch
             streamed += page
-            replaceDirectReaderPages(
-                directReaderPages
-                .filterNot { it.id.chapterIndex == chapterIndex }
-                .plus(streamed)
-                .sortedWith(compareBy({ it.id.chapterIndex }, { it.id.pageIndex }))
-            )
+            // Both lists are sorted by (chapterIndex, pageIndex); linear merge
+            // produces the same order as filterNot().plus().sortedWith() with one
+            // allocation and no sort.
+            replaceDirectReaderPages(mergeStreamedReaderPages(directReaderPages, streamed, chapterIndex))
             if (shouldPublishStreamedReaderPage(chapterIndex, page)) {
                 // 归因用：标记第一次真正发生的发布（不一定是本章第一页——发布规则要求
                 // "含 durChapterPos 的页成型"，见 shouldPublishStreamedReaderPage）。
@@ -1132,6 +1159,18 @@ class ReadBookController(
 
     override fun readerChapterInputChanged() {
         ReaderPerfTrace.marker("input.changed")
+        // 全文搜索定位必须在章节输入发布的这一刻消费：openChapter 的 success 回调会清掉
+        // pendingSearchNavigation，而下面的页面测量是 80ms 合并的，等到那时再读就只剩 null，
+        // 表现为"跳到目标章首、不高亮搜索词"。
+        // 排版任务跑在 IO 上，而定位要碰页面窗口/选区流，所以切回主线程（Main.immediate 在
+        // 主线程调用时同步执行，行为与同章命中的 effect 分支一致）。
+        activity.lifecycleScope.launch {
+            pendingSearchNavigation?.let { navigation ->
+                ReadBook.readerChapterInputWindow.current
+                    ?.takeIf { it.chapter.index == navigation.result.chapterIndex }
+                    ?.let { resolveSearchNavigation(navigation, it) }
+            }
+        }
         // Current/previous/next chapter inputs are published independently during opening.
         // Coalesce that short burst so an arriving adjacent chapter does not repeatedly cancel
         // the expensive current-chapter measurement before its first page can be committed.
@@ -1139,11 +1178,6 @@ class ReadBookController(
         readerChapterInputPublishJob = activity.lifecycleScope.launch {
             delay(80)
             ReaderPerfTrace.marker("input.coalesced")
-            pendingSearchNavigation?.let { navigation ->
-                ReadBook.readerChapterInputWindow.current
-                    ?.takeIf { it.chapter.index == navigation.result.chapterIndex }
-                    ?.let { resolveSearchNavigation(navigation, it) }
-            }
             publishReaderPageWindow()
         }
     }
@@ -1402,12 +1436,14 @@ class ReadBookController(
         // 页表里还挂着"排了一半"的残留（任务已被取消、部分页却没清干净）时同样要重排，
         // 否则这一章会停在半成品上、尾部一直挂着"加载中"。
         val stalledPartialPages = currentIndex in directReaderStreamingChapters
-        // 当前章优先启动，已有同身份任务则继续运行。随后独立预排邻章，不能因为
-        // 当前章仍在逐页流出就延迟到整章完成；旧 View 也分别装载窗口里的各章。
+        // Current chapter first: defer adjacent prefetch until its batch lands, avoiding
+        // 3-chapter concurrent pagination. The batch commit republishes the window,
+        // which schedules the missing neighbors.
         if (!isReaderChapterPaginationRunning(current) && (!hasShapedPages || stalledPartialPages)) {
             startReaderChapterPagination(
                 paginationGeneration, current, width, height, padding, style,
             )
+            return
         }
         scheduleAdjacentReaderChapterPagination(chapters, current, width, height, padding, style)
     }
@@ -1450,6 +1486,31 @@ class ReadBookController(
         val currentId = directReaderPageIndex?.let { directReaderPages.getOrNull(it)?.id }
         directReaderPages = pages
         directReaderPageIndex = ReaderPageNavigator.rebasePageIndex(pages, currentId)
+    }
+
+    // Linear merge of two (chapterIndex, pageIndex)-sorted lists. Same result as
+    // filterNot().plus().sortedWith(), without extra copies or a sort.
+    private fun mergeStreamedReaderPages(
+        current: List<ReaderPage>,
+        streamed: List<ReaderPage>,
+        chapterIndex: Int,
+    ): List<ReaderPage> {
+        val merged = ArrayList<ReaderPage>(current.size + streamed.size)
+        var j = 0
+        for (page in current) {
+            if (page.id.chapterIndex == chapterIndex) continue
+            while (j < streamed.size && compareReaderPageId(streamed[j], page) < 0) {
+                merged += streamed[j++]
+            }
+            merged += page
+        }
+        while (j < streamed.size) merged += streamed[j++]
+        return merged
+    }
+
+    private fun compareReaderPageId(a: ReaderPage, b: ReaderPage): Int {
+        val chapterDiff = a.id.chapterIndex - b.id.chapterIndex
+        return if (chapterDiff != 0) chapterDiff else a.id.pageIndex - b.id.pageIndex
     }
 
     /**
@@ -1948,6 +2009,20 @@ class ReadBookController(
         return false
     }
 
+    /**
+     * 段评弹层：书源 click 里 `java.showBrowser(url, html)` 的落点。
+     *
+     * url 为空说明书源既没给内容也没给地址，退回旧的通用弹窗（返回 false）。
+     */
+    private fun showParagraphReview(url: String, html: String?, preloadJs: String?): Boolean {
+        if (url.isBlank() && html.isNullOrBlank()) return false
+        val sheet = ReadBookSheet.ParagraphReview(url, html, preloadJs)
+        activity.runOnUiThread {
+            viewModel.onIntent(ReadBookIntent.ShowSheet(sheet))
+        }
+        return true
+    }
+
     fun clickImg(click: String, src: String) {
         if (LegacyReaderImageOptionsResolver.isParagraphRuleAction(click)) {
             activity.toastOnUi(R.string.reader_paragraph_image_action_unsupported)
@@ -1956,7 +2031,12 @@ class ReadBookController(
         activity.lifecycleScope.launch(IO) {
             try {
                 val source = ReadBook.bookSource ?: return@launch
-                val java = SourceLoginJsExtensions(activity, source, BookType.text)
+                val java = SourceLoginJsExtensions(activity, source, BookType.text).apply {
+                    // 段评：书源 click 里的 java.showBrowser(url, html) 走阅读页自己的弹层
+                    browserPresenter = { url, html, preloadJs ->
+                        showParagraphReview(url, html, preloadJs)
+                    }
+                }
                 val book = ReadBook.book ?: return@launch
                 val chapter = bookRepository.getChapter(book.bookUrl, ReadBook.durChapterIndex)
                     ?: throw Exception("no find chapter")
@@ -2092,7 +2172,7 @@ class ReadBookController(
         // 选区含标题时 bodyStart 会被压成 0，落不到正确的段上，直接判不可用
         val bodyStart = selection?.bodyStart?.takeIf { !selection.includesTitle }
         val positions = ReadBook.readerChapterInputWindow.current?.source
-            ?.let { BgmSceneStore.positionsToOrdinals(it.semanticContent) }
+            ?.let { BgmSceneStore.positionsToOrdinals(it) }
             .orEmpty()
         var ordinal = -1
         if (bodyStart != null) {
@@ -2491,14 +2571,22 @@ class ReadBookController(
                     publishReaderPageWindow()
                 } else {
                     // 定位只对本次跳章有效；openChapter 成功仍未消费时放弃，
-                    // 避免挂起导航在用户之后主动进入同一章时劫持阅读位置
+                    // 避免挂起导航在用户之后主动进入同一章时劫持阅读位置。
+                    // 与老 View 实现一致，章节就绪后在这里兜底定位一次：即便本次章节输入
+                    // 早于 pendingSearchNavigation 发布（readerChapterInputChanged 已经错过），
+                    // 也能落在搜索词上。
                     ReadBook.openChapter(
                         result.chapterIndex,
                         // Search offsets may include a title prefix. The body offset is resolved
                         // after the cached chapter input has been published.
                         0,
                     ) {
-                        pendingSearchNavigation = null
+                        pendingSearchNavigation?.let { navigation ->
+                            pendingSearchNavigation = null
+                            ReadBook.readerChapterInputWindow.current
+                                ?.takeIf { it.chapter.index == navigation.result.chapterIndex }
+                                ?.let { resolveSearchNavigation(navigation, it) }
+                        }
                     }
                 }
             }
@@ -2554,13 +2642,16 @@ class ReadBookController(
             is ReadBookEffect.OpenReadStyleImagePicker,
             is ReadBookEffect.OpenReadStyleImagePickerForMode,
             is ReadBookEffect.OpenReadStyleImport,
+            is ReadBookEffect.OpenReadStyleImportAsNew,
             is ReadBookEffect.OpenReadStyleExport,
+            is ReadBookEffect.OpenReadStyleConfigsExport,
             is ReadBookEffect.OpenMenuCustomIconPicker,
             is ReadBookEffect.OpenTitleBarCustomIconPicker,
             is ReadBookEffect.OpenSystemTtsSettings,
             ReadBookEffect.OpenTtsEnginesAndVoices,
             ReadBookEffect.OpenTtsCache,
             is ReadBookEffect.OpenBookVoiceCasting,
+            is ReadBookEffect.OpenAiChat,
             is ReadBookEffect.OpenReadAloudSubPage,
             is ReadBookEffect.OpenHighlightRuleImportPicker,
             is ReadBookEffect.OpenHighlightRuleExportPicker,

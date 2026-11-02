@@ -53,6 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.legado.app.R
+import io.legado.app.data.repository.SearchContentChangedException
 import io.legado.app.data.entities.SearchContentHistory
 import io.legado.app.ui.main.LocalSearchOverlayAnimation
 import io.legado.app.ui.theme.LegadoTheme
@@ -182,7 +183,9 @@ fun SearchContentScreen(
 
     val contentState = when {
         error != null -> SearchContentState.Error(error)
-        isSearching -> SearchContentState.Loading
+        // 仓库逐章 emit 增量结果：只有还没有任何结果时才让加载态占住列表区，
+        // 否则边搜边出的结果会被 Loading 一直挡住，直到整本扫完才显示。
+        isSearching && searchResults.isEmpty() -> SearchContentState.Loading
         searchQuery.isBlank() -> SearchContentState.History
         searchResults.isEmpty() -> SearchContentState.EmptyResult
         else -> null
@@ -291,8 +294,13 @@ fun SearchContentScreen(
             ) { state ->
                 when (state) {
                     is SearchContentState.Error -> {
+                        val message = if (state.throwable is SearchContentChangedException) {
+                            stringResource(R.string.search_content_changed)
+                        } else {
+                            state.throwable.localizedMessage ?: "发生未知错误"
+                        }
                         EmptyMessage(
-                            message = state.throwable.localizedMessage ?: "发生未知错误",
+                            message = message,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .wrapContentSize()
