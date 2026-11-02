@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SpaceBar
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.TextFields
@@ -313,6 +314,16 @@ fun GlobalThemePage(
                 }
             }
         }
+
+        Spacer(Modifier.height(8.dp))
+
+        // 内置主题入口：一次改掉配色 + 边距 + 背景图，比逐项调更省事。
+        TinySettingItem(
+            title = stringResource(R.string.read_theme),
+            description = stringResource(R.string.read_theme_summary),
+            imageVector = Icons.Default.Palette,
+            onClick = { onIntent(ReadBookIntent.OpenReadThemePicker) },
+        )
 
         Spacer(Modifier.height(8.dp))
 

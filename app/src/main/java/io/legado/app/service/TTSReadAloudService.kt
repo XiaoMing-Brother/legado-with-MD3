@@ -26,7 +26,6 @@ import io.legado.app.help.readaloud.effect.VoiceEffectAudio
 import io.legado.app.help.readaloud.effect.VoiceEffectStore
 import io.legado.app.lib.dialogs.SelectItem
 import io.legado.app.model.ReadAloud
-import io.legado.app.ui.config.readConfig.ReadConfig
 import io.legado.app.utils.GSON
 import io.legado.app.utils.LogUtils
 import io.legado.app.utils.fromJsonObject
@@ -35,14 +34,12 @@ import io.legado.app.utils.toastOnUi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 本地朗读
  */
-class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
+class TTSReadAloudService : BaseReadAloudService() {
 
     override val useSpeechPlaybackQueue: Boolean = true
 
@@ -55,9 +52,12 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
     private val pendingUtterances = ConcurrentHashMap<String, CastMarkers.Spoken>()
 
     protected override val currentSpeechRate: Float
-        get() = if (ReadConfig.ttsFollowSys) 1f else (speechRateSetting + 5) / 10f
+        get() = if (aloudSettings.ttsFollowSys) {
+            1f
+        } else {
+            (speechRateSetting + 5) / 10f
+        }
 
-    private val readAloudSettingsGateway: ReadAloudSettingsGateway by inject()
     @Volatile
     private var speechRateSetting: Int = 5
 
@@ -222,7 +222,7 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
         
         speakJob?.cancel()
         speakJob = execute {
-            val interval = ReadConfig.ttsParagraphInterval.toLong()
+            val interval = aloudSettings.ttsParagraphInterval.toLong()
             AppLog.putDebug("TTS_PLAY: nowSpeak=$nowSpeak, isDelay=$isDelay, interval=$interval")
             
             if (hasSpeechPlaybackQueue || interval > 0) {
@@ -468,7 +468,7 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
         val config = runCatching {
             GSON.fromJson(voice.traitsJson, SystemTtsVoiceConfig::class.java)
         }.getOrNull() ?: SystemTtsVoiceConfig()
-        val globalRate = if (ReadConfig.ttsFollowSys) {
+        val globalRate = if (aloudSettings.ttsFollowSys) {
             1f
         } else {
             (speechRateSetting + 5) / 10f
@@ -500,7 +500,11 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
 
     private fun applyDefaultPreset() {
         val tts = textToSpeech ?: return
-        val rate = if (ReadConfig.ttsFollowSys) 1f else (speechRateSetting + 5) / 10f
+        val rate = if (aloudSettings.ttsFollowSys) {
+            1f
+        } else {
+            (speechRateSetting + 5) / 10f
+        }
         if (rate != appliedSpeechRate) {
             appliedSpeechRate = rate
             tts.setSpeechRate(rate)
@@ -525,7 +529,7 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
      * 更新朗读速度
      */
     override fun upSpeechRate(reset: Boolean) {
-        if (ReadConfig.ttsFollowSys) {
+        if (aloudSettings.ttsFollowSys) {
             if (reset) {
                 clearTTS()
                 initTts()
@@ -618,9 +622,9 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
             val paragraphAdvanced = nextParagraph(naturalCompletion = true)
             if (paragraphAdvanced &&
                 !pause &&
-                (hasSpeechPlaybackQueue || ReadConfig.ttsParagraphInterval > 0)
+                (hasSpeechPlaybackQueue || aloudSettings.ttsParagraphInterval > 0)
             ) {
-                needParagraphInterval = ReadConfig.ttsParagraphInterval > 0
+                needParagraphInterval = aloudSettings.ttsParagraphInterval > 0
                 advancedFromUtteranceDone = true
                 play()
             }
@@ -689,9 +693,9 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
             val paragraphAdvanced = nextParagraph(naturalCompletion = true)
             if (paragraphAdvanced &&
                 !pause &&
-                (hasSpeechPlaybackQueue || ReadConfig.ttsParagraphInterval > 0)
+                (hasSpeechPlaybackQueue || aloudSettings.ttsParagraphInterval > 0)
             ) {
-                needParagraphInterval = ReadConfig.ttsParagraphInterval > 0
+                needParagraphInterval = aloudSettings.ttsParagraphInterval > 0
                 play()
             }
         }

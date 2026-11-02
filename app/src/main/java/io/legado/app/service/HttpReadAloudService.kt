@@ -910,7 +910,7 @@ class HttpReadAloudService : BaseReadAloudService(),
             includeTitle = false,
             adaptSpecialStyle = readSettings.adaptSpecialStyle,
             htmlSemanticTextResolver = AndroidReaderHtmlSemanticTextResolver,
-            castLabels = if (io.legado.app.ui.config.readConfig.ReadConfig.multiRoleCast) {
+            castLabels = if (readAloudSettings.multiRoleCast) {
                 CastAssignmentStore.labelsForChapter(book.bookUrl, chapter.index)
             } else {
                 null

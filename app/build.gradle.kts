@@ -1,3 +1,4 @@
+import com.android.build.api.variant.FilterConfiguration
 import java.io.FileInputStream
 import java.util.Properties
 
@@ -30,6 +31,11 @@ val projectVersionName = "$versionMajor.$versionMinor.$versionPatch"
 val enableAbiSplits = providers.gradleProperty("enableAbiSplits")
     .map(String::toBoolean)
     .getOrElse(true)
+// 共存构建开关（-Pcoexist=true）：换掉 applicationId 与包名前缀资源，使产物可与正式包并存安装。
+// 默认关闭，常规构建行为不变。
+val coexist = providers.gradleProperty("coexist")
+    .map(String::toBoolean)
+    .getOrElse(false)
 
 android {
     // Compose 1.13.0-beta01 的 AAR 元数据要求 compileSdk >= 37.1（android-37.0 会被 checkAarMetadata 拒绝）。
@@ -89,7 +95,11 @@ android {
             if (project.hasProperty("RELEASE_STORE_FILE")) {
                 signingConfig = signingConfigs.getByName("myConfig")
             }
-            manifestPlaceholders["app_name"] = "@string/app_name"
+            if (coexist) {
+                applicationIdSuffix = ".coexist"
+            }
+            manifestPlaceholders["app_name"] =
+                if (coexist) "@string/app_name_a" else "@string/app_name"
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -337,4 +347,20 @@ dependencies {
 tasks.withType<Test>().configureEach {
     forkEvery = 1
     maxParallelForks = 1
+}
+
+// 共存构建与常规 release 共用 app/build/outputs/apk/app/release 目录，会互相覆盖产物。
+// 共存模式给 APK 加后缀，保证两种产物能同时保留、不混淆。
+if (coexist) {
+    androidComponents {
+        onVariants { variant ->
+            variant.outputs.forEach { output ->
+                val abi = output.filters
+                    .firstOrNull { it.filterType == FilterConfiguration.FilterType.ABI }
+                    ?.identifier
+                    ?: "universal"
+                output.outputFileName.set("$appName-app-$abi-release-coexist.apk")
+            }
+        }
+    }
 }

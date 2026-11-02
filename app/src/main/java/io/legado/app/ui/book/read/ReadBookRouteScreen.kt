@@ -191,7 +191,8 @@ fun ReadBookRouteScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val appUiConfiguration = LocalAppUiConfiguration.current
     val isDarkTheme = appUiConfiguration.isDarkTheme
-    val isEInkMode = appUiConfiguration.theme.appTheme == "4"
+    val isEInkMode = io.legado.app.model.ReadBook.paginationEnvironment?.style?.isEInkMode
+        ?: (appUiConfiguration.theme.appTheme == "4")
     val eyeProtectionActive = rememberEyeProtectionActive(
         enabled = state.eyeProtection.enabled,
         autoNight = state.eyeProtection.autoNight,

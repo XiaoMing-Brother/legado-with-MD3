@@ -37,6 +37,7 @@ import io.legado.app.ui.book.read.sheet.PageKeyConfigSheet
 import io.legado.app.ui.book.read.sheet.PhotoSheet
 import io.legado.app.ui.book.read.sheet.ReadAloudConfigContent
 import io.legado.app.ui.book.read.sheet.ReadAloudNumberConfigSheet
+import io.legado.app.ui.book.read.sheet.ReadThemePresetSheet
 import io.legado.app.ui.book.read.sheet.ReaderMoreActionsSheet
 import io.legado.app.ui.book.read.sheet.ShadowSetSheet
 import io.legado.app.ui.book.read.sheet.SimulatedReadingSheet
@@ -532,6 +533,12 @@ fun ReadBookScreen(
     AppLogSheet(
         show = state.activeSheet is ReadBookSheet.AppLog,
         onDismissRequest = dismissSheet,
+    )
+    ReadThemePresetSheet(
+        show = state.activeSheet is ReadBookSheet.ReadThemePicker,
+        // 入口在全局页，关掉即回到全局页。
+        onDismissRequest = dismissSheet,
+        onSelectTheme = { themeId -> onIntent(ReadBookIntent.ApplyReadTheme(themeId)) },
     )
     BgTextConfigSheet(
         show = state.activeSheet is ReadBookSheet.BgTextConfig,

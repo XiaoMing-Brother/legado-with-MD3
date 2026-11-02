@@ -761,6 +761,11 @@ class ReadBookViewModel(
 
     // --- MVI Intent Dispatcher ---
 
+    /** Track D：阅读器画布/控制器出站事件的单一入口。 */
+    fun onReaderEvent(event: ReaderEvent) {
+        ReaderEventIntentMapper.dispatch(event, ::onIntent)
+    }
+
     fun onIntent(intent: ReadBookIntent) {
         when (intent) {
             is ReadBookIntent.InitData -> {
@@ -776,6 +781,30 @@ class ReadBookViewModel(
             is ReadBookIntent.PrevPage -> ReadBook.moveToPrevPage()
             is ReadBookIntent.NextChapter -> ReadBook.moveToNextChapter(upContent = true)
             is ReadBookIntent.PrevChapter -> ReadBook.moveToPrevChapter(upContent = true, toLast = false)
+            is ReadBookIntent.ComposeTurnPage -> {
+                ReaderComposeChapterNavigator.advanceToChapter(
+                    targetChapterIndex = intent.targetChapterIndex,
+                    currentChapterIndex = { ReadBook.durChapterIndex },
+                    moveToNextChapter = {
+                        ReadBook.moveToNextChapter(upContent = false, upContentInPlace = false)
+                    },
+                    moveToPrevChapter = {
+                        ReadBook.moveToPrevChapter(
+                            upContent = false,
+                            toLast = true,
+                            upContentInPlace = false,
+                        )
+                    },
+                )
+            }
+            is ReadBookIntent.ToggleReaderReadAloud -> handleToggleReaderReadAloud(intent)
+            is ReadBookIntent.ToggleReadAloudPlayback -> {
+                if (BaseReadAloudService.isPlay()) {
+                    ReadAloud.pause(application)
+                } else {
+                    ReadAloud.resume(application)
+                }
+            }
             is ReadBookIntent.OpenChapter -> {
                 ReadBook.saveReadingAnchorBeforeChapterJump(intent.index, intent.pos)
                 openChapter(intent.index, intent.pos)
@@ -1490,6 +1519,9 @@ class ReadBookViewModel(
             is ReadBookIntent.DeleteCurrentReadStyleConfig -> styleDelegate.deleteCurrentStyle()
             is ReadBookIntent.ApplyPresetTheme -> styleDelegate.applyPresetTheme(intent.presetIndex)
             is ReadBookIntent.OpenBgTextConfig -> styleDelegate.openBgTextConfig(intent.index)
+            is ReadBookIntent.OpenReadThemePicker -> styleDelegate.openReadThemePicker()
+            is ReadBookIntent.ApplyReadTheme -> styleDelegate.applyReadTheme(intent.themeId)
+            is ReadBookIntent.ApplyBackgroundPalette -> styleDelegate.applyBackgroundPalette()
 
             is ReadBookIntent.ToggleDayNight -> styleDelegate.toggleDayNight()
             // Text action menu
@@ -2027,6 +2059,10 @@ class ReadBookViewModel(
         footerFont = ReadBookConfig.footerFont,
         headerFontSize = ReadBookConfig.headerFontSize,
         footerFontSize = ReadBookConfig.footerFontSize,
+        headerBold = ReadBookConfig.headerBold,
+        footerBold = ReadBookConfig.footerBold,
+        headerItalic = ReadBookConfig.headerItalic,
+        footerItalic = ReadBookConfig.footerItalic,
         applyHeaderStyle = ReadBookConfig.applyHeaderStyle,
         tipDividerColor = ReadBookConfig.tipDividerColor,
         headerMode = ReadBookConfig.headerMode,
@@ -2681,6 +2717,31 @@ class ReadBookViewModel(
             )
         }
         _effects.tryEmit(ReadBookEffect.ExitSearch)
+    }
+
+    private fun handleToggleReaderReadAloud(intent: ReadBookIntent.ToggleReaderReadAloud) {
+        _effects.tryEmit(ReadBookEffect.StopAutoPage)
+        when {
+            !ReadBook.isCurrentBookReadAloud -> {
+                if (!readAloudFromVisibleStart(intent.visibleChapterIndex, intent.visibleChapterPosition)) {
+                    ReadBook.readAloud()
+                }
+            }
+            BaseReadAloudService.pause -> {
+                val restarted = intent.pageChangedSinceToggle &&
+                    readAloudFromVisibleStart(intent.visibleChapterIndex, intent.visibleChapterPosition)
+                if (!restarted) ReadAloud.resume(application)
+            }
+            else -> ReadAloud.pause(application)
+        }
+    }
+
+    private fun readAloudFromVisibleStart(chapterIndex: Int?, chapterPosition: Int?): Boolean {
+        if (chapterIndex == null || chapterPosition == null) return false
+        if (chapterIndex != ReadBook.durChapterIndex) return false
+        ReadBook.updateReadingPosition(chapterPosition)
+        ReadBook.readAloud(chapterPosition = chapterPosition)
+        return true
     }
 
     private fun navigateSearchResultByOffset(offset: Int) {

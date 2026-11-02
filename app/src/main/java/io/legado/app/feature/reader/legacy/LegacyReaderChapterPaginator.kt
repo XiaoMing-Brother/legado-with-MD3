@@ -14,6 +14,7 @@ import io.legado.app.feature.reader.core.layout.ReaderChapterMeasureResult
 import io.legado.app.feature.reader.core.layout.ReaderChapterMeasureStyle
 import io.legado.app.feature.reader.core.layout.ReaderImageDimensions
 import io.legado.app.feature.reader.core.layout.ReaderImageLayoutMode
+import io.legado.app.feature.reader.core.layout.readerEdgePadding
 import io.legado.app.feature.reader.core.layout.ReaderPaginationConfig
 import io.legado.app.feature.reader.core.layout.ReaderPaginationMetrics
 import io.legado.app.feature.reader.core.layout.ReaderPaginationSession
@@ -261,11 +262,17 @@ object LegacyReaderChapterPaginator {
             viewportWidthPx = viewportWidthPx,
             viewportHeightPx = viewportHeightPx,
             paddingLeftPx = (paginationStyle.paddingLeftPx + contentPaddingLeftPx).toFloat(),
-            paddingTopPx = (paginationStyle.paddingTopPx + contentPaddingTopPx).toFloat() +
-                    headerExtentPx,
+            // 上下边距与状态栏/导航栏占位取大值而不是相加：异形屏上「状态栏高 + 边距」会让正文
+            // 顶部凭空多出一份状态栏高度的空白（清墨同款处理）。左右仍是刘海内缩，必须叠加。
+            paddingTopPx = readerEdgePadding(
+                paginationStyle.paddingTopPx,
+                contentPaddingTopPx,
+            ).toFloat() + headerExtentPx,
             paddingRightPx = (paginationStyle.paddingRightPx + contentPaddingRightPx).toFloat(),
-            paddingBottomPx = (paginationStyle.paddingBottomPx + contentPaddingBottomPx).toFloat() +
-                    footerExtentPx,
+            paddingBottomPx = readerEdgePadding(
+                paginationStyle.paddingBottomPx,
+                contentPaddingBottomPx,
+            ).toFloat() + footerExtentPx,
             lineHeightPx = paginationStyle.bodyTextHeightPx,
             baselineOffsetPx = paginationStyle.bodyBaselineOffsetPx,
             lineSpacingMultiplier = paginationStyle.lineSpacingExtra,

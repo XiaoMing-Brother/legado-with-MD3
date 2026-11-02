@@ -18,9 +18,9 @@ import io.legado.app.feature.reader.core.model.ReaderTipValueFormatter
 import io.legado.app.feature.reader.core.model.ReaderTipValueType
 import io.legado.app.feature.reader.core.model.ReaderTipVisual
 import io.legado.app.feature.reader.core.model.resolveReaderTipColor
+import io.legado.app.feature.reader.core.model.resolveReaderFontWeight
 import io.legado.app.feature.reader.platform.ReaderAndroidPaintFactory
 import io.legado.app.help.config.ReadBookConfig
-import io.legado.app.model.ReadBook
 import io.legado.app.utils.dpToPx
 import io.legado.app.utils.spToPx
 import org.koin.core.component.KoinComponent
@@ -52,6 +52,8 @@ object LegacyReaderPageDecorationFactory : KoinComponent {
             fontSizePx = ReadBookConfig.headerFontSize.toFloat().spToPx(),
             fontPath = tipFontPath(ReadBookConfig.headerFont),
             fontFamily = tipFontFamily(),
+            fontWeight = resolveReaderFontWeight(ReadBookConfig.headerBold),
+            italic = ReadBookConfig.headerItalic,
             paddingTopPx = ReadBookConfig.headerPaddingTop.dpToPx().toFloat(),
             paddingBottomPx = ReadBookConfig.headerPaddingBottom.dpToPx().toFloat(),
             dividerVisible = ReadBookConfig.showHeaderLine,
@@ -69,6 +71,14 @@ object LegacyReaderPageDecorationFactory : KoinComponent {
                 if (ReadBookConfig.applyHeaderStyle) ReadBookConfig.headerFont else ReadBookConfig.footerFont
             ),
             fontFamily = tipFontFamily(),
+            fontWeight = resolveReaderFontWeight(
+                if (ReadBookConfig.applyHeaderStyle) ReadBookConfig.headerBold else ReadBookConfig.footerBold
+            ),
+            italic = if (ReadBookConfig.applyHeaderStyle) {
+                ReadBookConfig.headerItalic
+            } else {
+                ReadBookConfig.footerItalic
+            },
             paddingTopPx = ReadBookConfig.footerPaddingTop.dpToPx().toFloat(),
             paddingBottomPx = ReadBookConfig.footerPaddingBottom.dpToPx().toFloat(),
             dividerVisible = ReadBookConfig.showFooterLine,
@@ -79,13 +89,15 @@ object LegacyReaderPageDecorationFactory : KoinComponent {
         fontSizePx: Float,
         fontPath: String,
         fontFamily: String,
+        fontWeight: Int,
+        italic: Boolean,
         paddingTopPx: Float,
         paddingBottomPx: Float,
         dividerVisible: Boolean,
     ): Float {
         val metrics = Paint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG).apply {
             textSize = fontSizePx
-            typeface = ReaderAndroidPaintFactory.loadTypeface(fontPath, 400, false, fontFamily)
+            typeface = ReaderAndroidPaintFactory.loadTypeface(fontPath, fontWeight, italic, fontFamily)
         }.fontMetrics
         // 旧版页眉是 `includeFontPadding="false"` 的 TextView：实测高 = descent − ascent，
         // 基线 = −ascent。用 top/bottom 会把 leading（含异常 leading）算进预留高度。
@@ -105,6 +117,7 @@ object LegacyReaderPageDecorationFactory : KoinComponent {
         chapterPageCount: Int,
         time: String,
         batteryPercent: Int,
+        session: ReaderPageDecorationContext,
         hasBookmark: Boolean = false,
         contentPaddingLeftPx: Int = 0,
         contentPaddingTopPx: Int = 0,
@@ -112,14 +125,14 @@ object LegacyReaderPageDecorationFactory : KoinComponent {
         contentPaddingBottomPx: Int = 0,
     ): ReaderPageDecoration {
         val settings = readSettings.currentSettings
-        val wholeBook = ReadBook.getWholeBookPageState(page.id.chapterIndex, page.id.pageIndex)
+        val wholeBook = session.wholeBookPageStateProvider(page.id.chapterIndex, page.id.pageIndex)
         val context = ReaderTipValueContext(
-            bookName = ReadBook.book?.name.orEmpty(),
+            bookName = session.bookName,
             chapterTitle = page.chapterTitle,
             time = time.ifBlank { timeFormat.format(Date()) },
             batteryPercent = batteryPercent.coerceIn(0, 100),
             chapterIndex = page.id.chapterIndex,
-            chapterCount = ReadBook.chapterSize.coerceAtLeast(1),
+            chapterCount = session.chapterCount.coerceAtLeast(1),
             pageIndex = page.id.pageIndex,
             pageCount = chapterPageCount.coerceAtLeast(1),
             // 章还没排出任何页（占位/消息页）时页数未知，旧 `PageView.setProgress` 给的是 `-`；
@@ -129,7 +142,12 @@ object LegacyReaderPageDecorationFactory : KoinComponent {
             } else {
                 chapterPageCount.toString()
             },
-            readProgress = readProgress(page.id.chapterIndex, page.id.pageIndex, chapterPageCount),
+            readProgress = readProgress(
+                page.id.chapterIndex,
+                page.id.pageIndex,
+                chapterPageCount,
+                session.chapterCount,
+            ),
             // 对照旧 `PageView.setProgress`/`resolveCustomTemplate`：整书页数文案带本地化前缀，
             // 精确/估算两种格式，无估算时回落到 `whole_book_page_unavailable`（`全文 - / -`）。
             wholeBookPageText = when {
@@ -157,7 +175,7 @@ object LegacyReaderPageDecorationFactory : KoinComponent {
         return ReaderPageDecoration(
             bookmarkBadge = ReaderBookmarkBadge.create(
                 hasBookmark = hasBookmark,
-                isScroll = ReadBook.pageAnim() == 3,
+                isScroll = session.isScroll,
                 pageWidthPx = page.widthPx,
                 contentTopPx = page.contentTopPx,
                 contentRightPaddingPx = ReadBookConfig.paddingRight.dpToPx(),
@@ -187,6 +205,8 @@ object LegacyReaderPageDecorationFactory : KoinComponent {
                 paddingBottomPx = ReadBookConfig.headerPaddingBottom.dpToPx().toFloat(),
                 dividerColorArgb = dividerColor.takeIf { ReadBookConfig.showHeaderLine },
                 fontFamily = tipFontFamily(),
+                fontWeight = resolveReaderFontWeight(ReadBookConfig.headerBold),
+                italic = ReadBookConfig.headerItalic,
                 insetLeftPx = contentPaddingLeftPx.toFloat(),
                 insetRightPx = contentPaddingRightPx.toFloat(),
             ),
@@ -210,6 +230,14 @@ object LegacyReaderPageDecorationFactory : KoinComponent {
                 fontPath = tipFontPath(
                     if (ReadBookConfig.applyHeaderStyle) ReadBookConfig.headerFont else ReadBookConfig.footerFont
                 ),
+                fontWeight = resolveReaderFontWeight(
+                    if (ReadBookConfig.applyHeaderStyle) ReadBookConfig.headerBold else ReadBookConfig.footerBold
+                ),
+                italic = if (ReadBookConfig.applyHeaderStyle) {
+                    ReadBookConfig.headerItalic
+                } else {
+                    ReadBookConfig.footerItalic
+                },
                 paddingLeftPx = ReadBookConfig.footerPaddingLeft.dpToPx() + contentPaddingLeftPx.toFloat(),
                 paddingTopPx = ReadBookConfig.footerPaddingTop.dpToPx().toFloat(),
                 paddingRightPx = ReadBookConfig.footerPaddingRight.dpToPx() + contentPaddingRightPx.toFloat(),
@@ -311,8 +339,12 @@ object LegacyReaderPageDecorationFactory : KoinComponent {
      * `chapterSize == 0` 或"首页且章还没排出页" → `0.0%`；章还没排出页 → 按章计；
      * 其余按"章 + 页"计，且未真正读完时不允许显示 100%。
      */
-    private fun readProgress(chapterIndex: Int, pageIndex: Int, pageCount: Int): String {
-        val chapterCount = ReadBook.chapterSize
+    private fun readProgress(
+        chapterIndex: Int,
+        pageIndex: Int,
+        pageCount: Int,
+        chapterCount: Int,
+    ): String {
         if (chapterCount == 0 || (pageCount == 0 && chapterIndex == 0)) return ZERO_PROGRESS
         val formatter = DecimalFormat("0.0%")
         if (pageCount == 0) {

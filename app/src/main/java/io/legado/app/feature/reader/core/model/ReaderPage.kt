@@ -429,6 +429,10 @@ data class ReaderTipRow(
     val dividerColorArgb: Int?,
     /** 未设页眉页脚字体时回落正文字体族（旧 `tipTypeface ?: ChapterProvider.typeface`）。 */
     val fontFamily: String = "sans-serif",
+    /** 页眉页脚独立的字重（400 = 常规）。旧 View 的页眉页脚恒为常规，这里默认保持一致。 */
+    val fontWeight: Int = 400,
+    /** 页眉页脚独立的斜体。旧 View 恒为常规直立体。 */
+    val italic: Boolean = false,
     /** 根层安全区内缩：分隔线只画在内缩后的宽度里（旧 `vwRoot` 的刘海 padding）。 */
     val insetLeftPx: Float = 0f,
     val insetRightPx: Float = 0f,

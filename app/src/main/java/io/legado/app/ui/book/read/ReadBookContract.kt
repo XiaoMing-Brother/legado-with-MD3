@@ -172,6 +172,11 @@ data class ReadSheetConfigUiState(
     val footerFont: String = "",
     val headerFontSize: Int = 12,
     val footerFontSize: Int = 12,
+    /** 页眉字重：0 常规 / 1 粗体 / 2 细体 / 100..900 直接值。 */
+    val headerBold: Int = 0,
+    val footerBold: Int = 0,
+    val headerItalic: Boolean = false,
+    val footerItalic: Boolean = false,
     val applyHeaderStyle: Boolean = true,
     /** -1 表示"跟随主题分割线"，0 表示"跟随正文颜色"。 */
     val tipDividerColor: Int = 0,
@@ -519,6 +524,17 @@ sealed interface ReadBookIntent {
     data object PrevPage : ReadBookIntent
     data object NextChapter : ReadBookIntent
     data object PrevChapter : ReadBookIntent
+    /** Canvas 翻页跨章：不触发 upContent=true 的菜单换章路径。 */
+    /** Canvas 页表章号与 [ReadBook.durChapterIndex] 对齐；不触发整页 `upContent`。 */
+    data class ComposeTurnPage(val targetChapterIndex: Int) : ReadBookIntent
+    /** 阅读画布上的朗读胶囊/快捷键切换，含从可见正文起点开读。 */
+    data class ToggleReaderReadAloud(
+        val visibleChapterIndex: Int? = null,
+        val visibleChapterPosition: Int? = null,
+        val pageChangedSinceToggle: Boolean = false,
+    ) : ReadBookIntent
+    /** 分区点击：仅暂停/继续，不触发自动翻页停止或从可见起点重读。 */
+    data object ToggleReadAloudPlayback : ReadBookIntent
     data class OpenChapter(val index: Int, val pos: Int = 0) : ReadBookIntent
     data class SkipToPage(val pageIndex: Int) : ReadBookIntent
 
@@ -703,6 +719,15 @@ sealed interface ReadBookIntent {
     data object AddReadStyleConfig : ReadBookIntent
     data object DeleteCurrentReadStyleConfig : ReadBookIntent
     data class ApplyPresetTheme(val presetIndex: Int) : ReadBookIntent
+
+    /** 打开内置阅读主题选择（清墨 LightInk 主题商店快照）。 */
+    data object OpenReadThemePicker : ReadBookIntent
+
+    /** 应用内置主题：配色立即生效，自带背景图随后异步下载。 */
+    data class ApplyReadTheme(val themeId: Int) : ReadBookIntent
+
+    /** 从当前背景图取一套配色并套用到正文/强调色（清墨同款「图片取色」）。 */
+    data object ApplyBackgroundPalette : ReadBookIntent
 
     // Bookshelf
     data object RemoveFromBookshelf : ReadBookIntent
@@ -1239,6 +1264,9 @@ sealed interface ReadBookSheet {
     data object Marking : ReadBookSheet
     data object MoreConfig : ReadBookSheet
     data object BgTextConfig : ReadBookSheet
+
+    /** 内置阅读主题选择弹层（从「背景与文字」进入）。 */
+    data object ReadThemePicker : ReadBookSheet
     data object ReadAloudConfig : ReadBookSheet
     data object PreDownloadConfig : ReadBookSheet
     data object PreSynthesisConcurrencyConfig : ReadBookSheet
@@ -1500,6 +1528,18 @@ sealed interface ConfigUpdate {
         override val actions = setOf(ConfigUpdateAction.UpdateStyle)
     }
     data class FooterFontSize(val value: Int) : ConfigUpdate {
+        override val actions = setOf(ConfigUpdateAction.UpdateStyle)
+    }
+    data class HeaderBold(val value: Int) : ConfigUpdate {
+        override val actions = setOf(ConfigUpdateAction.UpdateStyle)
+    }
+    data class FooterBold(val value: Int) : ConfigUpdate {
+        override val actions = setOf(ConfigUpdateAction.UpdateStyle)
+    }
+    data class HeaderItalic(val value: Boolean) : ConfigUpdate {
+        override val actions = setOf(ConfigUpdateAction.UpdateStyle)
+    }
+    data class FooterItalic(val value: Boolean) : ConfigUpdate {
         override val actions = setOf(ConfigUpdateAction.UpdateStyle)
     }
     data class ApplyHeaderStyle(val value: Boolean) : ConfigUpdate {

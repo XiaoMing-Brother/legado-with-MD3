@@ -2741,7 +2741,13 @@ private fun ReaderPageCanvas(
             Paint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG).apply {
                 color = row.colorArgb
                 textSize = row.fontSizePx
-                typeface = ReaderAndroidPaintFactory.loadTypeface(row.fontPath, 400, false)
+                typeface = ReaderAndroidPaintFactory.loadTypeface(
+                    row.fontPath,
+                    row.fontWeight,
+                    row.italic,
+                    row.fontFamily,
+                )
+                textSkewX = if (row.italic) -0.25f else 0f
             }
         }
     }
@@ -3011,7 +3017,13 @@ private fun ReaderPageDecorationOverlay(page: ReaderPage, modifier: Modifier) {
 private fun createTipPaint(row: ReaderTipRow) = Paint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG).apply {
     color = row.colorArgb
     textSize = row.fontSizePx
-    typeface = ReaderAndroidPaintFactory.loadTypeface(row.fontPath, 400, false, row.fontFamily)
+    typeface = ReaderAndroidPaintFactory.loadTypeface(
+        row.fontPath,
+        row.fontWeight,
+        row.italic,
+        row.fontFamily,
+    )
+    textSkewX = if (row.italic) -0.25f else 0f
 }
 
 internal fun <T> resolveReaderTipResource(

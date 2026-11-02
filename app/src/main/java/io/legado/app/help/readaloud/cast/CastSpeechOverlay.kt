@@ -4,6 +4,7 @@ import io.legado.app.constant.AppLog
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.CastCharacter
 import io.legado.app.domain.gateway.ReadAloudVoiceGateway
+import io.legado.app.domain.gateway.ReadAloudSettingsGateway
 import io.legado.app.domain.model.readaloud.BookVoiceBinding
 import io.legado.app.domain.model.readaloud.CanonicalSpeechParagraph
 import io.legado.app.domain.model.readaloud.ReadAloudVoice
@@ -11,7 +12,6 @@ import io.legado.app.domain.model.readaloud.SpeechPlanItem
 import io.legado.app.domain.model.readaloud.SpeechRoleType
 import io.legado.app.feature.reader.core.cast.CastMarkers
 import io.legado.app.feature.reader.core.readaloud.isUnspeakableReadAloudUnit
-import io.legado.app.ui.config.readConfig.ReadConfig
 import org.koin.core.context.GlobalContext
 
 /**
@@ -55,7 +55,7 @@ object CastSpeechOverlay {
         val effects = runCatching {
             appDb.bookDao.getBook(bookUrl)?.let { RegexCastRuleStore.effectsFor(it) }
         }.getOrNull().orEmpty()
-        val multiRole = ReadConfig.useMultiSpeaker
+        val multiRole = GlobalContext.get().get<ReadAloudSettingsGateway>().currentSettings.useMultiSpeaker
         // 提前返回的这几路整章按旁白读，计划会直接当播放队列用：不发声段仍要按同一口径丢掉
         if (!multiRole && effects.isEmpty()) return dropSilentUnits(plan).first
         // 段级变声器按引号序号存在分配表里（正文胶囊那一栏设的，只管那一句）

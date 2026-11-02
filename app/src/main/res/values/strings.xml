@@ -3853,4 +3853,16 @@
     <string name="battery_optimization_status_ignored">Unrestricted (Tap to check OEM background policy)</string>
     <string name="battery_optimization_status_not_ignored">Restricted or not configured; service may be killed in background</string>
     <string name="reader_paragraph_image_action_unsupported">This image uses a paragraph-rule action that this version does not support.</string>
+    <!--Built-in read themes (LightInk store snapshot)-->
+    <string name="read_theme">Built-in Themes</string>
+    <string name="read_theme_summary">Tap a theme to apply its colors, margins and background image.</string>
+    <string name="read_theme_download_count">%1$d downloads</string>
+    <string name="read_theme_image_failed">Theme colors applied, but the background image failed to download.</string>
+    <!--Extract a color scheme from the current reading background image-->
+    <string name="read_bg_palette">Pick Colors from Image</string>
+    <string name="read_bg_palette_summary">Apply text and accent colors extracted from the current background image.</string>
+    <string name="read_bg_palette_failed">Set a background image first, or try another one.</string>
+    <!--Built-in reading backgrounds (assets/bg)-->
+    <string name="read_bg_builtin">Built-in backgrounds</string>
+    <string name="read_bg_builtin_summary">Tap to apply. No storage permission needed.</string>
 </resources>

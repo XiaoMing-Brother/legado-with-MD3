@@ -75,6 +75,12 @@ class ReaderOpenBookIsolationTest {
         val release = completion.indexOf("routeInitialized = true")
         assertTrue("路由初始化完成必须先解除隔离", release >= 0)
         assertTrue(
+            "路由就绪后应补发一次阅读器配置快照，避免跨会话设置滞留",
+            completion.contains("ReadConfigUpdateBus.post(") &&
+                completion.contains("ConfigUpdateAction.UpdateSystemUi") &&
+                completion.contains("ConfigUpdateAction.UpdateStyle"),
+        )
+        assertTrue(
             "解除隔离后主动重发，自动换源的正文可能已在此前到达",
             completion.indexOf("publishReaderPageWindow()") > release,
         )
@@ -82,6 +88,67 @@ class ReaderOpenBookIsolationTest {
         val initialization =
             section(graph, "readBookViewModel.initData(initRequest, initialBook) {")
         assertTrue(initialization.contains("controller.onRouteInitialized()"))
+    }
+
+    @Test
+    fun `media chapter keys route through read book intents`() {
+        val source = mainSourceFile("io/legado/app/ui/book/read/ReadBookController.kt").readText()
+        val media = section(source, "KeyEvent.KEYCODE_MEDIA_NEXT")
+        assertTrue(media.contains("ReaderEvent.NextChapter"))
+        assertFalse(media.contains("ReadBook.moveToNextChapter"))
+        assertTrue(
+            section(source, "KeyEvent.KEYCODE_MEDIA_PREVIOUS").contains("ReaderEvent.PreviousChapter"),
+        )
+    }
+
+    @Test
+    fun `compose chapter navigation routes through compose turn page intent`() {
+        val source = mainSourceFile("io/legado/app/ui/book/read/ReadBookController.kt").readText()
+        assertTrue(source.contains("ReaderEvent.AlignBookToChapter"))
+        assertFalse(
+            "Canvas 控制器不应再直接调用 moveToNextChapter/moveToPrevChapter",
+            source.contains("ReadBook.moveToNextChapter") || source.contains("ReadBook.moveToPrevChapter"),
+        )
+        val viewModel = mainSourceFile("io/legado/app/ui/book/read/ReadBookViewModel.kt").readText()
+        assertTrue(viewModel.contains("fun onReaderEvent"))
+        assertTrue(viewModel.contains("ReaderComposeChapterNavigator.advanceToChapter"))
+    }
+
+    @Test
+    fun `compose tap actions route through reader events`() {
+        val source = mainSourceFile("io/legado/app/ui/book/read/ReadBookController.kt").readText()
+        val tap = section(source, "fun onComposeTapAction(")
+        assertTrue(tap.contains("toReaderEvent"))
+        assertTrue(tap.contains("emitReaderEvent"))
+        assertFalse(
+            "九宫格业务不应在控制器里直连 ReadBookIntent 分支",
+            tap.contains("ReadBookIntent.NextChapter"),
+        )
+    }
+
+    @Test
+    fun `compose center menu routes through reader events`() {
+        val source = mainSourceFile("io/legado/app/ui/book/read/ReadBookController.kt").readText()
+        val menu = section(source, "fun showComposeActionMenu()")
+        assertTrue(menu.contains("resolveComposeCenterMenuEvent"))
+        assertTrue(menu.contains("emitReaderEvent"))
+        assertFalse(
+            "中心菜单不应再分支直连 ReadBookIntent",
+            menu.contains("ReadBookIntent.ShowMenu") ||
+                menu.contains("ReadBookIntent.ReadAloudAction"),
+        )
+    }
+
+    @Test
+    fun `reader controller does not call read aloud facade directly`() {
+        val source = mainSourceFile("io/legado/app/ui/book/read/ReadBookController.kt").readText()
+        assertFalse(
+            "朗读切换应经 ReadBookIntent，而不是 ReadAloud.pause/resume/stop",
+            source.contains("ReadAloud.pause") ||
+                source.contains("ReadAloud.resume") ||
+                source.contains("ReadAloud.stop"),
+        )
+        assertTrue(source.contains("ReaderEvent.ToggleReadAloud"))
     }
 
     @Test

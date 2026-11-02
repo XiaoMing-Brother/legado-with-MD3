@@ -25,6 +25,16 @@ data class ReaderContentBounds(
     val bottomPx: Int,
 )
 
+/**
+ * 正文边距与系统栏占位的合成值。
+ *
+ * 借鉴清墨：「因为异形屏和状态栏的存在，当状态栏显示且顶部边距小于状态栏高度时，使用状态栏
+ * 高度」。旧实现是两者相加，异形屏上会得到「状态栏高 + 用户边距」的双份留白；这里改成取大值，
+ * 用户边距大于系统栏时仍完全听用户的，默认配置下则只保留系统栏那一份。
+ */
+fun readerEdgePadding(userPaddingPx: Int, systemBarPaddingPx: Int): Int =
+    maxOf(userPaddingPx, systemBarPaddingPx)
+
 fun calculateContentBounds(
     viewportWidthPx: Int,
     viewportHeightPx: Int,

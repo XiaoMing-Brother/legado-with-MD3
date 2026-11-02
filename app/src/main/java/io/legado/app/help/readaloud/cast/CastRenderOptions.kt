@@ -7,9 +7,10 @@ import io.legado.app.feature.reader.core.layout.ReaderCastOptions
 import io.legado.app.feature.reader.core.layout.ReaderCastProfile
 import io.legado.app.feature.reader.legacy.LegacyReaderStyleRangeMapper
 import io.legado.app.help.config.ReadBookConfig
-import io.legado.app.ui.config.readConfig.ReadConfig
+import io.legado.app.domain.gateway.ReadAloudSettingsGateway
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.koin.core.context.GlobalContext
 
 /**
  * 分页前的多角色分配渲染选项装配（开关 → 角色档案 → 头像预热 → 变声器状态）。
@@ -29,7 +30,7 @@ object CastRenderOptions {
      */
     suspend fun signatureFor(bookUrl: String, chapterIndex: Int): Int =
         withContext(Dispatchers.IO) {
-            if (!ReadConfig.multiRoleCast) return@withContext 0
+            if (!aloudSettings().multiRoleCast) return@withContext 0
             val chapterEffects = appDb.chapterRoleAssignmentDao
                 .getForChapter(bookUrl, chapterIndex)
                 .filter { it.voiceEffect.isNotBlank() }
@@ -52,7 +53,7 @@ object CastRenderOptions {
         }
 
     suspend fun load(bookUrl: String, chapterIndex: Int): ReaderCastOptions {
-        if (!ReadConfig.multiRoleCast) return ReaderCastOptions.Disabled
+        if (!aloudSettings().multiRoleCast) return ReaderCastOptions.Disabled
         val profiles = withContext(Dispatchers.IO) {
             appDb.bookKnowledgeDao.getCharacterProfiles(bookUrl, 500)
         }
@@ -101,4 +102,7 @@ object CastRenderOptions {
         val bound = configName.orEmpty().configNames()
         return bound.isEmpty() || bound.contains(ReadBookConfig.durConfig.name)
     }
+
+    private fun aloudSettings() =
+        GlobalContext.get().get<ReadAloudSettingsGateway>().currentSettings
 }

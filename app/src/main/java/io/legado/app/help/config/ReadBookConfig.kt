@@ -218,6 +218,18 @@ object ReadBookConfig {
     val footerFontSize: Int
         get() = config.footerFontSize.takeIf { it > 0 } ?: 12
 
+    val headerBold: Int
+        get() = config.headerBold
+
+    val footerBold: Int
+        get() = config.footerBold
+
+    val headerItalic: Boolean
+        get() = config.headerItalic
+
+    val footerItalic: Boolean
+        get() = config.footerItalic
+
     val applyHeaderStyle: Boolean
         get() = config.applyHeaderStyle
 
@@ -468,6 +480,10 @@ object ReadBookConfig {
             footerFont = shareConfig.footerFont,
             headerFontSize = shareConfig.headerFontSize,
             footerFontSize = shareConfig.footerFontSize,
+            headerBold = shareConfig.headerBold,
+            footerBold = shareConfig.footerBold,
+            headerItalic = shareConfig.headerItalic,
+            footerItalic = shareConfig.footerItalic,
             applyHeaderStyle = shareConfig.applyHeaderStyle,
             textBold = shareConfig.textBold,
             textSize = shareConfig.textSize,
@@ -568,6 +584,10 @@ object ReadBookConfig {
         val footerFont: String = "",//页脚字体
         val headerFontSize: Int = 12,//页眉字号
         val footerFontSize: Int = 12,//页脚字号
+        val headerBold: Int = 0,//页眉字重 0:常规, 1:粗体, 2:细体, 100..900:直接值
+        val footerBold: Int = 0,//页脚字重，取值同页眉
+        val headerItalic: Boolean = false,//页眉斜体
+        val footerItalic: Boolean = false,//页脚斜体
         val applyHeaderStyle: Boolean = true,//页脚是否应用页眉字体样式
         val textBold: Int = 500,//是否粗体字 0:正常, 1:粗体, 2:细体
         val textSize: Int = 20,//文字大小
@@ -752,6 +772,10 @@ object ReadBookConfig {
             "footerFont" to footerFont,
             "headerFontSize" to headerFontSize,
             "footerFontSize" to footerFontSize,
+            "headerBold" to headerBold,
+            "footerBold" to footerBold,
+            "headerItalic" to headerItalic,
+            "footerItalic" to footerItalic,
             "applyHeaderStyle" to applyHeaderStyle,
             "textBold" to textBold,
             "textSize" to textSize,

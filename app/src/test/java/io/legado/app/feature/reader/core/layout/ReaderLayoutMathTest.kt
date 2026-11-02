@@ -20,4 +20,16 @@ class ReaderLayoutMathTest {
             calculateContentBounds(1080, 1920, 24, 32, 24, 32, 2),
         )
     }
+
+    @Test fun systemBarAvoidanceIsClampedInsteadOfAdded() {
+        // 清墨规则：状态栏显示且顶部边距小于状态栏高度时用状态栏高度，不叠加。
+        assertEquals(120, readerEdgePadding(userPaddingPx = 16, systemBarPaddingPx = 120))
+        assertEquals(200, readerEdgePadding(userPaddingPx = 200, systemBarPaddingPx = 120))
+        assertEquals(0, readerEdgePadding(userPaddingPx = 0, systemBarPaddingPx = 0))
+        assertEquals(
+            "用户把边距清零时，系统栏占位仍然保留（否则正文会顶到状态栏下）",
+            120,
+            readerEdgePadding(userPaddingPx = 0, systemBarPaddingPx = 120),
+        )
+    }
 }

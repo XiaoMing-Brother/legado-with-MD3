@@ -105,6 +105,10 @@ class ReadConfigUpdateDelegate(
             is ConfigUpdate.HeaderFontSize,
             is ConfigUpdate.FooterFont,
             is ConfigUpdate.FooterFontSize,
+            is ConfigUpdate.HeaderBold,
+            is ConfigUpdate.FooterBold,
+            is ConfigUpdate.HeaderItalic,
+            is ConfigUpdate.FooterItalic,
             is ConfigUpdate.ApplyHeaderStyle,
             is ConfigUpdate.TipHeaderColor,
             is ConfigUpdate.TipHeaderColorNight,
@@ -820,8 +824,12 @@ class ReadConfigUpdateDelegate(
         is ConfigUpdate.CustomTipFooterRight ->
             stringMutation(ReadStyleStringKey.CustomTipFooterRight, value)
         is ConfigUpdate.HeaderFontSize -> intMutation(ReadStyleIntKey.HeaderFontSize, value)
+        is ConfigUpdate.HeaderBold -> intMutation(ReadStyleIntKey.HeaderBold, value)
         is ConfigUpdate.FooterFont -> stringMutation(ReadStyleStringKey.FooterFont, path)
         is ConfigUpdate.FooterFontSize -> intMutation(ReadStyleIntKey.FooterFontSize, value)
+        is ConfigUpdate.FooterBold -> intMutation(ReadStyleIntKey.FooterBold, value)
+        is ConfigUpdate.HeaderItalic -> booleanMutation(ReadStyleBooleanKey.HeaderItalic, value)
+        is ConfigUpdate.FooterItalic -> booleanMutation(ReadStyleBooleanKey.FooterItalic, value)
         is ConfigUpdate.ApplyHeaderStyle ->
             booleanMutation(ReadStyleBooleanKey.ApplyHeaderStyle, value)
         is ConfigUpdate.TipHeaderColor -> colorMutation(ReadStyleColorKey.TipHeader, color)

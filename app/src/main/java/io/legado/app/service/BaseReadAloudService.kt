@@ -41,6 +41,7 @@ import io.legado.app.constant.NotificationId
 import io.legado.app.constant.PreferKey
 import io.legado.app.constant.Status
 import io.legado.app.domain.gateway.PlaybackCapsuleGateway
+import io.legado.app.domain.gateway.ReadAloudSettingsGateway
 import io.legado.app.domain.model.AiReasoningLevel
 import io.legado.app.domain.model.PlaybackCapsuleSource
 import io.legado.app.domain.model.PlaybackTimer
@@ -75,7 +76,6 @@ import io.legado.app.model.ReadAloudSessionStore
 import io.legado.app.model.ReadBook
 import io.legado.app.receiver.MediaButtonReceiver
 import io.legado.app.service.readaloud.ReadAloudOverlayWindow
-import io.legado.app.ui.config.readConfig.ReadConfig
 import io.legado.app.ui.main.MainActivity
 import io.legado.app.utils.LogUtils
 import io.legado.app.utils.activityPendingIntent
@@ -206,7 +206,12 @@ abstract class BaseReadAloudService : BaseService(),
     }
     protected val bookSession get() = ReadAloud.bookSession
 
-    private val useWakeLock = ReadConfig.readAloudWakeLock
+    protected val readAloudSettingsGateway: ReadAloudSettingsGateway
+        get() = get(ReadAloudSettingsGateway::class.java)
+
+    protected val aloudSettings get() = readAloudSettingsGateway.currentSettings
+
+    private val useWakeLock get() = aloudSettings.readAloudWakeLock
     private val wakeLock by lazy {
         powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "legado:ReadAloudService")
             .apply {
@@ -250,9 +255,9 @@ abstract class BaseReadAloudService : BaseService(),
     private var lastMediaSessionUpdateElapsedMs = 0L
     @Volatile
     private var systemMediaCompatibilityEnabled =
-        ReadConfig.systemMediaControlCompatibilityChange
+        false
     @Volatile
-    private var androidMediaControlEnabled = ReadConfig.androidMediaControlEnabled
+    private var androidMediaControlEnabled = false
     private val finishChapterTimerLock = Any()
     private var finishChapterAtIndex = NO_FINISH_CHAPTER
 
@@ -303,6 +308,9 @@ abstract class BaseReadAloudService : BaseService(),
     override fun onCreate() {
         super.onCreate()
         isAlive = true
+        val settings = aloudSettings
+        systemMediaCompatibilityEnabled = settings.systemMediaControlCompatibilityChange
+        androidMediaControlEnabled = settings.androidMediaControlEnabled
         stopRequested = false
         isRun = true
         pause = false
@@ -607,7 +615,7 @@ abstract class BaseReadAloudService : BaseService(),
         if (plan.isEmpty()) return ReadAloudPlaybackQueue.Empty
         val narration = try {
             val buildSpeechPlan: BuildSpeechPlanUseCase = get(BuildSpeechPlanUseCase::class.java)
-            buildSpeechPlan.narrationVoice(bookUrl, useMultiSpeaker = ReadConfig.useMultiSpeaker)
+            buildSpeechPlan.narrationVoice(bookUrl, useMultiSpeaker = aloudSettings.useMultiSpeaker)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -628,7 +636,7 @@ abstract class BaseReadAloudService : BaseService(),
         splitPolicy: ContentSplitPolicy,
     ): List<SpeechPlanItem> {
         if (bookUrl.isEmpty()) return emptyList()
-        val multiSpeakerOn = ReadConfig.useMultiSpeaker
+        val multiSpeakerOn = aloudSettings.useMultiSpeaker
         // 「多角色朗读」是唯一的发声开关：关掉就没有任何计划，整章回到用户在朗读设置里
         // 选的默认引擎。「多角色分配」只管正文胶囊，不参与决定用谁的声音念。
         //
@@ -645,12 +653,12 @@ abstract class BaseReadAloudService : BaseService(),
                 chapterIndex = chapterIndex,
                 paragraphs = paragraphs,
                 analysisMode = if (multiSpeakerOn) {
-                    SpeechAnalysisMode.fromStorage(ReadConfig.speechAnalysisMode)
+                    SpeechAnalysisMode.fromStorage(aloudSettings.speechAnalysisMode)
                 } else {
                     SpeechAnalysisMode.Rule
                 },
                 analysisReasoningLevel = AiReasoningLevel.fromStorage(
-                    ReadConfig.speechAnalysisReasoningLevel,
+                    aloudSettings.speechAnalysisReasoningLevel,
                     AiReasoningLevel.OFF,
                 ),
                 useMultiSpeaker = multiSpeakerOn,
@@ -688,7 +696,7 @@ abstract class BaseReadAloudService : BaseService(),
      * [base] 传这一句在段落里的起点，[CastMarkers.Spoken.storedOf] 就直接给出段内绝对偏移。
      */
     protected open fun spokenFor(storedTail: String, base: Int = 0): CastMarkers.Spoken =
-        if (ReadConfig.useMultiSpeaker) {
+        if (aloudSettings.useMultiSpeaker) {
             CastMarkers.stripKeepingOffsets(storedTail, base)
         } else {
             CastMarkers.Spoken.passThrough(storedTail, base)
@@ -703,25 +711,25 @@ abstract class BaseReadAloudService : BaseService(),
      */
     protected fun resolveContentSplitMode(
         mode: ReadAloudContentSplitMode = ReadAloudContentSplitMode.fromStorage(
-            ReadConfig.contentSplitMode
+            aloudSettings.contentSplitMode
         ),
     ): ReadAloudContentSplitMode =
         ContentSplitPolicies.resolve(
             mode,
             // 划分方式跟着「多角色朗读」走（与设置页那行文案同一口径）；
             // 「多角色分配」只显示胶囊，不改变朗读单元的粒度。
-            ReadConfig.useMultiSpeaker,
+            aloudSettings.useMultiSpeaker,
         )
 
     /** 当前生效的内容划分策略，供朗读服务与预合成共用。 */
     protected fun contentSplitPolicy(
         mode: ReadAloudContentSplitMode = ReadAloudContentSplitMode.fromStorage(
-            ReadConfig.contentSplitMode
+            aloudSettings.contentSplitMode
         ),
     ): ContentSplitPolicy =
         ContentSplitPolicies.forMode(
             mode = resolveContentSplitMode(mode),
-            storedSymbols = ReadConfig.contentSplitSymbols,
+            storedSymbols = aloudSettings.contentSplitSymbols,
         )
 
     @SuppressLint("WakelockTimeout")
@@ -863,7 +871,7 @@ abstract class BaseReadAloudService : BaseService(),
     }
 
     private fun syncBgmToProgress(chapterPosition: Int) {
-        if (!io.legado.app.ui.config.readConfig.ReadConfig.bgmAssign) {
+        if (!aloudSettings.bgmAssign) {
             readAloudBgm.pause()
             return
         }
@@ -1168,9 +1176,9 @@ abstract class BaseReadAloudService : BaseService(),
      * [completeCurrentChapter] 消费），因此这里不需要清另一侧的臂标。
      */
     private fun applyPersistedTimer() {
-        when (ReadAloudTimerMode.fromStorage(ReadConfig.readAloudTimerMode)) {
+        when (ReadAloudTimerMode.fromStorage(aloudSettings.timerMode)) {
             ReadAloudTimerMode.Minute -> {
-                val minutes = PlaybackTimer.normalize(ReadConfig.ttsTimer)
+                val minutes = PlaybackTimer.normalize(aloudSettings.ttsTimer)
                 timeMinute = minutes
                 doDs()
                 if (minutes > 0) {
@@ -1179,7 +1187,7 @@ abstract class BaseReadAloudService : BaseService(),
             }
 
             ReadAloudTimerMode.Chapter -> {
-                val chapters = PlaybackTimer.normalizeChapters(ReadConfig.readAloudTimerChapters)
+                val chapters = PlaybackTimer.normalizeChapters(aloudSettings.timerChapters)
                 synchronized(finishChapterTimerLock) { chapterQuota = chapters.takeIf { it > 0 } }
                 sessionStore.updateTimer(PlaybackTimer.MIN_MINUTES)
                 if (chapters > 0) {
@@ -1246,7 +1254,7 @@ abstract class BaseReadAloudService : BaseService(),
                     val finishChapter = synchronized(finishChapterTimerLock) {
                         timeMinute--
                         if (timeMinute == PlaybackTimer.MIN_MINUTES &&
-                            ReadConfig.finishCurrentChapterAfterTimer
+                            aloudSettings.finishCurrentChapterAfterTimer
                         ) {
                             // 臂标锚定正在朗读的章节：脱离（手动翻到后章）时 durChapterIndex
                             // 已领先，"读完本章"指正在读的这章，不是页面停留的章节
@@ -1280,7 +1288,7 @@ abstract class BaseReadAloudService : BaseService(),
      * @return 音频焦点
      */
     fun requestFocus(): Boolean {
-        if (ReadConfig.ignoreAudioFocus) {
+        if (aloudSettings.ignoreAudioFocus) {
             return true
         }
         val requestFocus = MediaHelp.requestFocus(mFocusRequest)
@@ -1471,7 +1479,7 @@ abstract class BaseReadAloudService : BaseService(),
             }
 
             override fun onSkipToNext() {
-                if (ReadConfig.mediaButtonPerNext) {
+                if (aloudSettings.mediaButtonPerNext) {
                     nextChapter()
                 } else {
                     nextP()
@@ -1479,7 +1487,7 @@ abstract class BaseReadAloudService : BaseService(),
             }
 
             override fun onSkipToPrevious() {
-                if (ReadConfig.mediaButtonPerNext) {
+                if (aloudSettings.mediaButtonPerNext) {
                     prevChapter()
                 } else {
                     prevP()
@@ -1570,7 +1578,7 @@ abstract class BaseReadAloudService : BaseService(),
      * 音频焦点变化
      */
     override fun onAudioFocusChange(focusChange: Int) {
-        if (ReadConfig.ignoreAudioFocus) {
+        if (aloudSettings.ignoreAudioFocus) {
             AppLog.put("忽略音频焦点处理(TTS)")
             return
         }
@@ -1700,7 +1708,7 @@ abstract class BaseReadAloudService : BaseService(),
         }
 
     private fun createAndroidMediaControlNotification(): NotificationCompat.Builder {
-        val navigateByChapter = ReadConfig.mediaButtonPerNext
+        val navigateByChapter = aloudSettings.mediaButtonPerNext
         val previousAction = if (navigateByChapter) {
             IntentAction.prev
         } else {
@@ -1898,7 +1906,8 @@ abstract class BaseReadAloudService : BaseService(),
     }
 
     private fun initPhoneStateListener() {
-        val needRegister = ReadConfig.ignoreAudioFocus && ReadConfig.pauseReadAloudWhilePhoneCalls
+        val needRegister =
+            aloudSettings.ignoreAudioFocus && aloudSettings.pauseReadAloudWhilePhoneCalls
         if (needRegister && registeredPhoneStateListener) {
             return
         }

@@ -120,8 +120,7 @@ class ReadAloudDelegate(
                         speechAnalysisReasoningLevel = prefs.speechAnalysisReasoningLevel,
                         useMultiSpeaker = prefs.useMultiSpeaker,
                         multiRoleCast = prefs.multiRoleCast,
-                        // 漏填这一项会出现「开关显示关、正文胶囊却还是开」：
-                        // 胶囊读的是 ReadConfig.bgmAssign（持久值），开关读的是这里的状态
+                        // 与胶囊、正文排版同源：ReadAloudSettingsGateway → UiState.bgmAssign
                         bgmAssign = prefs.bgmAssign,
                         // 总音量存在配乐自己的 prefs 里（与配乐库/段内音量同一处），不在朗读设置模型中
                         bgmVolume = io.legado.app.help.readaloud.cast.BgmPoolStore.volume(),

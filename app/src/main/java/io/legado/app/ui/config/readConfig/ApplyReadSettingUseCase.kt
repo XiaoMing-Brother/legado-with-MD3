@@ -28,7 +28,7 @@ class ApplyReadSettingUseCase {
             is ReadConfigIntent.TextFullJustifyChanged,
             is ReadConfigIntent.TextBottomJustifyChanged,
             is ReadConfigIntent.UseZhLayoutChanged,
-            is ReadConfigIntent.DoubleHorizontalPageChanged -> updateLayout()
+            is ReadConfigIntent.DoubleHorizontalPageChanged -> reloadLayout()
 
             is ReadConfigIntent.ProgressBarBehaviorChanged -> {
                 postEvent(EventBus.UP_SEEK_BAR, true)
@@ -39,24 +39,41 @@ class ApplyReadSettingUseCase {
             }
 
             is ReadConfigIntent.NoAnimScrollPageChanged -> ReadBook.renderCallBack?.upPageAnim()
-            is ReadConfigIntent.OptimizeRenderChanged -> updateStyle()
+            is ReadConfigIntent.OptimizeRenderChanged -> reloadStyle()
 
             // useUnderline 进了 RenderStyle 快照，改完必须重建并重绘，否则朗读/搜索
             // 高亮线要等下一次样式变更才生效
             is ReadConfigIntent.UseUnderlineChanged -> {
-                ReadConfigUpdateBus.post(setOf(ConfigUpdateAction.InvalidateTextPage))
+                ReadConfigUpdateBus.post(
+                    setOf(
+                        ConfigUpdateAction.UpdateStyle,
+                        ConfigUpdateAction.InvalidateTextPage,
+                        ConfigUpdateAction.UpdateContent,
+                    )
+                )
             }
             else -> Unit
         }
     }
 
-    private fun updateLayout() {
-        // The Compose paginator reads a fresh immutable style snapshot for every generation.
-        ReadBook.loadContent(false)
+    private fun reloadLayout() {
+        // 排版参数进了分页快照，必须让活跃阅读器重建环境并重排，不能只 loadContent。
+        ReadConfigUpdateBus.post(
+            setOf(
+                ConfigUpdateAction.UpdateStyle,
+                ConfigUpdateAction.UpdateLayout,
+                ConfigUpdateAction.ReloadContent,
+            )
+        )
     }
 
-    private fun updateStyle() {
+    private fun reloadStyle() {
+        ReadConfigUpdateBus.post(
+            setOf(
+                ConfigUpdateAction.UpdateStyle,
+                ConfigUpdateAction.ReloadContent,
+            )
+        )
         ReadBook.renderCallBack?.upPageAnim(true)
-        ReadBook.loadContent(false)
     }
 }

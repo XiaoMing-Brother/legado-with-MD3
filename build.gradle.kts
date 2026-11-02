@@ -54,6 +54,21 @@ abstract class VerifyConfigArchitectureTask : DefaultTask() {
         // 这类作用域函数里冒出来。与其枚举作用域函数（还会误伤 ChapterProvider 里只读的
         // `with(ReadBookConfig)`），不如直接盯裸赋值本身：带 `.` 前缀的限定写法归上面那条管。
         val readBookConfigBareWrite = Regex("""(?<![.\w])durConfig\s*=(?!=)""")
+        val readConfigDirectRead = Regex("""\bReadConfig\.""")
+        val controllerReaderIntentDirectCall = Regex(
+            """viewModel\s*\.\s*onIntent\s*\(\s*ReadBookIntent\.(?:NextChapter|PrevChapter|ToggleReaderReadAloud|ToggleReadAloudPlayback|ReadAloudStop|ToggleMenu|ComposeTurnPage)\b"""
+        )
+        val readerRenderRoots = setOf(
+            "io/legado/app/feature/reader/",
+        )
+        val readAloudServiceOwners = setOf(
+            "io/legado/app/service/BaseReadAloudService.kt",
+            "io/legado/app/service/TTSReadAloudService.kt",
+            "io/legado/app/service/HttpReadAloudService.kt",
+        )
+        val readAloudCastRoots = setOf(
+            "io/legado/app/help/readaloud/cast/",
+        )
         // 文件读写层 ReadStyleRepository 同理是 Koin 单例：谁 inject 谁就能直接 save()
         // 覆盖 readConfig.json，磁盘与 ReadStyleConfigStore 的内存状态就此分叉。
         val styleRepositoryOwners = setOf(
@@ -125,6 +140,31 @@ abstract class VerifyConfigArchitectureTask : DefaultTask() {
             if (relativePath !in styleRepositoryOwners && "ReadStyleRepository" in text) {
                 violations += "$displayPath: readConfig.json 的读写只对 ReadStyleConfigStore 与 " +
                     "ReadStyleGateway 的实现开放，不要注入 ReadStyleRepository"
+            }
+            if (readerRenderRoots.any { relativePath.startsWith(it) } &&
+                readConfigDirectRead.containsMatchIn(text)
+            ) {
+                violations += "$displayPath: 阅读器渲染层禁止直读 ReadConfig，请使用 Gateway 或分页快照"
+            }
+            if (relativePath == "io/legado/app/model/ReadBook.kt" &&
+                readConfigDirectRead.containsMatchIn(text)
+            ) {
+                violations += "$displayPath: ReadBook 禁止直读废弃 ReadConfig，请使用 ReadAloudSettingsGateway"
+            }
+            if (relativePath in readAloudServiceOwners &&
+                readConfigDirectRead.containsMatchIn(text)
+            ) {
+                violations += "$displayPath: 朗读服务禁止直读 ReadConfig，请使用 ReadAloudSettingsGateway"
+            }
+            if (relativePath == "io/legado/app/ui/book/read/ReadBookController.kt" &&
+                controllerReaderIntentDirectCall.containsMatchIn(text)
+            ) {
+                violations += "$displayPath: 阅读器会话动作应经 ReaderEvent 出站，不要直接调用 ViewModel Intent"
+            }
+            if (readAloudCastRoots.any { relativePath.startsWith(it) } &&
+                readConfigDirectRead.containsMatchIn(text)
+            ) {
+                violations += "$displayPath: 多角色朗读辅助层禁止直读 ReadConfig，请使用 ReadAloudSettingsGateway"
             }
             if (relativePath in injectedConfigFiles && "GlobalContext" in text) {
                 violations += "$displayPath: 配置所有者必须显式注入依赖，禁止 GlobalContext"
@@ -262,7 +302,7 @@ val verifyConfigArchitecture = tasks.register<VerifyConfigArchitectureTask>(
             "io/legado/app/ui/association/AddToBookshelfDialog.kt" to 5,
             "io/legado/app/ui/association/ImportReplaceRuleDialog.kt" to 1,
             "io/legado/app/ui/association/ImportRssSourceDialog.kt" to 1,
-            "io/legado/app/ui/book/read/ReadBookController.kt" to 2,
+            "io/legado/app/ui/book/read/ReadBookController.kt" to 0,
             // 护栏缺席期间 main 新增（整书页码估算），随合并冻结
             "io/legado/app/ui/book/read/pageestimate/ExactChapterPageCountStore.kt" to 3,
             "io/legado/app/ui/book/search/SearchScope.kt" to 4,

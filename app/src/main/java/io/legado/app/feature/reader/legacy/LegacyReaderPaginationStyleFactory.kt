@@ -8,6 +8,7 @@ import io.legado.app.feature.reader.core.layout.ReaderPageUnderline
 import io.legado.app.feature.reader.core.model.ReaderEmphasisUnderline
 import io.legado.app.feature.reader.core.model.ReaderTextShadow
 import io.legado.app.feature.reader.core.model.ReaderTextStyle
+import io.legado.app.feature.reader.core.model.resolveReaderFontWeight
 import io.legado.app.feature.reader.core.source.ReaderTitleSegmentation
 import io.legado.app.feature.reader.platform.ReaderAndroidPaginationStyle
 import io.legado.app.feature.reader.platform.ReaderAndroidPaintFactory
@@ -61,6 +62,7 @@ object LegacyReaderPaginationStyleFactory : KoinComponent {
             columnMode = ReaderColumnMode.fromPreference(settings.doubleHorizontalPage),
             isTablet = appCtx.isPad,
             isScroll = ReadBook.pageAnim() == 3,
+            isEInkMode = isEInkMode,
             textBottomJustify = settings.textBottomJustify,
             pageUnderline = ReadBookConfig.underline
                 .takeIf { it && ReadBook.book?.isImage != true }
@@ -110,10 +112,5 @@ object LegacyReaderPaginationStyleFactory : KoinComponent {
     }
 
     /** 字重配置的口径（0=常规 / 1=加粗 / 2=细 / 100..900=直接值）：预览与正文共用这一份。 */
-    fun resolveWeight(configured: Int): Int = when (configured) {
-        1 -> 900
-        2 -> 300
-        in 100..900 -> configured
-        else -> 400
-    }
+    fun resolveWeight(configured: Int): Int = resolveReaderFontWeight(configured)
 }

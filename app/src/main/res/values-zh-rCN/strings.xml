@@ -3849,4 +3849,16 @@
     <string name="battery_optimization_status_ignored">已开启无限制（点击可检查厂商后台策略）</string>
     <string name="battery_optimization_status_not_ignored">未开启无限制，后台可能被系统终止</string>
     <string name="reader_paragraph_image_action_unsupported">此图片使用段落规则动作，当前版本尚不支持。</string>
+    <!--内置阅读主题（清墨 LightInk 主题商店快照）-->
+    <string name="read_theme">内置主题</string>
+    <string name="read_theme_summary">点按主题即应用它的配色、边距与背景图。</string>
+    <string name="read_theme_download_count">%1$d 次下载</string>
+    <string name="read_theme_image_failed">配色已应用，背景图下载失败。</string>
+    <!--从当前阅读背景图提取一套配色-->
+    <string name="read_bg_palette">从背景图取色</string>
+    <string name="read_bg_palette_summary">按当前背景图提一套正文与强调色，直接套用。</string>
+    <string name="read_bg_palette_failed">先设置一张背景图，或换一张再试。</string>
+    <!--内置阅读背景图（assets/bg）-->
+    <string name="read_bg_builtin">内置背景图</string>
+    <string name="read_bg_builtin_summary">点按即用，无需存储权限。</string>
 </resources>

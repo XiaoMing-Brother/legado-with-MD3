@@ -13,9 +13,11 @@ import io.legado.app.data.entities.readRecord.ReadRecordSession
 import io.legado.app.data.repository.HighlightRuleRepository
 import io.legado.app.data.repository.ReadRecordRepository
 import io.legado.app.domain.gateway.BackupSettingsGateway
+import io.legado.app.domain.gateway.ReadAloudSettingsGateway
 import io.legado.app.domain.gateway.OtherSettingsGateway
 import io.legado.app.domain.gateway.ReadSettingsGateway
 import io.legado.app.feature.reader.core.navigation.ReaderChapterPaginationSnapshot
+import io.legado.app.feature.reader.core.layout.readerEdgePadding
 import io.legado.app.feature.reader.core.source.ReaderChapterSourceParser
 import io.legado.app.feature.reader.legacy.LegacyReaderChapterPaginationResult
 import io.legado.app.feature.reader.legacy.LegacyReaderChapterPaginator
@@ -29,7 +31,6 @@ import io.legado.app.help.book.ContentProcessor
 import io.legado.app.help.readaloud.cast.CastAssignmentStore
 import io.legado.app.help.readaloud.cast.BgmSceneStore
 import io.legado.app.help.readaloud.cast.CastRenderOptions
-import io.legado.app.ui.config.readConfig.ReadConfig
 import io.legado.app.help.book.isImage
 import io.legado.app.help.book.isLocal
 import io.legado.app.help.book.isLocalModified
@@ -170,6 +171,7 @@ object ReadBook : CoroutineScope by MainScope(), KoinComponent {
     private val readRecordRepository: ReadRecordRepository by inject()
     private val readAloudSessionStore: ReadAloudSessionStore by inject()
     private val readSettingsGateway: ReadSettingsGateway by inject()
+    private val readAloudSettingsGateway: ReadAloudSettingsGateway by inject()
     private val otherSettingsGateway: OtherSettingsGateway by inject()
     private val backupSettingsGateway: BackupSettingsGateway by inject()
     private var lastReadLength: Long = 0
@@ -386,8 +388,11 @@ object ReadBook : CoroutineScope by MainScope(), KoinComponent {
         val columns = style.columnCount(environment.widthPx, environment.heightPx)
         val contentWidth = environment.widthPx / columns - style.paddingLeftPx - style.paddingRightPx -
             environment.contentPaddingLeftPx - environment.contentPaddingRightPx
-        val contentHeight = (environment.heightPx - style.paddingTopPx - style.paddingBottomPx -
-            environment.contentPaddingTopPx - environment.contentPaddingBottomPx -
+        // 与 [LegacyReaderChapterPaginator] 同一口径：上下边距与系统栏占位取大值，否则估算出的
+        // 整书页数会比实际排版偏小（正文区被多减了一份状态栏高度）。
+        val contentHeight = (environment.heightPx -
+            readerEdgePadding(style.paddingTopPx, environment.contentPaddingTopPx) -
+            readerEdgePadding(style.paddingBottomPx, environment.contentPaddingBottomPx) -
             LegacyReaderPageDecorationFactory.headerExtentPx() -
             LegacyReaderPageDecorationFactory.footerExtentPx()).toInt()
         if (contentWidth <= 0 || contentHeight <= 0) return
@@ -526,8 +531,16 @@ object ReadBook : CoroutineScope by MainScope(), KoinComponent {
                 includeTitle = ReadBookConfig.titleMode != 2 || chapter.isVolume || processed.textList.isEmpty(),
                 adaptSpecialStyle = readSettingsGateway.currentSettings.adaptSpecialStyle,
                 htmlSemanticTextResolver = AndroidReaderHtmlSemanticTextResolver,
-                castLabels = if (ReadConfig.multiRoleCast) CastAssignmentStore.labelsForChapter(book.bookUrl, chapter.index) else emptyMap(),
-                bgmScenes = if (ReadConfig.bgmAssign) BgmSceneStore.labelsForChapter(book.bookUrl, chapter.index) else emptyMap(),
+                castLabels = if (readAloudSettingsGateway.currentSettings.multiRoleCast) {
+                    CastAssignmentStore.labelsForChapter(book.bookUrl, chapter.index)
+                } else {
+                    emptyMap()
+                },
+                bgmScenes = if (readAloudSettingsGateway.currentSettings.bgmAssign) {
+                    BgmSceneStore.labelsForChapter(book.bookUrl, chapter.index)
+                } else {
+                    emptyMap()
+                },
             )
             val environment = readerPaginationEnvironment ?: return
             when (val result = LegacyReaderChapterPaginator.paginate(
@@ -1728,9 +1741,13 @@ object ReadBook : CoroutineScope by MainScope(), KoinComponent {
             },
             layoutGeneration = pageEstimateGeneration,
         )
-        val castLabels =
-            if (ReadConfig.multiRoleCast) CastAssignmentStore.labelsForChapter(book.bookUrl, chapter.index) else emptyMap()
-        val bgmScenes = if (ReadConfig.bgmAssign) {
+        val aloudPrefs = readAloudSettingsGateway.currentSettings
+        val castLabels = if (aloudPrefs.multiRoleCast) {
+            CastAssignmentStore.labelsForChapter(book.bookUrl, chapter.index)
+        } else {
+            emptyMap()
+        }
+        val bgmScenes = if (aloudPrefs.bgmAssign) {
             BgmSceneStore.labelsForChapter(book.bookUrl, chapter.index)
         } else {
             emptyMap()

@@ -11,9 +11,16 @@ import io.legado.app.domain.gateway.ReadStyleMutation
 import io.legado.app.domain.gateway.ReadStyleStringKey
 import io.legado.app.domain.model.settings.ReadStyleItem
 import io.legado.app.domain.model.settings.ReadStyleState
+import io.legado.app.domain.model.settings.ReadBackgroundPalette
+import io.legado.app.domain.model.settings.ReadThemePreset
+import io.legado.app.domain.model.settings.toArgbHex
+import io.legado.app.domain.model.settings.themeMipmapUrlCandidates
+import io.legado.app.domain.model.settings.toStyle
 import io.legado.app.help.DefaultData
 import io.legado.app.help.config.AppConfigStore
 import io.legado.app.help.config.ReadBookConfig
+import io.legado.app.help.http.newCallResponse
+import io.legado.app.help.http.okHttpClient
 import io.legado.app.utils.GSON
 import io.legado.app.utils.fromJsonObject
 import kotlinx.coroutines.CancellationException
@@ -25,6 +32,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.InputStream
 import java.util.concurrent.atomic.AtomicLong
 
@@ -95,6 +103,94 @@ class ReadBookStyleConfigRepository(
         return true
     }
 
+    /**
+     * 应用内置主题。
+     *
+     * 三种阅读模式都写同一套配色：主题在源数据里只有一份调色板，`dark` 字段全部为 false
+     * 且不可信（见 [ReadThemePreset.isDark]），没法拆成日/夜两份，只有全写才能保证「选什么
+     * 就是什么」。代价是选完主题后日/夜切换不再改变阅读配色——用户切回自己的样式即恢复。
+     *
+     * 底色、正文/强调色、状态栏图标按样式独立（[mutateCurrentStyle]）；页眉页脚色与边距属于
+     * 排版项（[mutateEffective]），共享排版开着时改的是共享那份——与 [ReadStyleIntKey]
+     * 里 PaddingTop / ReadStyleColorKey 里 TipHeader 既有的落点保持一致。
+     *
+     * 标题色写 0 表示「跟随正文」：主题没有单独的标题色，[ReadThemePreset.content] 同时是
+     * 正文与标题色。它与页眉页脚色一样归排版项，见下面 mutateEffective 里的说明。
+     */
+    override fun applyReadTheme(themeId: Int): Boolean {
+        val theme = DefaultData.readThemes.firstOrNull { it.id == themeId } ?: return false
+        val style = theme.toStyle()
+        mutateCurrentStyle {
+            it.copy(
+                // 样式名跟随所选主题：背景与文字弹层标题、样式卡片标签都读这个字段。
+                name = theme.name,
+                bgStr = style.background,
+                bgStrNight = style.background,
+                bgStrEInk = style.background,
+                bgType = READ_THEME_BG_TYPE,
+                bgTypeNight = READ_THEME_BG_TYPE,
+                bgTypeEInk = READ_THEME_BG_TYPE,
+                textColor = style.content,
+                textColorNight = style.content,
+                textColorEInk = style.content,
+                textAccentColor = style.control,
+                textAccentColorNight = style.control,
+                textAccentColorEInk = style.control,
+                darkStatusIcon = style.darkStatusIcon,
+                darkStatusIconNight = style.darkStatusIcon,
+                darkStatusIconEInk = style.darkStatusIcon,
+            )
+        }
+        mutateEffective {
+            it.copy(
+                // 主题只有一套配色，标题跟随正文；不覆盖会残留上一个样式的标题色。
+                // 标题色与页眉页脚色在 ReadBookConfig 里是「生效项」（共享排版开着时读共享那份），
+                // 与 ReadStyleColorKey.Title/TipHeader 的落点一致，故不能放进 mutateCurrentStyle。
+                titleColor = 0,
+                titleColorNight = 0,
+                tipHeaderColor = style.secondary.toColorIntOrDefault(),
+                tipHeaderColorNight = style.secondary.toColorIntOrDefault(),
+                tipFooterColor = style.secondary.toColorIntOrDefault(),
+                tipFooterColorNight = style.secondary.toColorIntOrDefault(),
+                paddingTop = style.paddingTop,
+                paddingBottom = style.paddingBottom,
+                paddingLeft = style.paddingHorizontal,
+                paddingRight = style.paddingHorizontal,
+            )
+        }
+        save()
+        return true
+    }
+
+    /**
+     * 下载主题背景图并落盘到 bg 目录。
+     *
+     * 图床在源数据里多为明文 http，先试 [themeMipmapUrlCandidates] 的 https 版本，失败再回落
+     * 原始地址；全都失败返回 null（调用方只提示一次，配色不回滚）。
+     */
+    override suspend fun downloadReadThemeBackground(theme: ReadThemePreset): String? {
+        val url = theme.mipmap ?: return null
+        return withContext(Dispatchers.IO) {
+            for (candidate in themeMipmapUrlCandidates(url)) {
+                val path = runCatching {
+                    okHttpClient.newCallResponse { url(candidate) }.use { response ->
+                        check(response.isSuccessful) { "HTTP ${response.code}" }
+                        // 传候选地址本身做文件名：它末段本来就是图床给的文件名（含扩展名），
+                        // saveBackgroundImage 会取 name 并追加时间戳，不会互相覆盖。
+                        readStyleRepository.saveBackgroundImage(response.body.byteStream(), candidate)
+                    }
+                }.getOrElse { error ->
+                    // 取消/超时不是「这个地址不行」，不能顺着候选列表继续重试，
+                    // 也不能变成 null 让调用方提示「下载失败」。
+                    if (error is CancellationException) throw error
+                    null
+                }
+                if (path != null) return@withContext path
+            }
+            null
+        }
+    }
+
     override fun addStyle(): Int {
         val index = configStore.addConfig(ReadBookConfig.Config())
         save()
@@ -147,6 +243,59 @@ class ReadBookStyleConfigRepository(
 
     override fun setCurrentBackgroundImage(path: String) {
         mutateCurrentStyle { it.withCurBg(2, path) }
+        save()
+    }
+
+    override fun setReadThemeBackgroundImage(path: String) {
+        mutateCurrentStyle {
+            it.copy(
+                bgType = READ_THEME_BG_TYPE_IMAGE,
+                bgStr = path,
+                bgTypeNight = READ_THEME_BG_TYPE_IMAGE,
+                bgStrNight = path,
+                bgTypeEInk = READ_THEME_BG_TYPE_IMAGE,
+                bgStrEInk = path,
+            )
+        }
+        save()
+    }
+
+    /**
+     * 从背景图提取的配色写进**当前样式**。
+     *
+     * [mutateCurrentStyle] 而不是 `mutateEffective`：这是「给这张图配一套色」，属于样式自己的
+     * 背景相关项；共享排版开着时不覆盖共享那份（共享排版不拥有背景图）。
+     *
+     * 三种模式写同一套：正文/强调色在 Config 里按模式分开存，而用户是照着**当前这张图**挑的色。
+     * 只写当前模式会让「切到夜间还是旧配色」，与 [applyReadTheme] 全写的理由一致。
+     *
+     * 页眉页脚色与 [applyReadTheme] 一样走 [mutateEffective]：这两项在 ReadBookConfig 里是
+     * 「生效项」，落点必须与 [ReadStyleColorKey.TipHeader] 保持一致，否则共享排版开着时改的是
+     * 另一份。状态栏图标（`darkStatusIcon*`）按样式走 [mutateCurrentStyle]。
+     */
+    override fun applyReadBackgroundPalette(palette: ReadBackgroundPalette) {
+        mutateCurrentStyle { config ->
+            config
+                .withCurTextColor(palette.contentArgb)
+                .withCurTextAccentColor(palette.controlArgb)
+                .copy(
+                    textColorNight = palette.contentArgb.toArgbHex(),
+                    textColorEInk = palette.contentArgb.toArgbHex(),
+                    textAccentColorNight = palette.controlArgb.toArgbHex(),
+                    textAccentColorEInk = palette.controlArgb.toArgbHex(),
+                    darkStatusIcon = palette.darkStatusIcon,
+                    darkStatusIconNight = palette.darkStatusIcon,
+                    darkStatusIconEInk = palette.darkStatusIcon,
+                )
+        }
+        mutateEffective {
+            it.copy(
+                tipHeaderColor = palette.secondaryArgb,
+                tipHeaderColorNight = palette.secondaryArgb,
+                tipFooterColor = palette.secondaryArgb,
+                tipFooterColorNight = palette.secondaryArgb,
+            )
+        }
         save()
     }
 
@@ -228,6 +377,8 @@ class ReadBookStyleConfigRepository(
             ReadStyleIntKey.TipFooterRight -> mutateEffective { it.copy(tipFooterRight = value) }
             ReadStyleIntKey.HeaderFontSize -> mutateEffective { it.copy(headerFontSize = value) }
             ReadStyleIntKey.FooterFontSize -> mutateEffective { it.copy(footerFontSize = value) }
+            ReadStyleIntKey.HeaderBold -> mutateEffective { it.copy(headerBold = value) }
+            ReadStyleIntKey.FooterBold -> mutateEffective { it.copy(footerBold = value) }
             ReadStyleIntKey.PageAnim -> mutateEffective { it.withCurPageAnim(value) }
             ReadStyleIntKey.PageAnimSpeed -> mutateEffective { it.withPageAnimSpeed(value) }
             ReadStyleIntKey.UnderlineHeight -> mutateEffective { it.copy(underlineHeight = value) }
@@ -283,6 +434,8 @@ class ReadBookStyleConfigRepository(
             ReadStyleBooleanKey.ShowFooterLine -> mutateEffective { it.copy(showFooterLine = value) }
             ReadStyleBooleanKey.ApplyHeaderStyle ->
                 mutateEffective { it.copy(applyHeaderStyle = value) }
+            ReadStyleBooleanKey.HeaderItalic -> mutateEffective { it.copy(headerItalic = value) }
+            ReadStyleBooleanKey.FooterItalic -> mutateEffective { it.copy(footerItalic = value) }
             ReadStyleBooleanKey.StatusIconDark ->
                 mutateCurrentStyle { it.withCurStatusIconDark(value) }
         }
@@ -356,6 +509,12 @@ class ReadBookStyleConfigRepository(
     private fun String.toColorIntOrDefault(): Int =
         runCatching { android.graphics.Color.parseColor(this) }.getOrDefault(0)
 }
+
+/** 内置主题先只用配色：背景图由下载流程异步补上，这里先用颜色（0）占位。 */
+private const val READ_THEME_BG_TYPE = 0
+
+/** `ReadBookConfig.Config.bgType` 里的「其它图片」，值来自本地文件路径。 */
+private const val READ_THEME_BG_TYPE_IMAGE = 2
 
 internal data class ReadStyleSaveSnapshot(
     val configs: List<ReadBookConfig.Config>,

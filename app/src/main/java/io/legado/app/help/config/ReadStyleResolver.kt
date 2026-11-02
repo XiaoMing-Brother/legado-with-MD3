@@ -119,6 +119,19 @@ object ReadStyleResolver {
         }
     }
 
+    /**
+     * assets/bg 下的内置背景图文件名（含扩展名），按名称排序。
+     *
+     * 懒加载一次：内容是随 APK 打包的静态资源，运行期不会变。取不到（例如资源被裁剪掉的
+     * 定制构建）时返回空列表，调用方据此隐藏入口而不是抛异常。
+     */
+    val builtinBackgroundNames: List<String> by lazy {
+        runCatching { appCtx.assets.list(ASSET_BG_DIR)?.toList() }
+            .getOrNull()
+            .orEmpty()
+            .sorted()
+    }
+
     fun currentBackgroundDrawable(
         config: ReadBookConfig.Config,
         width: Int,
@@ -153,7 +166,7 @@ object ReadStyleResolver {
             bgDrawable = when (background.type) {
                 0 -> background.value.toColorInt().toDrawable()
                 1 -> {
-                    val path = "bg" + File.separator + background.value
+                    val path = ASSET_BG_DIR + File.separator + background.value
                     val bitmap = BitmapUtils.decodeAssetsBitmap(appCtx, path, width, height)
                     bitmap?.resizeAndRecycle(width, height)?.toDrawable(resources)
                 }
@@ -183,6 +196,9 @@ object ReadStyleResolver {
         )
         return fallbackColor.toDrawable()
     }
+
+    /** assets 下内置背景图目录（与 [ReadBackground.value] 的 `bgType = 1` 约定一致）。 */
+    const val ASSET_BG_DIR = "bg"
 }
 
 internal fun resolveReadStyleMode(

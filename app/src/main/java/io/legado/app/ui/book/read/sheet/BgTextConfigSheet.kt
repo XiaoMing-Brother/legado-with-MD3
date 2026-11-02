@@ -1,11 +1,14 @@
 package io.legado.app.ui.book.read.sheet
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -13,15 +16,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -39,21 +48,26 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import io.legado.app.R
 import io.legado.app.help.DefaultData
+import io.legado.app.help.config.ReadStyleResolver
 import io.legado.app.ui.book.read.ConfigUpdate
 import io.legado.app.ui.book.read.ReadBookIntent
 import io.legado.app.ui.book.read.ReadBookStyleConfig
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.widget.components.alert.AppAlertDialog
 import io.legado.app.ui.widget.components.card.NormalCard
+import io.legado.app.ui.widget.components.button.ToggleChip
 import io.legado.app.ui.widget.components.dialog.ColorPickerSheet
 import io.legado.app.ui.widget.components.dialog.TextListInputDialog
 import io.legado.app.ui.widget.components.modalBottomSheet.AppModalBottomSheet
 import io.legado.app.ui.widget.components.settingItem.TinyBgImageModeSettingItem
+import io.legado.app.ui.widget.components.settingItem.TinyClickableSettingItem
 import io.legado.app.ui.widget.components.settingItem.TinyColorModeSettingItem
 import io.legado.app.ui.widget.components.settingItem.TinySliderSettingItem
+import io.legado.app.ui.widget.components.settingItem.TinySettingItem
 import io.legado.app.ui.widget.components.settingItem.TinySwitchSettingItem
 import io.legado.app.ui.widget.components.text.AppText
 import io.legado.app.utils.hexString
+import coil3.compose.AsyncImage
 
 @Composable
 fun BgTextConfigSheet(
@@ -185,7 +199,82 @@ fun BgTextConfigSheet(
                 },
             )
 
-            // TODO: Add background image grid from assets
+            // 背景图取色（清墨「主题编辑器会根据图片提取出一套配色」）：纯色背景时提示取不出来。
+            TinyClickableSettingItem(
+                title = stringResource(R.string.read_bg_palette),
+                description = stringResource(R.string.read_bg_palette_summary),
+                imageVector = Icons.Default.Palette,
+                onClick = { onIntent(ReadBookIntent.ApplyBackgroundPalette) },
+            )
+
+            // 内置背景图（打包在 assets/bg）：不必申请存储权限，也不依赖用户先选图。
+            val builtinBackgrounds = remember { ReadStyleResolver.builtinBackgroundNames }
+            if (builtinBackgrounds.isNotEmpty()) {
+                var builtinIsNight by remember { mutableStateOf(false) }
+                var builtinExpanded by remember { mutableStateOf(false) }
+                val selectedBuiltin = if (builtinIsNight) {
+                    styleConfig.bgStrNight.takeIf { styleConfig.bgTypeNight == BUILTIN_BG_TYPE }
+                } else {
+                    styleConfig.bgStr.takeIf { styleConfig.bgType == BUILTIN_BG_TYPE }
+                }
+                TinySettingItem(
+                    title = stringResource(R.string.read_bg_builtin),
+                    description = stringResource(R.string.read_bg_builtin_summary),
+                    imageVector = Icons.Default.Wallpaper,
+                    expanded = builtinExpanded,
+                    onExpandChange = { builtinExpanded = it },
+                    expandContent = {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(bottom = 8.dp),
+                        ) {
+                            ToggleChip(
+                                label = stringResource(R.string.day),
+                                selected = !builtinIsNight,
+                                onToggle = { builtinIsNight = false },
+                            )
+                            ToggleChip(
+                                label = stringResource(R.string.night),
+                                selected = builtinIsNight,
+                                onToggle = { builtinIsNight = true },
+                            )
+                        }
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(builtinBackgrounds) { name ->
+                                BuiltinBackgroundCard(
+                                    name = name,
+                                    isSelected = name == selectedBuiltin,
+                                    onClick = {
+                                        if (builtinIsNight) {
+                                            onIntent(
+                                                ReadBookIntent.UpdateConfig(
+                                                    ConfigUpdate.BgTypeNight(BUILTIN_BG_TYPE)
+                                                )
+                                            )
+                                            onIntent(
+                                                ReadBookIntent.UpdateConfig(
+                                                    ConfigUpdate.BgStrNight(name)
+                                                )
+                                            )
+                                        } else {
+                                            onIntent(
+                                                ReadBookIntent.UpdateConfig(
+                                                    ConfigUpdate.BgType(BUILTIN_BG_TYPE)
+                                                )
+                                            )
+                                            onIntent(
+                                                ReadBookIntent.UpdateConfig(
+                                                    ConfigUpdate.BgStr(name)
+                                                )
+                                            )
+                                        }
+                                    },
+                                )
+                            }
+                        }
+                    },
+                )
+            }
         }
     }
 
@@ -309,3 +398,50 @@ private fun ActionCard(
         }
     }
 }
+
+/**
+ * 内置背景图缩略卡。
+ *
+ * 用 `file:///android_asset/...` 让 Coil 走它自带的 [coil3.fetch.AssetUriFetcher] 直接读 APK 资源，
+ * 不必先把 jpg 解成 Bitmap 再自己管理回收；选中态用描边区分，配色沿用当前阅读主题。
+ */
+@Composable
+private fun BuiltinBackgroundCard(
+    name: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val shape = RoundedCornerShape(8.dp)
+    Box(
+        modifier = modifier
+            .size(width = 64.dp, height = 88.dp)
+            .clip(shape)
+            .background(LegadoTheme.colorScheme.surfaceContainerHigh)
+            .clickable(onClick = onClick),
+    ) {
+        AsyncImage(
+            model = "$ASSET_FILE_PREFIX${ReadStyleResolver.ASSET_BG_DIR}/$name",
+            contentDescription = name,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+        if (isSelected) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .border(
+                        width = 2.dp,
+                        color = LegadoTheme.colorScheme.primary,
+                        shape = shape,
+                    ),
+            )
+        }
+    }
+}
+
+/** 与 `bgType = 1` 配套：背景值存 assets 文件名。 */
+private const val BUILTIN_BG_TYPE = 1
+
+/** Coil 的 assets 读取前缀，见 `coil3.fetch.AssetUriFetcher`。 */
+private const val ASSET_FILE_PREFIX = "file:///android_asset/"

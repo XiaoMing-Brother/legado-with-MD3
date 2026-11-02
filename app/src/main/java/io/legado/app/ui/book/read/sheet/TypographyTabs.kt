@@ -770,6 +770,20 @@ internal fun TypographyHeaderTab(
                 onIntent(ReadBookIntent.SaveReadStyleConfig)
             },
         )
+        FontWeightSetting(
+            value = config.headerBold,
+            onValueChange = { value ->
+                onIntent(ReadBookIntent.UpdateConfig(ConfigUpdate.HeaderBold(value)))
+            },
+        )
+        TinySwitchSettingItem(
+            title = stringResource(R.string.read_config_italic),
+            checked = config.headerItalic,
+            imageVector = Icons.Default.FormatItalic,
+            onCheckedChange = {
+                onIntent(ReadBookIntent.UpdateConfig(ConfigUpdate.HeaderItalic(it)))
+            },
+        )
         TinyColorModeSettingItem(
             title = stringResource(R.string.color),
             dayColor = if (config.tipHeaderColor != 0) config.tipHeaderColor else config.textColorDay,
@@ -894,6 +908,20 @@ internal fun TypographyFooterTab(
                 onValueChange = { value ->
                     onIntent(ReadBookIntent.UpdateConfig(ConfigUpdate.FooterFontSize(value.toInt())))
                     onIntent(ReadBookIntent.SaveReadStyleConfig)
+                },
+            )
+            FontWeightSetting(
+                value = config.footerBold,
+                onValueChange = { value ->
+                    onIntent(ReadBookIntent.UpdateConfig(ConfigUpdate.FooterBold(value)))
+                },
+            )
+            TinySwitchSettingItem(
+                title = stringResource(R.string.read_config_italic),
+                checked = config.footerItalic,
+                imageVector = Icons.Default.FormatItalic,
+                onCheckedChange = {
+                    onIntent(ReadBookIntent.UpdateConfig(ConfigUpdate.FooterItalic(it)))
                 },
             )
             TinyColorModeSettingItem(
