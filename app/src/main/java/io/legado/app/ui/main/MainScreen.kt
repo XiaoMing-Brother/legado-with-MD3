@@ -1,29 +1,20 @@
 package io.legado.app.ui.main
 
 import android.content.Intent
-import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,43 +22,29 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuOpen
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.WideNavigationRail
-import androidx.compose.material3.WideNavigationRailItem
-import androidx.compose.material3.WideNavigationRailValue
-import androidx.compose.material3.rememberWideNavigationRailState
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
@@ -75,71 +52,41 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
 import io.legado.app.R
 import io.legado.app.feature.explore.ExploreMainRoute
-import io.legado.app.ui.book.readaloud.ReadAloudBarCapsuleEndPadding
-import io.legado.app.ui.book.readaloud.ReadAloudBarCapsuleSize
-import io.legado.app.ui.book.readaloud.ReadAloudBarCapsuleSlot
-import io.legado.app.ui.book.readaloud.ReadAloudPlayerOverlayBus
-import io.legado.app.ui.book.readaloud.morph.ReadAloudMorphState
 import io.legado.app.ui.main.bookshelf.BookShelfItem
 import io.legado.app.ui.main.bookshelf.BookshelfRouteScreen
-import io.legado.app.ui.main.bookshelf.BookshelfViewModel
 import io.legado.app.ui.main.home.HomeRouteScreen
 import io.legado.app.ui.main.my.MyRouteScreen
 import io.legado.app.ui.main.my.PrefClickEvent
 import io.legado.app.ui.main.rss.RssRouteScreen
 import io.legado.app.ui.theme.LegadoTheme
-import io.legado.app.ui.theme.ThemeResolver
 import io.legado.app.ui.widget.components.AppScaffold
-import io.legado.app.ui.widget.components.FloatingBottomBar
-import io.legado.app.ui.widget.components.FloatingBottomBarItem
-import io.legado.app.ui.widget.components.GlassDefaults
-import io.legado.app.ui.widget.components.button.series.MediumTonalButton
 import io.legado.app.ui.widget.components.icon.AppIcon
 import io.legado.app.ui.widget.components.icon.AppIcons
-import io.legado.app.ui.widget.components.menuItem.RoundDropdownMenu
-import io.legado.app.ui.widget.components.menuItem.RoundDropdownMenuItem
-import io.legado.app.ui.widget.components.navigation.AppNavigationBar
-import io.legado.app.ui.widget.components.navigation.AppNavigationBarItem
 import io.legado.app.ui.widget.components.pager.rememberPagerFlingPassThroughConnection
 import io.legado.app.ui.widget.components.text.AppText
 import io.legado.app.utils.sendToClip
 import io.legado.app.utils.startActivityForBook
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import org.koin.androidx.compose.koinViewModel
-import top.yukonga.miuix.kmp.basic.FloatingActionButton
-import top.yukonga.miuix.kmp.basic.NavigationRailDefaults
-import top.yukonga.miuix.kmp.basic.NavigationRailValue
-import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
-import top.yukonga.miuix.kmp.basic.NavigationRail as MiuixNavigationRail
-import top.yukonga.miuix.kmp.basic.NavigationRailItem as MiuixNavigationRailItem
 
-private val MainNavigationTabMinWidth = 76.dp
-
+/**
+ * 主界面：所有已启用主页面都在同一个 [HorizontalPager] 里，左右滑动切换，
+ * 不再渲染底栏 / 悬浮底栏 / 侧栏。左侧抽屉只作为快捷跳转，通过顶栏汉堡按钮打开。
+ */
 @OptIn(
-    ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class,
-    ExperimentalFoundationApi::class, ExperimentalSharedTransitionApi::class
+    ExperimentalMaterial3Api::class,
+    ExperimentalFoundationApi::class,
+    ExperimentalSharedTransitionApi::class,
 )
 @Composable
 fun MainScreen(
     mainUiState: MainUiState,
     onIntent: (MainUiIntent) -> Unit,
     effects: kotlinx.coroutines.flow.Flow<MainEffect>,
-    useRail: Boolean,
-    /** 听书胶囊的形变状态：胶囊要排在悬浮底栏同一行，需要把锚点上报给同一个进度源。 */
-    readAloudMorph: ReadAloudMorphState?,
-    homePlaybackCapsuleEnabled: Boolean,
-    capsuleAnchorPreview: io.legado.app.domain.model.PlaybackCapsuleState?,
     onOpenSettings: () -> Unit,
-    onNavigateToChat: () -> Unit,
     onNavigateToSearch: (String?) -> Unit,
     onNavigateToScopedSearch: (String) -> Unit,
     onNavigateToRemoteImport: () -> Unit,
@@ -174,12 +121,10 @@ fun MainScreen(
     onNavigateToAllBookmark: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onMainDestinationChanged: () -> Unit = {},
-    onNavigationRailWidthChanged: (androidx.compose.ui.unit.Dp) -> Unit = {},
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
 ) {
     val context = LocalContext.current
-    val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(effects, context) {
@@ -206,31 +151,14 @@ fun MainScreen(
         }
     }
 
-    val hazeState = remember { HazeState() }
-    val customSecondaryColor = if (LegadoTheme.isDark) {
-        mainUiState.secondaryThemeColorNight.takeIf { it != 0 }
-            ?: mainUiState.secondaryThemeColor
-    } else {
-        mainUiState.secondaryThemeColor
-    }
-    val floatingBarSurfaceColor = if (mainUiState.deepPersonalizationActive && customSecondaryColor != 0) {
-        Color(customSecondaryColor)
-    } else {
-        LegadoTheme.colorScheme.surface
-    }
-    val floatingBarBackdrop = rememberLayerBackdrop {
-        drawRect(floatingBarSurfaceColor)
-        drawContent()
-    }
-    val destinations = mainUiState.destinations
-
-    val initialPage = remember(destinations, mainUiState.defaultHomePage) {
-        val index = destinations.indexOfFirst {
+    val pagerDestinations = mainUiState.destinations
+    val initialPage = remember(pagerDestinations, mainUiState.defaultHomePage) {
+        val index = pagerDestinations.indexOfFirst {
             it.route == mainUiState.defaultHomePage
         }
         if (index != -1) index else 0
     }
-    val pagerState = rememberPagerState(initialPage = initialPage) { destinations.size }
+    val pagerState = rememberPagerState(initialPage = initialPage) { pagerDestinations.size }
     var lastSettledMainPage by remember(pagerState) { mutableIntStateOf(pagerState.settledPage) }
     val currentOnMainDestinationChanged by rememberUpdatedState(onMainDestinationChanged)
     LaunchedEffect(pagerState.settledPage) {
@@ -243,297 +171,68 @@ fun MainScreen(
         state = pagerState,
         orientation = Orientation.Horizontal,
     )
-    var bookshelfScrollToTopRequest by remember { mutableLongStateOf(0L) }
-    fun requestBookshelfScrollToTop() {
-        bookshelfScrollToTopRequest++
-    }
-
-    fun handleMainDestinationClick(index: Int, destination: MainDestination) {
-        if (
-            destination == MainDestination.Bookshelf &&
-            pagerState.currentPage == index &&
-            pagerState.targetPage == index
-        ) {
-            requestBookshelfScrollToTop()
-            return
-        }
-        coroutineScope.launch {
-            pagerState.animateScrollToPage(index)
+    LaunchedEffect(pagerDestinations) {
+        if (pagerDestinations.isNotEmpty() && pagerState.currentPage !in pagerDestinations.indices) {
+            pagerState.scrollToPage(pagerDestinations.lastIndex)
         }
     }
-    LaunchedEffect(destinations) {
-        if (destinations.isNotEmpty() && pagerState.currentPage !in destinations.indices) {
-            pagerState.scrollToPage(destinations.lastIndex)
-        }
+
+    val mainDrawerState = rememberDrawerState(DrawerValue.Closed)
+    val openDrawer: () -> Unit = remember(coroutineScope, mainDrawerState) {
+        { coroutineScope.launch { mainDrawerState.open() } }
     }
-    val labelVisibilityMode = mainUiState.labelVisibilityMode
-    val isUnlabeled = labelVisibilityMode == "unlabeled"
-    val useFloatingBottomBar =
-        shouldUseHomePlaybackCapsule(
-            onMainRoute = true, showBottomView = mainUiState.showBottomView,
-            useFloatingBottomBar = mainUiState.useFloatingBottomBar, useRail = useRail,
-        )
-    val useLiquidGlass = useFloatingBottomBar &&
-            mainUiState.useFloatingBottomBarLiquidGlass &&
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-    val alwaysShowLabel = labelVisibilityMode == "labeled"
-    val showLabel = !isUnlabeled
+    // 宿主与 NavDisplay 的返回处理器都注册在抽屉之上，事件到不了抽屉内部；把「展开中 +
+    // 如何关闭」登记给宿主，宿主才能在返回时先关抽屉而不是出栈或退出应用。
+    val drawerHost = LocalMainDrawerHost.current
+    val drawerOpen = mainDrawerState.isOpen
+    val closeDrawer: () -> Unit = remember(coroutineScope, mainDrawerState) {
+        { coroutineScope.launch { mainDrawerState.close() } }
+    }
+    LaunchedEffect(drawerHost, drawerOpen, closeDrawer) {
+        // 首帧同步一次；后续由 SideEffect 在同一帧内完成，避免返回事件抢在登记之前。
+        if (drawerHost == null) return@LaunchedEffect
+        if (drawerOpen) drawerHost.attach(closeDrawer) else drawerHost.detach()
+    }
+    SideEffect {
+        if (drawerHost == null) return@SideEffect
+        if (drawerOpen) drawerHost.attach(closeDrawer) else drawerHost.detach()
+    }
+    DisposableEffect(drawerHost) {
+        onDispose { drawerHost?.detach() }
+    }
 
-    val navState = rememberWideNavigationRailState(
-        initialValue = if (mainUiState.navExtended)
-            WideNavigationRailValue.Expanded
-        else
-            WideNavigationRailValue.Collapsed
-    )
-
-    Row(
-        modifier = Modifier
-            .fillMaxSize()
-            .windowInsetsPadding(mainAdaptiveInsets.only(WindowInsetsSides.Horizontal))
-    ) {
-        if (useRail && mainUiState.showBottomView) {
-            if (ThemeResolver.isMiuixEngine(LegadoTheme.composeEngine)) {
-                val miuixNavState = rememberNavigationRailState(
-                    initialValue = if (mainUiState.navExtended) {
-                        NavigationRailValue.Expanded
-                    } else {
-                        NavigationRailValue.Collapsed
-                    }
-                )
-                LaunchedEffect(miuixNavState.currentValue) {
-                    onIntent(MainUiIntent.SetNavigationRailExpanded(miuixNavState.isExpanded))
-                }
-                MiuixNavigationRail(
-                    modifier = Modifier.onSizeChanged {
-                        onNavigationRailWidthChanged(with(density) { it.width.toDp() })
+    CompositionLocalProvider(LocalMainDrawerOpen provides openDrawer) {
+        ModalNavigationDrawer(
+            drawerState = mainDrawerState,
+            // 必须保留手势：M3 的遮罩点击只在 gesturesEnabled 时才调用 drawerState.close()，
+            // 关掉手势会连带失去「点抽屉外关闭」。
+            gesturesEnabled = true,
+            drawerContent = {
+                MainNavigationDrawer(
+                    destinations = pagerDestinations,
+                    selectedIndex = pagerState.currentPage,
+                    customIconPath = { destination -> mainUiState.customIconPath(destination) },
+                    onSelect = { index ->
+                        coroutineScope.launch {
+                            mainDrawerState.close()
+                            pagerState.animateScrollToPage(index)
+                        }
                     },
-                    state = miuixNavState,
-                    header = {
-                        FloatingActionButton(
-                            modifier = Modifier
-                                .align(Alignment.Start)
-                                .padding(start = NavigationRailDefaults.ExpandedItemHorizontalMargin),
-                            onClick = { onNavigateToSearch(null) },
-                        ) {
-                            AppIcon(
-                                Icons.Default.Search,
-                                contentDescription = null,
-                                tint = Color.White
-                            )
-                        }
-                    }
-                ) {
-                    destinations.forEachIndexed { index, destination ->
-                        val selected = pagerState.targetPage == index
-                        var showGroupMenu by remember { mutableStateOf(false) }
-                        val haptic = LocalHapticFeedback.current
-                        val destinationLabel = stringResource(destination.labelId)
-                        Box {
-                            MiuixNavigationRailItem(
-                                modifier = Modifier
-                                    .semantics(mergeDescendants = true) {
-                                        contentDescription = destinationLabel
-                                    }
-                                    .then(
-                                        if (destination == MainDestination.Bookshelf) {
-                                            Modifier.combinedClickable(
-                                                interactionSource = remember { MutableInteractionSource() },
-                                                indication = null,
-                                                onClick = {
-                                                    handleMainDestinationClick(
-                                                        index,
-                                                        destination
-                                                    )
-                                                },
-                                                onLongClick = {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                    showGroupMenu = true
-                                                }
-                                            )
-                                        } else Modifier
-                                    ),
-                                selected = selected,
-                                onClick = { handleMainDestinationClick(index, destination) },
-                                icon = AppIcons.mainDestination(destination, selected),
-                                label = destinationLabel,
-                            )
-                            if (destination == MainDestination.Bookshelf && showGroupMenu) {
-                                BookshelfRailGroupMenuRoute(
-                                    expanded = showGroupMenu,
-                                    onDismissRequest = { showGroupMenu = false },
-                                    onBeforeSelectGroup = {
-                                        if (pagerState.currentPage != index) {
-                                            pagerState.scrollToPage(index)
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-            } else WideNavigationRail(
-                modifier = Modifier.onSizeChanged {
-                    onNavigationRailWidthChanged(with(density) { it.width.toDp() })
-                },
-                state = navState,
-                header = {
-                    val expanded = navState.targetValue == WideNavigationRailValue.Expanded
-
-                    Column {
-                        MediumTonalButton(
-                            modifier = Modifier.padding(start = 24.dp),
-                            onClick = {
-                                coroutineScope.launch {
-                                    val targetExpanded = !expanded
-                                    if (targetExpanded) navState.expand()
-                                    else navState.collapse()
-                                    onIntent(MainUiIntent.SetNavigationRailExpanded(targetExpanded))
-                                }
-                            },
-                            icon = if (expanded) {
-                                Icons.AutoMirrored.Filled.MenuOpen
-                            } else {
-                                Icons.Default.Menu
-                            },
-                            contentDescription = stringResource(
-                                if (expanded) R.string.collapse else R.string.expand
-                            ),
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        ExtendedFloatingActionButton(
-                            modifier = Modifier.padding(start = 20.dp),
-                            onClick = { onNavigateToSearch(null) },
-                            expanded = expanded,
-                            icon = { AppIcon(Icons.Default.Search, contentDescription = null) },
-                            text = { AppText(stringResource(R.string.search)) }
-                        )
-                    }
-                }
-            ) {
-                destinations.forEachIndexed { index, destination ->
-                    val selected = pagerState.targetPage == index
-                    var showGroupMenu by remember { mutableStateOf(false) }
-                    val haptic = LocalHapticFeedback.current
-                    val destinationLabel = stringResource(destination.labelId)
-
-                    WideNavigationRailItem(
-                        modifier = Modifier.semantics(mergeDescendants = true) {
-                            contentDescription = destinationLabel
-                        },
-                        railExpanded = navState.targetValue == WideNavigationRailValue.Expanded,
-                        selected = selected,
-                        onClick = {
-                            handleMainDestinationClick(index, destination)
-                        },
-                        icon = {
-                            Box {
-                                NavigationIcon(
-                                    destination = destination,
-                                    selected = selected,
-                                    customIconPath = mainUiState.customIconPath(destination),
-                                    modifier = if (destination == MainDestination.Bookshelf) {
-                                        Modifier.combinedClickable(
-                                            interactionSource = remember { MutableInteractionSource() },
-                                            indication = null,
-                                            onClick = {
-                                                handleMainDestinationClick(index, destination)
-                                            },
-                                            onLongClick = {
-                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                showGroupMenu = true
-                                            }
-                                        )
-                                    } else Modifier
-                                )
-
-                                if (destination == MainDestination.Bookshelf && showGroupMenu) {
-                                    BookshelfRailGroupMenuRoute(
-                                        expanded = showGroupMenu,
-                                        onDismissRequest = { showGroupMenu = false },
-                                        onBeforeSelectGroup = {
-                                            if (pagerState.currentPage != index) {
-                                                pagerState.scrollToPage(index)
-                                            }
-                                        }
-                                    )
-                                }
-                            }
-                        },
-                        label = if (labelVisibilityMode != "unlabeled") {
-                            { AppText(stringResource(destination.labelId)) }
-                        } else null
-                    )
-                }
-            }
-        }
-
-        AppScaffold(
-            modifier = Modifier.weight(1f),
-            bottomBar = {
-                if (!useRail && mainUiState.showBottomView && !useFloatingBottomBar) {
-                    AppNavigationBar(
-                        showLabel = showLabel,
-                        alwaysShowLabel = alwaysShowLabel
-                    ) {
-                        destinations.forEachIndexed { index, destination ->
-                            val selected = pagerState.targetPage == index
-                            val customIconPath = mainUiState.customIconPath(destination)
-                            val selectedCustomIconPath =
-                                mainUiState.selectedCustomIconPath(destination)
-                            val destinationLabel = stringResource(destination.labelId)
-                            AppNavigationBarItem(
-                                modifier = Modifier.semantics(mergeDescendants = true) {
-                                    contentDescription = destinationLabel
-                                },
-                                selected = selected,
-                                onClick = {
-                                    handleMainDestinationClick(index, destination)
-                                },
-                                labelString = stringResource(destination.labelId),
-                                iconVector = AppIcons.mainDestination(destination, selected),
-                                m3Icon = {
-                                    NavigationIcon(
-                                        destination = destination,
-                                        selected = selected,
-                                        customIconPath = if (selected) {
-                                            selectedCustomIconPath.ifEmpty { customIconPath }
-                                        } else customIconPath,
-                                    )
-                                },
-                                m3IndicatorColor = GlassDefaults.glassColor(
-                                    noBlurColor = LegadoTheme.colorScheme.secondaryContainer,
-                                    blurAlpha = GlassDefaults.ThickBlurAlpha
-                                ),
-                                m3ShowLabel = showLabel,
-                                m3AlwaysShowLabel = alwaysShowLabel,
-                                useCustomIcon =
-                                    customIconPath.isNotEmpty() || selectedCustomIconPath.isNotEmpty(),
-                            )
-                        }
-                    }
-                }
+                )
             },
-            // The row owns side cutouts, child pages own top bars, and this scaffold owns the bottom.
-            contentWindowInsets = mainAdaptiveInsets.only(WindowInsetsSides.Bottom)
-        ) { padding ->
-            Box(
+        ) {
+            AppScaffold(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .consumeWindowInsets(padding)
-            ) {
+                    .windowInsetsPadding(mainAdaptiveInsets.only(WindowInsetsSides.Horizontal)),
+                // 子页面各自拥有顶栏，外壳只负责底部系统栏。
+                contentWindowInsets = mainAdaptiveInsets.only(WindowInsetsSides.Bottom),
+            ) { padding ->
                 Box(
-                    modifier = Modifier.then(
-                        if (useLiquidGlass) {
-                            Modifier
-                                .hazeSource(hazeState)
-                                .layerBackdrop(floatingBarBackdrop)
-                        } else {
-                            Modifier
-                        }
-                    )
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .consumeWindowInsets(padding)
                 ) {
                     HorizontalPager(
                         state = pagerState,
@@ -548,65 +247,59 @@ fun MainScreen(
                         userScrollEnabled = true,
                         beyondViewportPageCount = 4
                     ) { page ->
-                        val destination = destinations.getOrNull(page) ?: return@HorizontalPager
+                        val destination = pagerDestinations.getOrNull(page) ?: return@HorizontalPager
                         val pageLifecycleOwner = rememberMainPageLifecycleOwner(
                             isActive = page == pagerState.currentPage
                         )
                         CompositionLocalProvider(LocalLifecycleOwner provides pageLifecycleOwner) {
                             when (destination) {
-                            MainDestination.Home -> HomeRouteScreen(
-                                onOpenBook = { book ->
-                                    context.startActivityForBook(book)
-                                },
-                                onNavigateToBookInfo = { name, author, bookUrl, origin, coverPath, sharedCoverKey ->
-                                    onNavigateToBookInfo(
-                                        name ?: "",
-                                        author ?: "",
-                                        bookUrl,
-                                        origin,
-                                        coverPath,
-                                        sharedCoverKey,
-                                    )
-                                },
-                                onOpenExploreShow = onNavigateToExploreShow,
-                                onOpenBackupSettings = onNavigateToBackupSettings,
-                                onNavigateToReadRecord = onNavigateToReadRecord,
-                                onNavigateToReadRecordOverview = onNavigateToReadRecordOverview,
-                                sharedTransitionScope = sharedTransitionScope,
-                                animatedVisibilityScope = animatedVisibilityScope,
-                            )
+                                MainDestination.Home -> HomeRouteScreen(
+                                    onOpenBook = { book ->
+                                        context.startActivityForBook(book)
+                                    },
+                                    onNavigateToBookInfo = { name, author, bookUrl, origin, coverPath, sharedCoverKey ->
+                                        onNavigateToBookInfo(
+                                            name ?: "",
+                                            author ?: "",
+                                            bookUrl,
+                                            origin,
+                                            coverPath,
+                                            sharedCoverKey,
+                                        )
+                                    },
+                                    onOpenExploreShow = onNavigateToExploreShow,
+                                    onOpenBackupSettings = onNavigateToBackupSettings,
+                                    onNavigateToReadRecord = onNavigateToReadRecord,
+                                    onNavigateToReadRecordOverview = onNavigateToReadRecordOverview,
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                )
 
-                            MainDestination.Bookshelf -> BookshelfRouteScreen(
-                                scrollToTopRequest = bookshelfScrollToTopRequest,
-                                onScrollToTopRequestHandled = { handledRequest ->
-                                    if (bookshelfScrollToTopRequest == handledRequest) {
-                                        bookshelfScrollToTopRequest = 0L
-                                    }
-                                },
-                                onBookClick = { book, sharedCoverKey ->
-                                    onOpenBookshelfBook(book, sharedCoverKey)
-                                },
-                                onBookLongClick = { book, sharedCoverKey ->
-                                    onNavigateToBookInfo(
-                                        book.name,
-                                        book.author,
-                                        book.bookUrl,
-                                        book.origin,
-                                        book.getDisplayCover(),
-                                        sharedCoverKey
-                                    )
-                                },
-                                onNavigateToSearch = { query -> onNavigateToSearch(query) },
-                                onNavigateToRemoteImport = onNavigateToRemoteImport,
-                                onNavigateToLocalImport = onNavigateToLocalImport,
-                                onNavigateToCache = onNavigateToCache,
-                                onNavigateToSettings = onOpenSettings,
-                                sharedTransitionScope = sharedTransitionScope,
-                                animatedVisibilityScope = animatedVisibilityScope,
-                            )
+                                MainDestination.Bookshelf -> BookshelfRouteScreen(
+                                    onBookClick = { book, sharedCoverKey ->
+                                        onOpenBookshelfBook(book, sharedCoverKey)
+                                    },
+                                    onBookLongClick = { book, sharedCoverKey ->
+                                        onNavigateToBookInfo(
+                                            book.name,
+                                            book.author,
+                                            book.bookUrl,
+                                            book.origin,
+                                            book.getDisplayCover(),
+                                            sharedCoverKey
+                                        )
+                                    },
+                                    onNavigateToSearch = { query -> onNavigateToSearch(query) },
+                                    onNavigateToRemoteImport = onNavigateToRemoteImport,
+                                    onNavigateToLocalImport = onNavigateToLocalImport,
+                                    onNavigateToCache = onNavigateToCache,
+                                    onNavigateToSettings = onOpenSettings,
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                )
 
                                 MainDestination.Explore -> ExploreMainRoute(
-                                onOpenExploreShow = onNavigateToExploreShow,
+                                    onOpenExploreShow = onNavigateToExploreShow,
                                     onBookClick = { book, sharedCoverKey ->
                                         onNavigateToBookInfo(
                                             book.name,
@@ -617,174 +310,52 @@ fun MainScreen(
                                             sharedCoverKey,
                                         )
                                     },
-                                onOpenLogin = { sourceUrl ->
-                                    onNavigateToSourceLogin(
-                                        io.legado.app.ui.login.SourceLoginType.BookSource,
-                                        sourceUrl,
-                                    )
-                                },
-                                onOpenEdit = onNavigateToBookSourceEdit,
-                                onOpenSearch = onNavigateToScopedSearch,
-                            )
-                            MainDestination.Rss -> RssRouteScreen(
-                                onOpenSort = { sourceUrl, sortUrl, key ->
-                                    onNavigateToRssSort(sourceUrl, sortUrl, key)
-                                },
-                                onOpenRead = { title, origin, link, openUrl, startPage ->
-                                    onNavigateToRssRead(title, origin, link, openUrl, startPage)
-                                },
-                                onOpenFavorites = onNavigateToRssFavorites,
-                                onOpenRuleSub = onNavigateToRuleSub,
-                                onOpenLogin = { sourceUrl ->
-                                    onNavigateToSourceLogin(
-                                        io.legado.app.ui.login.SourceLoginType.RssSource,
-                                        sourceUrl,
-                                    )
-                                },
-                                onOpenSourceEdit = onNavigateToRssSourceEdit,
-                                onOpenSourceManage = onNavigateToRssSourceManage,
-                            )
-                            MainDestination.My -> MyRouteScreen(
-                                onOpenSettings = onOpenSettings,
-                                onNavigateToChat = onNavigateToChat,
-                                onNavigate = { event ->
-                                    when (event) {
-                                        PrefClickEvent.OpenBookCacheManage -> onNavigateToBookCacheManage()
-                                        PrefClickEvent.OpenBookSourceManage -> onNavigateToBookSourceManage()
-                                        PrefClickEvent.OpenReplaceRules -> onNavigateToReplaceRules()
-                                        PrefClickEvent.OpenReadRecord -> onNavigateToReadRecord()
-                                        PrefClickEvent.OpenDictRule -> onNavigateToDictRule()
-                                        PrefClickEvent.OpenTxtTocRule -> onNavigateToTxtTocRule()
-                                        PrefClickEvent.OpenAllBookmark -> onNavigateToAllBookmark()
-                                        else -> onIntent(MainUiIntent.HandlePreferenceClick(event))
-                                    }
-                                }
-                            )
-                        }
-                        }
-                    }
-                }
-
-                if (useFloatingBottomBar) {
-                    var readAloudCapsuleShown by remember { mutableStateOf(false) }
-                    var playbackControlsExpanded by rememberSaveable { mutableStateOf(false) }
-                    val expansion by animateFloatAsState(
-                        targetValue = if (playbackControlsExpanded && readAloudCapsuleShown) 1f else 0f,
-                        animationSpec = spring(
-                            dampingRatio = 1f,
-                            stiffness = 260f,
-                            visibilityThreshold = 0.0001f
-                        ),
-                        label = "homePlaybackControls",
-                    )
-                    FloatingNavigationContainer(modifier = Modifier.align(Alignment.BottomCenter)) {
-                        val gap = ReadAloudBarCapsuleEndPadding
-                        val capsuleReserve by animateDpAsState(
-                            targetValue = if (readAloudCapsuleShown) ReadAloudBarCapsuleSize + gap else 0.dp,
-                            // 入场前立即留出空间；退场后逐步归还，避免停播时导航宽度跳变。
-                            animationSpec = if (readAloudCapsuleShown) snap() else spring(
-                                dampingRatio = 1f,
-                                stiffness = 260f
-                            ),
-                            label = "homePlaybackReserve",
-                        )
-                        val navigationAvailableWidth =
-                            (maxWidth - capsuleReserve).coerceAtLeast(0.dp)
-                        // 保留原导航项的自然宽度和居中位置，不把没有胶囊的底栏拉满。
-                        val normalNavigationWidth =
-                            (MainNavigationTabMinWidth * destinations.size + 8.dp)
-                                .coerceAtMost(navigationAvailableWidth)
-                        val navigationStartInset =
-                            (navigationAvailableWidth - normalNavigationWidth) / 2
-                        val expandedCapsuleWidth = (maxWidth - ReadAloudBarCapsuleSize - gap)
-                            .coerceAtLeast(ReadAloudBarCapsuleSize)
-                        val capsuleWidth = ReadAloudBarCapsuleSize +
-                                (expandedCapsuleWidth - ReadAloudBarCapsuleSize) * expansion
-                        val navigationWidth = normalNavigationWidth +
-                                (ReadAloudBarCapsuleSize.coerceAtMost(maxWidth) - normalNavigationWidth) * expansion
-                        FloatingBottomBar(
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .offset(x = navigationStartInset * (1f - expansion))
-                                .width(navigationWidth),
-                            compactProgress = expansion,
-                            expandedWidth = normalNavigationWidth,
-                            onRestoreNavigation = { playbackControlsExpanded = false },
-                            selectedIndex = { pagerState.targetPage },
-                            onSelected = { index ->
-                                destinations.getOrNull(index)?.let { destination ->
-                                    handleMainDestinationClick(index, destination)
-                                }
-                            },
-                            onReselected = { index ->
-                                destinations.getOrNull(index)?.let { destination ->
-                                    handleMainDestinationClick(index, destination)
-                                }
-                            },
-                            backdrop = floatingBarBackdrop,
-                            tabsCount = destinations.size,
-                            isBlurEnabled = useLiquidGlass,
-                            hasCustomIcons = destinations.any { dest ->
-                                mainUiState.customIconPath(dest).isNotEmpty() ||
-                                        mainUiState.selectedCustomIconPath(dest).isNotEmpty()
-                            }
-                        ) {
-                            destinations.forEachIndexed { index, destination ->
-                                val selected = pagerState.targetPage == index
-                                val customIconPath = mainUiState.customIconPath(destination)
-                                val selectedCustomIconPath =
-                                    mainUiState.selectedCustomIconPath(destination)
-                                val destinationLabel = stringResource(destination.labelId)
-                                FloatingBottomBarItem(
-                                    enabled = !playbackControlsExpanded && expansion <= 0.05f,
-                                    onClick = {
-                                        handleMainDestinationClick(index, destination)
+                                    onOpenLogin = { sourceUrl ->
+                                        onNavigateToSourceLogin(
+                                            io.legado.app.ui.login.SourceLoginType.BookSource,
+                                            sourceUrl,
+                                        )
                                     },
-                                    modifier = Modifier
-                                        .defaultMinSize(
-                                            minWidth = MainNavigationTabMinWidth
+                                    onOpenEdit = onNavigateToBookSourceEdit,
+                                    onOpenSearch = onNavigateToScopedSearch,
+                                )
+
+                                MainDestination.Rss -> RssRouteScreen(
+                                    onOpenSort = { sourceUrl, sortUrl, key ->
+                                        onNavigateToRssSort(sourceUrl, sortUrl, key)
+                                    },
+                                    onOpenRead = { title, origin, link, openUrl, startPage ->
+                                        onNavigateToRssRead(title, origin, link, openUrl, startPage)
+                                    },
+                                    onOpenFavorites = onNavigateToRssFavorites,
+                                    onOpenRuleSub = onNavigateToRuleSub,
+                                    onOpenLogin = { sourceUrl ->
+                                        onNavigateToSourceLogin(
+                                            io.legado.app.ui.login.SourceLoginType.RssSource,
+                                            sourceUrl,
                                         )
-                                        .semantics(mergeDescendants = true) {
-                                            contentDescription = destinationLabel
+                                    },
+                                    onOpenSourceEdit = onNavigateToRssSourceEdit,
+                                    onOpenSourceManage = onNavigateToRssSourceManage,
+                                )
+
+                                MainDestination.My -> MyRouteScreen(
+                                    onOpenSettings = onOpenSettings,
+                                    onNavigate = { event ->
+                                        when (event) {
+                                            PrefClickEvent.OpenBookCacheManage -> onNavigateToBookCacheManage()
+                                            PrefClickEvent.OpenBookSourceManage -> onNavigateToBookSourceManage()
+                                            PrefClickEvent.OpenReplaceRules -> onNavigateToReplaceRules()
+                                            PrefClickEvent.OpenReadRecord -> onNavigateToReadRecord()
+                                            PrefClickEvent.OpenDictRule -> onNavigateToDictRule()
+                                            PrefClickEvent.OpenTxtTocRule -> onNavigateToTxtTocRule()
+                                            PrefClickEvent.OpenAllBookmark -> onNavigateToAllBookmark()
+                                            else -> onIntent(MainUiIntent.HandlePreferenceClick(event))
                                         }
-                                ) {
-                                    NavigationIcon(
-                                        destination = destination,
-                                        customIconPath = if (selected) {
-                                            selectedCustomIconPath.ifEmpty { customIconPath }
-                                        } else customIconPath,
-                                        selected = selected
-                                    )
-                                    if (
-                                        showLabel && (alwaysShowLabel || selected)
-                                    ) {
-                                        AppText(
-                                            text = stringResource(destination.labelId),
-                                            style = LegadoTheme.typography.labelSmall,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
                                     }
-                                }
+                                )
                             }
                         }
-                        // 打开听书播放页：与阅读器共用同一条全局请求通道。
-                        ReadAloudBarCapsuleSlot(
-                            enabled = homePlaybackCapsuleEnabled,
-                            onOpenPlayer = { ReadAloudPlayerOverlayBus.request(it) },
-                            morph = readAloudMorph,
-                            anchorPreview = capsuleAnchorPreview,
-                            // 与悬浮底栏共用同一份 backdrop，液态玻璃开关一致。
-                            backdrop = floatingBarBackdrop,
-                            isBlurEnabled = useLiquidGlass,
-                            controlsExpanded = playbackControlsExpanded,
-                            expansion = expansion,
-                            width = capsuleWidth,
-                            expandedWidth = expandedCapsuleWidth,
-                            onControlsExpandedChange = { playbackControlsExpanded = it },
-                            onOccupiedWidthChanged = { readAloudCapsuleShown = it > 0 },
-                            modifier = Modifier.align(Alignment.BottomEnd),
-                        )
                     }
                 }
             }
@@ -839,68 +410,11 @@ private class MainPageLifecycleOwner : LifecycleOwner {
 }
 
 @Composable
-private fun BookshelfRailGroupMenuRoute(
-    expanded: Boolean,
-    onDismissRequest: () -> Unit,
-    onBeforeSelectGroup: suspend () -> Unit,
-    viewModel: BookshelfViewModel = koinViewModel()
-) {
-    val groupState by viewModel.groupSelectorState.collectAsStateWithLifecycle()
-    BookshelfRailGroupMenu(
-        expanded = expanded,
-        state = groupState,
-        onDismissRequest = onDismissRequest,
-        onSelectGroup = { groupId ->
-            onBeforeSelectGroup()
-            viewModel.onIntent(
-                io.legado.app.ui.main.bookshelf.BookshelfIntent.ChangeGroup(groupId)
-            )
-        },
-    )
-}
-
-@Composable
-private fun BookshelfRailGroupMenu(
-    expanded: Boolean,
-    state: io.legado.app.ui.main.bookshelf.BookshelfGroupSelectorState,
-    onDismissRequest: () -> Unit,
-    onSelectGroup: suspend (Long) -> Unit,
-) {
-    val coroutineScope = rememberCoroutineScope()
-
-    RoundDropdownMenu(
-        expanded = expanded,
-        onDismissRequest = onDismissRequest
-    ) { dismiss ->
-        state.groups.forEachIndexed { groupIndex, group ->
-            RoundDropdownMenuItem(
-                text = group.groupName,
-                onClick = {
-                    coroutineScope.launch {
-                        onSelectGroup(group.groupId)
-                        dismiss()
-                    }
-                },
-                trailingIcon = {
-                    if (state.selectedGroupIndex == groupIndex) {
-                        AppIcon(
-                            Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-            )
-        }
-    }
-}
-
-@Composable
 private fun NavigationIcon(
     destination: MainDestination,
     selected: Boolean,
     customIconPath: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (customIconPath.isNotEmpty()) {
         AsyncImage(
@@ -911,5 +425,68 @@ private fun NavigationIcon(
     } else {
         val icon = AppIcons.mainDestination(destination, selected)
         AppIcon(icon, contentDescription = null, modifier = modifier)
+    }
+}
+
+/** 抽屉只占屏幕左侧一条，不铺满；360dp 机型上留出约 1/5 内容预览。 */
+private val DrawerWidth = 288.dp
+
+/**
+ * 主导航抽屉。
+ *
+ * 页面切换本身由 [HorizontalPager] 的左右滑动完成，这里只做快捷跳转：
+ * 列出全部已启用主页面，选中后把 pager 滚到对应页。
+ */
+@Composable
+private fun MainNavigationDrawer(
+    destinations: List<MainDestination>,
+    selectedIndex: Int,
+    customIconPath: (MainDestination) -> String,
+    onSelect: (Int) -> Unit,
+) {
+    ModalDrawerSheet(modifier = Modifier.width(DrawerWidth)) {
+        Spacer(Modifier.height(24.dp))
+        destinations.forEachIndexed { index, destination ->
+            MainDrawerDestinationRow(
+                destination = destination,
+                selected = index == selectedIndex,
+                customIconPath = customIconPath(destination),
+                onClick = { onSelect(index) },
+            )
+        }
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun MainDrawerDestinationRow(
+    destination: MainDestination,
+    selected: Boolean,
+    customIconPath: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 2.dp)
+            .clip(RoundedCornerShape(28.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        NavigationIcon(
+            destination = destination,
+            selected = selected,
+            customIconPath = customIconPath,
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        AppText(
+            text = stringResource(destination.labelId),
+            style = if (selected) {
+                LegadoTheme.typography.titleMediumEmphasized
+            } else {
+                LegadoTheme.typography.titleMedium
+            },
+        )
     }
 }

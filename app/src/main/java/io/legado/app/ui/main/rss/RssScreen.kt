@@ -50,6 +50,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.legado.app.R
+import io.legado.app.ui.main.MainDrawerNavigationIcon
 import io.legado.app.data.entities.RssSource
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.adaptiveContentPadding
@@ -165,6 +166,7 @@ fun RssScreen(
             state = state,
             subtitle = state.group.ifEmpty { stringResource(R.string.all) },
             onBackClick = null,
+            navigationContent = { MainDrawerNavigationIcon() },
             onSearchToggle = { onIntent(RssIntent.ToggleSearch(it)) },
             onSearchQueryChange = { onIntent(RssIntent.Search(it)) },
             searchPlaceholder = stringResource(R.string.search_rss_source),

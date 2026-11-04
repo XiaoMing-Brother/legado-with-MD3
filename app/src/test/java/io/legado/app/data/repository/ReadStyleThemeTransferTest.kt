@@ -5,7 +5,12 @@ import io.legado.app.data.entities.HighlightRule
 import io.legado.app.domain.gateway.ReadSettingsGateway
 import io.legado.app.domain.gateway.AppShellSettingsGateway
 import io.legado.app.domain.gateway.ThemeSettingsGateway
+import io.legado.app.domain.model.settings.ReadBackgroundPalette
 import io.legado.app.domain.model.settings.ReadSettings
+import io.legado.app.domain.model.settings.contrastRatio
+import io.legado.app.domain.model.settings.parseArgbColor
+import io.legado.app.domain.model.settings.relativeLuminance
+import io.legado.app.help.DefaultData
 import io.legado.app.help.config.AppConfigStore
 import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.support.InMemoryAppDatabaseFixture
@@ -169,6 +174,86 @@ class ReadStyleThemeTransferTest {
         val addedIndex = store.addConfig(original)
         assertNotEquals(original.id, store.configAt(addedIndex).id)
         assertFalse(GSON.toJson(store.configAt(addedIndex)).contains("\"id\""))
+    }
+
+    @Test
+    fun applyingALightBuiltInThemeStillTurnsThePageDarkAtNight() {
+        val theme = DefaultData.readThemes.first { it.id == 312 } // 漫绿：浅纸色
+        assertTrue(gateway.applyReadTheme(theme.id))
+
+        val config = store.configAt(5)
+        assertEquals("白天仍是主题原色", theme.background, config.bgStr)
+        assertNotEquals("夜间必须换一套底色", config.bgStr, config.bgStrNight)
+        val nightBackground = parseArgbColor(config.bgStrNight)!!
+        assertTrue(
+            "浅色主题的夜间底色必须变深：${config.bgStrNight}",
+            relativeLuminance(nightBackground) < 0.1,
+        )
+        assertTrue(
+            "夜间正文对比度不足",
+            contrastRatio(parseArgbColor(config.getTextColorNight())!!, nightBackground) >= 4.5,
+        )
+        assertTrue(
+            "夜间页眉页脚对比度不足",
+            contrastRatio(config.tipHeaderColorNight, nightBackground) >= 4.5,
+        )
+        assertFalse("夜间深底要用浅色状态栏图标", config.getDarkStatusIconNight())
+    }
+
+    @Test
+    fun applyingADarkBuiltInThemeReusesItsPaletteAtNight() {
+        val theme = DefaultData.readThemes.first { it.id == 513 } // 大海：本来就是深色
+        assertTrue(gateway.applyReadTheme(theme.id))
+
+        val config = store.configAt(5)
+        assertEquals(theme.background, config.bgStrNight)
+        assertEquals(theme.content, config.getTextColorNight())
+    }
+
+    @Test
+    fun lightThemeBackgroundImageDoesNotLeakIntoNight() {
+        val theme = DefaultData.readThemes.first { it.id == 312 }
+        gateway.applyReadTheme(theme.id)
+        val derivedNightColor = store.configAt(5).bgStrNight
+
+        gateway.setReadThemeBackgroundImage("/tmp/theme.png", useForNight = false)
+        val lightThemeConfig = store.configAt(5)
+        assertEquals(2, lightThemeConfig.bgType)
+        assertEquals("/tmp/theme.png", lightThemeConfig.bgStr)
+        assertEquals("夜间仍用派生深色底", 0, lightThemeConfig.bgTypeNight)
+        assertEquals(derivedNightColor, lightThemeConfig.bgStrNight)
+
+        gateway.setReadThemeBackgroundImage("/tmp/night.png", useForNight = true)
+        val darkThemeConfig = store.configAt(5)
+        assertEquals(2, darkThemeConfig.bgTypeNight)
+        assertEquals("/tmp/night.png", darkThemeConfig.bgStrNight)
+    }
+
+    @Test
+    fun extractedPaletteTextIsRederivedForTheSolidNightBackground() {
+        val theme = DefaultData.readThemes.first { it.id == 312 }
+        gateway.applyReadTheme(theme.id)
+        val palette = ReadBackgroundPalette(
+            backgroundArgb = 0xFFF5F5F0.toInt(),
+            contentArgb = 0xFF2D2D33.toInt(),
+            secondaryArgb = 0xFF6A6A6A.toInt(),
+            controlArgb = 0xFF3473E7.toInt(),
+        )
+
+        gateway.applyReadBackgroundPalette(palette)
+
+        val config = store.configAt(5)
+        assertEquals("白天仍用图片取色", 0xFF2D2D33.toInt(), parseArgbColor(config.getTextColor()))
+        val nightBackground = parseArgbColor(config.bgStrNight)!!
+        assertTrue(
+            "夜间正文要重新反推成浅色",
+            contrastRatio(parseArgbColor(config.getTextColorNight())!!, nightBackground) >= 4.5,
+        )
+        assertTrue(
+            "夜间页眉页脚要重新反推成浅色",
+            contrastRatio(config.tipHeaderColorNight, nightBackground) >= 4.5,
+        )
+        assertFalse("夜间深底要用浅色状态栏图标", config.getDarkStatusIconNight())
     }
 
     private fun rule(id: String, name: String?, pattern: String) = HighlightRule(

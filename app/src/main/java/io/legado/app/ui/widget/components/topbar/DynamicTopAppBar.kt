@@ -37,6 +37,8 @@ fun <T> DynamicTopAppBar(
     scrollBehavior: GlassTopAppBarScrollBehavior,
     onBackClick: (() -> Unit)? = null,
     backNavigationIcon: ImageVector = AppIcons.Back,
+    /** 没有返回键时显示的自定义导航入口（如抽屉模式的汉堡）。 */
+    navigationContent: (@Composable () -> Unit)? = null,
     showSearchAction: Boolean = true,
     onSearchToggle: (Boolean) -> Unit,
     onSearchQueryChange: (String) -> Unit,
@@ -90,6 +92,8 @@ fun <T> DynamicTopAppBar(
                         if (isSelecting) R.string.cancel_select else R.string.back
                     )
                 )
+            } else {
+                navigationContent?.invoke()
             }
         },
         actions = {

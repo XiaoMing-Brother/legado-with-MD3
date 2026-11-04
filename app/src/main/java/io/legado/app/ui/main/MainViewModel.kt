@@ -50,7 +50,6 @@ class MainViewModel(
 
     fun onIntent(intent: MainUiIntent) {
         when (intent) {
-            is MainUiIntent.SetNavigationRailExpanded -> setNavExtended(intent.expanded)
             is MainUiIntent.HandlePreferenceClick -> handlePrefClick(intent.event)
         }
     }
@@ -64,13 +63,6 @@ class MainViewModel(
     }
 
     suspend fun getLatestWebDavBackup() = webDavBackupUseCase.getLatestBackup()
-
-    private fun setNavExtended(expanded: Boolean) {
-        if (_uiState.value.navExtended == expanded) return
-        viewModelScope.launch {
-            appShellSettingsGateway.update { it.copy(navExtended = expanded) }
-        }
-    }
 
     private fun handlePrefClick(event: PrefClickEvent) {
         when (event) {
@@ -107,11 +99,6 @@ private fun buildMainUiState(
     return MainUiState(
         destinations = destinations.toImmutableList(),
         defaultHomePage = appShell.defaultHomePage,
-        showBottomView = appShell.showBottomView,
-        useFloatingBottomBar = appShell.useFloatingBottomBar,
-        useFloatingBottomBarLiquidGlass = appShell.useFloatingBottomBarLiquidGlass,
-        labelVisibilityMode = appShell.labelVisibilityMode,
-        navExtended = appShell.navExtended,
         navIconHome = appShell.navIconHome,
         navIconBookshelf = appShell.navIconBookshelf,
         navIconExplore = appShell.navIconExplore,

@@ -3,8 +3,9 @@ package io.legado.app.ui.widget.components
 import android.graphics.Typeface
 import android.net.Uri
 import androidx.annotation.StringRes
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,11 +51,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.legado.app.R
 import io.legado.app.domain.gateway.OtherSettingsGateway
 import io.legado.app.help.FontFolderRead
+import io.legado.app.help.deleteFont
+import io.legado.app.help.isPrivateFont
 import io.legado.app.help.scanFontFiles
+import io.legado.app.ui.widget.components.alert.AppAlertDialog
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.ProvideAppDensity
 import io.legado.app.utils.FileDoc
 import io.legado.app.utils.cnCompare
+import io.legado.app.utils.toastOnUi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -110,6 +115,10 @@ fun FontSelectGrid(
     var filesLoading by remember { mutableStateOf(false) }
     var folderRead by remember { mutableStateOf<FontFolderRead?>(null) }
     var searchQuery by remember { mutableStateOf("") }
+    var pendingDelete by remember { mutableStateOf<FileDoc?>(null) }
+    val deleteActionText = stringResource(R.string.delete)
+    val cancelText = stringResource(R.string.cancel)
+    val deleteFailedText = stringResource(R.string.font_delete_failed)
     val fontSortFlow = remember(otherSettings) {
         otherSettings.settings.map { it.fontSort }.distinctUntilChanged()
     }
@@ -252,10 +261,39 @@ fun FontSelectGrid(
                         item = item,
                         isSelected = item.name == selectedFontName,
                         onClick = { onSelectFont(item) },
+                        // 只有应用私有目录里的字体能删：用户自己的字体文件夹删了没有回收站
+                        onLongClick = if (isPrivateFont(context, item.uri)) {
+                            { pendingDelete = item }
+                        } else null,
                     )
                 }
             }
         }
+    }
+
+    pendingDelete?.let { target ->
+        AppAlertDialog(
+            show = true,
+            onDismissRequest = { pendingDelete = null },
+            title = deleteActionText,
+            text = stringResource(R.string.font_delete_confirm, target.name),
+            confirmText = deleteActionText,
+            onConfirm = {
+                pendingDelete = null
+                scope.launch {
+                    val deleted = withContext(Dispatchers.IO) {
+                        deleteFont(context, target.uri)
+                    }
+                    if (deleted) {
+                        // 重新扫描：删掉的字体必须从列表消失，不能只改本地快照
+                        fontItems = fontItems.filterNot { it.name == target.name }
+                    } else {
+                        context.toastOnUi(deleteFailedText)
+                    }
+                }
+            },
+            dismissText = cancelText,
+        )
     }
 }
 
@@ -269,41 +307,58 @@ private fun fontFolderMessage(folder: FontFolderRead?): String? = when (folder) 
     } else null
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FontItem(
     item: FileDoc,
     isSelected: Boolean,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val fontFamily by rememberItemFontFamily(item.uri)
+    val sampleText = stringResource(R.string.font_sample_text)
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(LegadoTheme.colorScheme.surface, RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            )
             .padding(12.dp),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.height(48.dp)
+        Column(
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            modifier = Modifier.height(56.dp)
         ) {
-            Text(
-                text = item.name,
-                style = LegadoTheme.typography.bodyMedium.copy(fontFamily = fontFamily),
-                color = LegadoTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f),
-            )
-            if (isSelected) {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = null,
-                    tint = LegadoTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp),
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // 文件名用主题字体，避免「名字本身被渲染成待选字体」后完全看不出区别
+                Text(
+                    text = item.name,
+                    style = LegadoTheme.typography.bodySmall,
+                    color = LegadoTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
+                if (isSelected) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        tint = LegadoTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
+            // 预览行：只有这一行用字体本身渲染，用户才能一眼分辨字形
+            Text(
+                text = sampleText,
+                style = LegadoTheme.typography.titleMedium.copy(fontFamily = fontFamily),
+                color = LegadoTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }

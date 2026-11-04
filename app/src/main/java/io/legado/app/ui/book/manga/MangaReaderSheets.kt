@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.foundation.layout.Arrangement
@@ -197,11 +196,6 @@ private fun MangaSourceActionSquare(
 internal fun MangaReaderPageActionsSheet(
     hasSpread: Boolean,
     onIntent: (MangaReaderIntent) -> Unit,
-    onTranslate: ((Boolean) -> Unit)? = null,
-    onSaveTranslation: (() -> Unit)? = null,
-    onClearTranslation: (() -> Unit)? = null,
-    onRecompose: (() -> Unit)? = null,
-    hasTranslation: Boolean = false,
 ) {
     AppModalBottomSheet(
         show = true,
@@ -272,39 +266,6 @@ internal fun MangaReaderPageActionsSheet(
                     repeat(4 - rowActions.size) { Spacer(Modifier.weight(1f)) }
                 }
                 Spacer(Modifier.height(8.dp))
-                if (rowIndex == 0) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ReaderMenuActionSquare(
-                            icon = Icons.Default.Translate,
-                            text = stringResource(if (hasTranslation) R.string.feature_manga_retranslate_short else R.string.feature_manga_translate_short),
-                            modifier = Modifier.weight(1f),
-                            enabled = onTranslate != null,
-                            onClick = { onTranslate?.invoke(hasTranslation) },
-                        )
-                        ReaderMenuActionSquare(
-                            icon = Icons.Default.Layers,
-                            text = stringResource(R.string.feature_manga_recompose_short),
-                            modifier = Modifier.weight(1f),
-                            enabled = onRecompose != null,
-                            onClick = { onRecompose?.invoke() },
-                        )
-                        ReaderMenuActionSquare(
-                            icon = Icons.Default.Save,
-                            text = stringResource(R.string.feature_manga_save_translation),
-                            modifier = Modifier.weight(1f),
-                            enabled = onSaveTranslation != null,
-                            onClick = { onSaveTranslation?.invoke() },
-                        )
-                        ReaderMenuActionSquare(
-                            icon = Icons.Default.Delete,
-                            text = stringResource(R.string.feature_manga_translation_clear_page),
-                            modifier = Modifier.weight(1f),
-                            enabled = onClearTranslation != null,
-                            onClick = { onClearTranslation?.invoke() },
-                        )
-                    }
-                    Spacer(Modifier.height(8.dp))
-                }
             }
         }
     }

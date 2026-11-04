@@ -48,19 +48,21 @@ interface ReadStyleGateway {
     suspend fun downloadReadThemeBackground(theme: ReadThemePreset): String?
 
     /**
-     * 把已落盘的主题背景图写进**三种阅读模式**并落盘一次。
+     * 把已落盘的主题背景图写进排版配置并落盘一次。
      *
-     * 与 [applyReadTheme] 写三份配色对称：主题只有一张图，只写当前模式会导致
-     * 「白天有图、切到夜间变纯色」。与 [setCurrentBackgroundImage] 的区别仅在写入范围。
+     * [useForNight] 为 true（主题底色本身够深）时三种阅读模式共用这张图；为 false 时只写白天与
+     * 墨水屏，夜间保留 [applyReadTheme] 派生的深色底——浅色主题的亮图不该出现在夜间。
+     * 与 [setCurrentBackgroundImage] 的区别仅在写入范围。
      */
-    fun setReadThemeBackgroundImage(path: String)
+    fun setReadThemeBackgroundImage(path: String, useForNight: Boolean)
 
     /**
      * 把从背景图提取出来的一套配色写进**当前样式**（清墨：「主题编辑器会根据图片提取出一套配色
      * 便于快捷搭配」）。
      *
      * 只改文字相关项：底色仍由背景图提供（[ReadBackgroundPalette.backgroundArgb] 仅用于判定状态栏
-     * 图标明暗）。三种阅读模式写同一套——用户是照着「这张图」挑的色，切到夜间变成另一套反而错位。
+     * 图标明暗）。白天与墨水屏写图片取色；夜间槽位是纯色底时按该底色重新反推文字色，避免白天亮图
+     * 取出的深色文字压在深色夜间底上看不清。夜间也用这张图时保持三种模式同一套配色。
      */
     fun applyReadBackgroundPalette(palette: ReadBackgroundPalette)
 

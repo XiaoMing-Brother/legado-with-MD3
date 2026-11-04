@@ -19,7 +19,7 @@ class Phase2SettingsMappingTest {
         assertRoundTrips(
             samples = listOf(
                 TranslationSettings(
-                    provider = TranslationConstants.PROVIDER_APP_AI,
+                    provider = TranslationConstants.PROVIDER_GOOGLE,
                     targetLanguage = "ja",
                     maxCharsPerChunk = 12_345,
                     concurrentChunks = 3,
@@ -28,6 +28,24 @@ class Phase2SettingsMappingTest {
             ),
             toPrefMap = TranslationSettings::toPrefMap,
             fromPreferences = Preferences::toTranslationSettings,
+        )
+    }
+
+    @Test
+    fun `旧的 AI 翻译配置读回时回落到 Google`() {
+        val prefs = TranslationSettings(provider = TranslationConstants.PROVIDER_GOOGLE)
+            .toPrefMap()
+            .toTestPreferences()
+        val legacy = mapOf<String, Any?>(
+            PreferKey.llmProvider to TranslationConstants.PROVIDER_APP_AI
+        ).toTestPreferences()
+        assertEquals(
+            TranslationConstants.PROVIDER_GOOGLE,
+            legacy.toTranslationSettings().provider,
+        )
+        assertEquals(
+            TranslationConstants.PROVIDER_GOOGLE,
+            prefs.toTranslationSettings().provider,
         )
     }
 

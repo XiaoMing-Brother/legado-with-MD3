@@ -725,6 +725,11 @@ class ReadConfigUpdateDelegate(
                     readSettingsRepository.setClickImgWay(update.value)
                 }
             }
+            is ConfigUpdate.ImageNightMode -> {
+                scope.launch {
+                    readSettingsRepository.setImageNightMode(update.value)
+                }
+            }
             is ConfigUpdate.DisableReturnKey -> {
                 scope.launch {
                     readSettingsRepository.setDisableReturnKey(update.value)

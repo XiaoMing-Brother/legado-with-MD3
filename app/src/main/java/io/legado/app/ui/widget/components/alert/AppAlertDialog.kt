@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -22,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.LegadoTheme.composeEngine
+import io.legado.app.ui.theme.LocalAppUiConfiguration
 import io.legado.app.ui.theme.ProvideAppDensity
 import io.legado.app.ui.theme.ThemeResolver
 import io.legado.app.ui.widget.components.button.PrimaryButton
@@ -44,6 +46,13 @@ fun AppAlertDialog(
     dismissText: String = "取消",
     onDismiss: (() -> Unit)? = null,
 ) {
+    // 与底部弹层、下拉菜单同一套轮廓：开了「卡片圆角覆盖」的主题（清墨 20dp）连对话框一起变
+    val themeSettings = LocalAppUiConfiguration.current.theme
+    val dialogShape = if (themeSettings.overrideBaseCardCornerRadius) {
+        RoundedCornerShape(themeSettings.baseCardCornerRadius.dp)
+    } else {
+        AlertDialogDefaults.shape
+    }
     if (ThemeResolver.isMiuixEngine(composeEngine)) {
         WindowDialog(
             show = show,
@@ -100,6 +109,7 @@ fun AppAlertDialog(
             AlertDialog(
                 onDismissRequest = onDismissRequest,
                 modifier = modifier,
+                shape = dialogShape,
                 containerColor = LegadoTheme.colorScheme.surfaceContainer,
                 iconContentColor = LegadoTheme.colorScheme.primary,
                 titleContentColor = LegadoTheme.colorScheme.onSurface,

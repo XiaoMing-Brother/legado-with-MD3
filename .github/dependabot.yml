@@ -22,24 +22,5 @@ registries:
     password: dummy
     username: dummy
 
-updates:
-  - package-ecosystem: gradle
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    registries: "*"
-    open-pull-requests-limit: 20
-    groups:
-      kotlin_KSP:
-        patterns:
-          - "org.jetbrains.kotlin:*"
-          - "com.google.devtools.ksp"
-  # Maintain dependencies for GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: npm
-    directory: "modules/web"
-    schedule:
-      interval: "weekly"
+# Fork 工作流：不在 GitHub 上自动开依赖 PR；上游有更新时在本地 sync-from-upstream。
+updates: []

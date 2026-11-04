@@ -1,23 +1,6 @@
 name: Auto Build
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - '**'
-      # - '!**/assets/**'
-      # - '!**.md'
-      - '!**/ISSUE_TEMPLATE/**'
-      - '!**/modules/web/**'
-  pull_request:
-    paths-ignore:
-      - '**/modules/web/**'
-  workflow_run:
-    workflows: [Build Web]
-    branches: [master]
-    types:
-      - completed
   workflow_dispatch:
   workflow_call:
     inputs:
@@ -38,7 +21,7 @@ jobs:
 
   prepare:
     runs-on: ubuntu-latest
-    if: ${{ !startsWith(github.event.head_commit.message, 'Merge pull request') }}
+    if: ${{ github.repository == 'HapeLee/legado-with-MD3' && !startsWith(github.event.head_commit.message, 'Merge pull request') }}
     outputs:
       versionL: ${{ steps.set-ver.outputs.full_version_name }}
       version: ${{ steps.set-ver.outputs.current_version }}
@@ -130,6 +113,7 @@ jobs:
 
   build:
     needs: prepare
+    if: github.repository == 'HapeLee/legado-with-MD3'
     strategy:
       matrix:
         # 两个产品同时发布：core 轻量版（无本地推理）与 full 完整版（内置 OCR/擦除/气泡检测）。

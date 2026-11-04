@@ -858,7 +858,7 @@ class ThemePackageManager(
     }
 
     private suspend fun applyThemeSettings(data: ThemeExportData) {
-        themePackageSettingsGateway.applyAndAwait(data)
+        themePackageSettingsGateway.applyAndAwait(data.copy(showStatusBar = true))
         withContext(Dispatchers.Main.immediate) {
             val mode = when (data.themeMode) {
                 "1" -> AppCompatDelegate.MODE_NIGHT_NO

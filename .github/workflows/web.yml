@@ -1,15 +1,6 @@
 name: Build Web
 
 on:
-  push:
-    branches:
-      # 本仓库默认分支是 main；原写 master 导致下面的「自动提交产物」步骤从未触发过。
-      - main
-    paths:
-      - '**/modules/web/**'
-  pull_request:
-    paths:
-      - '**/modules/web/**'
   workflow_dispatch:
 
 # git-auto-commit-action 要往 main 提交 app/src/main/assets/web/vue/**，需要写权限；
@@ -21,6 +12,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: github.repository == 'HapeLee/legado-with-MD3'
 
     steps:
       - name: Checkout

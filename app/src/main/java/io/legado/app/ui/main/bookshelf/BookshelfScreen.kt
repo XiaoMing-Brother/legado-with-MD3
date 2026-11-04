@@ -58,6 +58,7 @@ import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
@@ -113,6 +114,7 @@ import io.legado.app.domain.model.PrivateUnlockTarget
 import io.legado.app.help.security.BiometricUnlockLauncher
 import io.legado.app.ui.book.group.GroupEditSheet
 import io.legado.app.ui.book.info.GroupSelectSheet
+import io.legado.app.ui.main.LocalMainDrawerOpen
 import io.legado.app.ui.main.bookCoverSharedElementKey
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.ProvideAppDensity
@@ -1345,11 +1347,19 @@ private fun BookshelfTopBar(
     GlassMediumFlexibleTopAppBar(
         modifier = Modifier.fillMaxWidth(),
         navigationIcon = {
+            val openDrawer = LocalMainDrawerOpen.current
             if (uiState.isEditMode) {
                 TopBarNavigationButton(
                     onClick = onExitEditMode,
                     imageVector = AppIcons.Close,
                     contentDescription = exitEditModeDescription
+                )
+            } else if (openDrawer != null) {
+                // 抽屉导航下没有底栏，这里必须给出入口；底栏/侧栏模式该 CompositionLocal 为 null
+                TopBarNavigationButton(
+                    onClick = openDrawer,
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = stringResource(R.string.menu)
                 )
             }
         },

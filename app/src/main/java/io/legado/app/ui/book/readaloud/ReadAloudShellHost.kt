@@ -26,7 +26,6 @@ fun ReadAloudShellHost(
     showCapsule: Boolean,
     playbackGateway: PlaybackCapsuleGateway = koinInject(),
     settingsGateway: ReadAloudSettingsGateway = koinInject(),
-    hidden: Boolean = false,
     anchorPreview: PlaybackCapsuleState? = null,
     onCapsulePositionChanged: (x: Float, y: Float) -> Unit,
     onOpenPlayer: (PlaybackCapsuleState) -> Unit,
@@ -40,7 +39,7 @@ fun ReadAloudShellHost(
     // 初次朗读还没有服务会话时，按保存位置布局同一个胶囊，仅测量、不绘制。
     val previewOnly = playerState.source == null
     val displayState = if (previewOnly) anchorPreview ?: playerState else playerState
-    val visible = !hidden && showCapsule && (playerState.source != null || anchorPreview != null)
+    val visible = showCapsule && (playerState.source != null || anchorPreview != null)
     CompositionLocalProvider(LocalReadAloudMorph provides morph?.takeIf { visible }) {
         Box(modifier = Modifier.fillMaxSize()) {
             AnimatedVisibility(

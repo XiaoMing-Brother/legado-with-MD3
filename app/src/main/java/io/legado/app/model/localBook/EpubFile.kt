@@ -8,6 +8,8 @@ import io.legado.app.constant.AppLog
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.help.book.BookHelp
+import io.legado.app.help.epub.EpubFontFaceParser
+import io.legado.app.help.epub.EpubFontRegistry
 import io.legado.app.utils.FileUtils
 import io.legado.app.utils.encodeURI
 import io.legado.app.utils.isXml
@@ -56,10 +58,15 @@ class EpubFile(var book: Book) {
         }
 
         @Synchronized
-        fun getPresentation(book: Book, chapter: BookChapter): io.legado.app.feature.reader.core.source.ReaderLocalPresentation? =
-            getEFile(book).getContent(chapter, presentation = true)?.let {
-                io.legado.app.feature.reader.platform.ReaderLocalPresentationResolver.resolve(it)
+        fun getPresentation(book: Book, chapter: BookChapter): io.legado.app.feature.reader.core.source.ReaderLocalPresentation? {
+            val eFile = getEFile(book)
+            return eFile.getContent(chapter, presentation = true)?.let { html ->
+                io.legado.app.feature.reader.platform.ReaderLocalPresentationResolver.resolve(
+                    html,
+                    fontToken = eFile::fontTokenFor,
+                )
             }
+        }
 
         @Synchronized
         override fun getImage(
@@ -195,12 +202,19 @@ class EpubFile(var book: Book) {
         // Jsoup可能会修复不规范的xhtml文件 解析处理后再获取
         val document = Jsoup.parse(String(res.data, mCharset))
         val bodyElement = document.body()
-        if (presentation) LocalBookSemanticHtml.inlineDocumentCssSemantics(document) { href ->
-            val resolved = LocalBookSemanticHtml.resolveRelativeHref(res.href, href)
-            resolved?.let { path ->
-                runCatching {
-                    epubBook?.resources?.getByHref(path)?.data?.let { String(it, Charsets.UTF_8) }
-                }.getOrNull()
+        if (presentation) {
+            // 样式表与内联 <style> 是唯一能看到 @font-face 的地方：先抽取并登记，
+            // 正文里的 font-family 才能落到包内字体文件。纯文本路径不读字体，不白跑。
+            document.select("style").forEach { style -> registerFontFaces(style.data(), res.href) }
+            LocalBookSemanticHtml.inlineDocumentCssSemantics(document) { href ->
+                val resolved = LocalBookSemanticHtml.resolveRelativeHref(res.href, href)
+                resolved?.let { path ->
+                    runCatching {
+                        epubBook?.resources?.getByHref(path)?.data?.let { bytes ->
+                            String(bytes, Charsets.UTF_8).also { registerFontFaces(it, path) }
+                        }
+                    }.getOrNull()
+                }
             }
         }
         bodyElement.select("script, style").remove()
@@ -237,6 +251,39 @@ class EpubFile(var book: Book) {
         if (href == "cover.jpeg") return epubBook?.coverImage?.inputStream
         val abHref = LocalBookSemanticHtml.decodeFragment(href)
         return epubBook?.resources?.getByHref(abHref)?.inputStream
+    }
+
+    /**
+     * 族名 → 字体令牌。按书保存：CSS 里的族名（`F0`、`MainFont`）可能跨书重名，
+     * 全局表会把 A 书的字体串给 B 书。
+     */
+    private val fontTokens = HashMap<String, String>()
+
+    /**
+     * 把一段 CSS 里的 `@font-face` 字体抽取到应用私有目录，并记下族名对应的令牌。
+     *
+     * 字体路径按样式表所在位置解析（与 `url()` 的相对语义一致），拿不到资源就跳过，
+     * 不能因为一本书少个字体就整章取不到正文。
+     */
+    private fun registerFontFaces(css: String, baseHref: String) {
+        EpubFontFaceParser.parse(css).forEach { face ->
+            val family = face.family.trim().trim('"', '\'').trim().lowercase()
+                .takeIf { it.isNotEmpty() } ?: return@forEach
+            if (fontTokens.containsKey(family)) return@forEach
+            val path = LocalBookSemanticHtml.resolveRelativeHref(baseHref, face.href) ?: return@forEach
+            val bytes = runCatching { epubBook?.resources?.getByHref(path)?.data }.getOrNull()
+                ?: return@forEach
+            EpubFontRegistry.register(bytes, face.extension)?.let { token ->
+                fontTokens[family] = token
+            }
+        }
+    }
+
+    /** 把 CSS/HTML 里声明的族名换成字体令牌；未登记（或回退族名）返回 null。 */
+    internal fun fontTokenFor(family: String?): String? {
+        if (fontTokens.isEmpty() || family.isNullOrBlank()) return null
+        val key = family.trim().trim('"', '\'').trim().lowercase()
+        return fontTokens[key]
     }
 
     private fun upBookCover(fastCheck: Boolean = false) {

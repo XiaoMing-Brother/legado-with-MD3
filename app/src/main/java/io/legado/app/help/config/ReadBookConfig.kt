@@ -108,7 +108,7 @@ object ReadBookConfig {
     val readMenuIconStyle get() = readSettings.readMenuIconStyle.coerceIn(0, 2)
     val titleBarIconStyle get() = readSettings.titleBarIconStyle.coerceIn(0, 2)
     val readMenuIconItemsPerRow get() = readSettings.readMenuIconItemsPerRow.coerceIn(2, 8)
-    val readMenuIconRowCount get() = readSettings.readMenuIconRowCount.coerceIn(1, 2)
+    val readMenuIconRowCount get() = readSettings.readMenuIconRowCount.coerceIn(1, 4)
     val readMenuBottomCornerRadius get() = readSettings.readMenuBottomCornerRadius.coerceIn(0, 32)
     val readMenuTopBarBlurMode get() = readSettings.readMenuTopBarBlurMode.coerceIn(0, 2)
     val readMenuBottomBarBlurMode get() = readSettings.readMenuBottomBarBlurMode.coerceIn(0, 2)

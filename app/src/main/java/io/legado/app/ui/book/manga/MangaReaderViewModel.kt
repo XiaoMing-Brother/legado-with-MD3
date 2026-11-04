@@ -354,7 +354,6 @@ class MangaReaderViewModel(
                 }
             }
 
-            is MangaReaderIntent.SaveTranslatedImage -> saveImage(intent.url)
             is MangaReaderIntent.ExecutePageAction -> executePageAction(intent.action)
             is MangaReaderIntent.MessageShown -> _uiState.update { state ->
                 state.copy(

@@ -199,16 +199,6 @@ fun EditThemeSheet(
                 onCheckedChange = { data = data.copy(showRss = it) }
             )
             CompactSwitchSettingItem(
-                title = stringResource(R.string.show_bottom_nav),
-                checked = data.showBottomView,
-                onCheckedChange = { data = data.copy(showBottomView = it) }
-            )
-            CompactSwitchSettingItem(
-                title = stringResource(R.string.floating_bottom_bar),
-                checked = data.useFloatingBottomBar,
-                onCheckedChange = { data = data.copy(useFloatingBottomBar = it) }
-            )
-            CompactSwitchSettingItem(
                 title = stringResource(R.string.theme_manage_status_bar),
                 checked = data.showStatusBar,
                 onCheckedChange = { data = data.copy(showStatusBar = it) }
@@ -217,20 +207,6 @@ fun EditThemeSheet(
                 title = stringResource(R.string.theme_manage_page_turn_animation),
                 checked = data.swipeAnimation,
                 onCheckedChange = { data = data.copy(swipeAnimation = it) }
-            )
-            CompactDropdownSettingItem(
-                title = stringResource(R.string.tabletInterface),
-                selectedValue = data.tabletInterface,
-                displayEntries = stringArrayResource(R.array.tabletInterface),
-                entryValues = stringArrayResource(R.array.tabletInterface_value),
-                onValueChange = { data = data.copy(tabletInterface = it) }
-            )
-            CompactDropdownSettingItem(
-                title = stringResource(R.string.theme_manage_label_visibility),
-                selectedValue = data.labelVisibilityMode,
-                displayEntries = stringArrayResource(R.array.label_vis_mode),
-                entryValues = stringArrayResource(R.array.label_vis_mode_value),
-                onValueChange = { data = data.copy(labelVisibilityMode = it) }
             )
             CompactDropdownSettingItem(
                 title = stringResource(R.string.default_home_page),
@@ -257,22 +233,10 @@ fun EditThemeSheet(
                     onValueChange = { data = data.copy(topBarBlurRadius = it.toInt()) }
                 )
                 CompactSliderSettingItem(
-                    title = stringResource(R.string.theme_manage_bottom_bar_blur_radius),
-                    value = data.bottomBarBlurRadius.toFloat(),
-                    valueRange = 1f..60f,
-                    onValueChange = { data = data.copy(bottomBarBlurRadius = it.toInt()) }
-                )
-                CompactSliderSettingItem(
                     title = stringResource(R.string.theme_manage_top_bar_blur_opacity),
                     value = data.topBarBlurAlpha.toFloat(),
                     valueRange = 0f..255f,
                     onValueChange = { data = data.copy(topBarBlurAlpha = it.toInt()) }
-                )
-                CompactSliderSettingItem(
-                    title = stringResource(R.string.theme_manage_bottom_bar_blur_opacity),
-                    value = data.bottomBarBlurAlpha.toFloat(),
-                    valueRange = 0f..255f,
-                    onValueChange = { data = data.copy(bottomBarBlurAlpha = it.toInt()) }
                 )
             }
 
@@ -285,12 +249,6 @@ fun EditThemeSheet(
                 value = data.topBarOpacity.toFloat(),
                 valueRange = 0f..100f,
                 onValueChange = { data = data.copy(topBarOpacity = it.toInt()) }
-            )
-            CompactSliderSettingItem(
-                title = stringResource(R.string.bottom_bar_opacity),
-                value = data.bottomBarOpacity.toFloat(),
-                valueRange = 0f..100f,
-                onValueChange = { data = data.copy(bottomBarOpacity = it.toInt()) }
             )
 
             Spacer(modifier = Modifier.height(8.dp))

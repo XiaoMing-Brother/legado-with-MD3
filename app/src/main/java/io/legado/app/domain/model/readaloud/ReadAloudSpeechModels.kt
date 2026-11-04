@@ -176,9 +176,8 @@ data class CharacterPerformanceProfile(
 )
 
 enum class SpeechAnalysisMode(val storageValue: String) {
-    Rule("rule"),
-    RuleWithAi("rule_with_ai"),
-    AiUnderstanding("ai_understanding");
+    /** 纯规则分段：AI 分析已移除，历史配置（rule_with_ai / ai_understanding）读回时也落到这里。 */
+    Rule("rule");
 
     companion object {
         fun fromStorage(value: String): SpeechAnalysisMode =

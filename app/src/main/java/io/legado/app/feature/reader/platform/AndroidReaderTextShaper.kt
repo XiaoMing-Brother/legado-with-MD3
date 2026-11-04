@@ -11,6 +11,7 @@ import io.legado.app.feature.reader.core.layout.ReaderFontLineMetrics
 import io.legado.app.feature.reader.core.layout.ReaderTextShaper
 import io.legado.app.feature.reader.core.layout.clusterGlyphs
 import io.legado.app.feature.reader.core.model.ReaderTextStyle
+import io.legado.app.help.epub.EpubFontRegistry
 import io.legado.app.utils.validFontLeading
 import splitties.init.appCtx
 import java.io.File
@@ -46,6 +47,14 @@ object ReaderAndroidPaintFactory {
     fun baselineOffset(paint: Paint): Float = paint.fontMetrics.let { paint.validFontLeading - it.ascent }
 
     fun loadTypeface(path: String, weight: Int, italic: Boolean, family: String = "sans-serif"): Typeface {
+        // ePub 内嵌字体：排版器把 CSS 里的族名换成了 `epubfont:<md5>.<ext>` 令牌，
+        // 令牌进的是 fontFamily（path 是用户自选字体文件，二者互斥）。
+        // 令牌失效（字体缓存被清理）时回落到系统族名，不会崩。
+        val tokenPath = when {
+            path.startsWith(EpubFontRegistry.TOKEN_PREFIX) -> EpubFontRegistry.fontPathFor(path)
+            family.startsWith(EpubFontRegistry.TOKEN_PREFIX) -> EpubFontRegistry.fontPathFor(family)
+            else -> null
+        }
         val key = "$path|$weight|$italic|$family"
         typefaceCache[key]?.let { return it }
         val base = runCatching {
@@ -60,6 +69,7 @@ object ReaderAndroidPaintFactory {
                     path.toUri().path?.let { File(it).takeIf(File::isFile) }
                         ?.let { Typeface.Builder(it).build() }
                 path.isNotBlank() && File(path).isFile -> Typeface.Builder(File(path)).build()
+                tokenPath != null -> Typeface.Builder(File(tokenPath)).build()
                 else -> null
             }
         }.getOrNull() ?: Typeface.create(family, Typeface.NORMAL)

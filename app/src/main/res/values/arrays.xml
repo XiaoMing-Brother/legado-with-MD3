@@ -136,6 +136,12 @@
         <item>Double Click</item>
     </string-array>
 
+    <string-array name="image_night_mode_title">
+        <item>Keep Original</item>
+        <item>Invert Colors</item>
+        <item>Dim to Background</item>
+    </string-array>
+
     <string-array name="double_page_title">
 		<item>Single page</item>
 		<item>Double page</item>
@@ -218,13 +224,6 @@
 		<item>Simplified_Chinese</item>
 		<item>Traditional_Chinese</item>
 		<item>English</item>
-	</string-array>
-
-	<string-array name="tabletInterface">
-		<item>Auto</item>
-        <item>Sidebar when space permits</item>
-        <item>Sidebar in landscape windows</item>
-        <item>Bottom navigation</item>
 	</string-array>
 
     <string-array name="top_bar_button_style">
@@ -340,13 +339,6 @@
 		<item>Standard</item>
 		<item>Compact</item>
 		<item>Cover Only</item>
-	</string-array>
-
-	<string-array name="label_vis_mode" >
-		<item>Auto</item>
-		<item>Selected</item>
-		<item>Labeled</item>
-		<item>Unlabeled</item>
 	</string-array>
 
 	<string-array name="book_info_background_blur_entries">

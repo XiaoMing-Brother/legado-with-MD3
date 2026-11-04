@@ -93,6 +93,7 @@ import io.legado.app.lib.permission.Permissions
 import io.legado.app.lib.permission.PermissionsCompat
 import io.legado.app.ui.config.backupConfig.BackupOptionSheet
 import io.legado.app.ui.config.backupConfig.RestoreOptionSheet
+import io.legado.app.ui.main.MainDrawerNavigationIcon
 import io.legado.app.ui.main.homepage.HomepageFeedActions
 import io.legado.app.ui.main.homepage.HomepageManageActions
 import io.legado.app.ui.main.homepage.HomepageModuleFeed
@@ -443,6 +444,7 @@ fun HomeScreen(
             GlassMediumFlexibleTopAppBar(
                 title = stringResource(R.string.home),
                 subtitle = currentPageSourceName,
+                navigationIcon = { MainDrawerNavigationIcon() },
                 scrollBehavior = scrollBehavior,
                 actions = {
                     TopBarActionButton(

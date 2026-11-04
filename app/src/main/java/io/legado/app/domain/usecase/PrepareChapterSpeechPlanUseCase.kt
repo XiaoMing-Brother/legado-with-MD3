@@ -1,6 +1,5 @@
 package io.legado.app.domain.usecase
 
-import io.legado.app.domain.model.AiReasoningLevel
 import io.legado.app.domain.model.readaloud.CanonicalSpeechParagraph
 import io.legado.app.domain.model.readaloud.ContentSplitPolicy
 import io.legado.app.domain.model.readaloud.SpeechAnalysisMode
@@ -17,7 +16,6 @@ import io.legado.app.help.readaloud.segment.RuleBasedSpeechSegmenter
 class PrepareChapterSpeechPlanUseCase(
     private val analyzeChapterSpeech: AnalyzeChapterSpeechUseCase,
     private val resolveLocalSpeakers: ResolveLocalSpeakersUseCase,
-    private val refineSpeechWithAi: RefineSpeechWithAiUseCase,
     private val buildSpeechPlan: BuildSpeechPlanUseCase,
 ) {
 
@@ -27,24 +25,12 @@ class PrepareChapterSpeechPlanUseCase(
         paragraphs: List<CanonicalSpeechParagraph>,
         preferredDefaultVoiceId: String? = null,
         analysisMode: SpeechAnalysisMode = SpeechAnalysisMode.Rule,
-        analysisReasoningLevel: AiReasoningLevel = AiReasoningLevel.OFF,
         useMultiSpeaker: Boolean = true,
         policy: ContentSplitPolicy,
     ): List<SpeechPlanItem> {
         if (paragraphs.isEmpty()) return emptyList()
-        val requestedMode = analysisMode
-        val ruleVersion = ruleResolverVersion(policy)
-        val resolverVersion = if (requestedMode == SpeechAnalysisMode.Rule) {
-            ruleVersion
-        } else {
-            runCatching { refineSpeechWithAi.resolverVersion(bookUrl, requestedMode, policy) }
-                .getOrDefault(ruleVersion)
-        }
-        val effectiveMode = if (isRuleResolverVersion(resolverVersion, policy)) {
-            SpeechAnalysisMode.Rule
-        } else {
-            requestedMode
-        }
+        // AI 分析已移除：分段与说话人解析一律走纯规则
+        val resolverVersion = ruleResolverVersion(policy)
         val analysis = analyzeChapterSpeech(
             bookUrl = bookUrl,
             chapterIndex = chapterIndex,
@@ -56,19 +42,7 @@ class PrepareChapterSpeechPlanUseCase(
             analysisResult = analysis,
             paragraphs = paragraphs,
         )
-        val resolved = if (effectiveMode == SpeechAnalysisMode.Rule) {
-            locallyResolved
-        } else {
-            runCatching {
-                refineSpeechWithAi(
-                    analysisResult = locallyResolved,
-                    paragraphs = paragraphs,
-                    mode = effectiveMode,
-                    reasoningLevel = analysisReasoningLevel,
-                    policy = policy,
-                )
-            }.getOrDefault(locallyResolved)
-        }
+        val resolved = locallyResolved
         return buildSpeechPlan(
             bookUrl = bookUrl,
             segments = resolved.segments,

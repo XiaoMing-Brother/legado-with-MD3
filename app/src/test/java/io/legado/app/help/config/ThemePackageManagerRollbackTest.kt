@@ -192,6 +192,35 @@ class ThemePackageManagerRollbackTest {
         assertFalse(File(coverGateway.rootDir, coverGateway.deletedAlbumIds.single()).exists())
     }
 
+    @Test
+    fun applyThemePackageKeepsStatusBarVisible() = runBlocking {
+        val settingsGateway = RecordingThemeSettingsGateway(
+            ThemeExportData(appTheme = "old", showStatusBar = false),
+        )
+        val manager = ThemePackageManager(
+            context = application,
+            coverAlbumUseCase = CoverAlbumUseCase(FakeCoverAlbumGateway(application.cacheDir)),
+            themePackageSettingsGateway = settingsGateway,
+        )
+        val legacyFile = File(application.cacheDir, "legacy-status-bar-theme.json").apply {
+            writeText(
+                GSON.toJson(
+                    ThemeExportData(
+                        appTheme = "new",
+                        showStatusBar = false,
+                    ),
+                ),
+            )
+        }
+
+        settingsGateway.failure = null
+        val result = manager.importLegacyJson(Uri.fromFile(legacyFile))
+
+        assertTrue(result.isSuccess)
+        assertEquals(1, settingsGateway.attempts.size)
+        assertEquals(true, settingsGateway.attempts.single().showStatusBar)
+    }
+
     private class FailingThemeSettingsGateway(
         initial: ThemeExportData,
         private val failure: () -> Exception = { IOException("apply failed") },
@@ -205,6 +234,22 @@ class ThemePackageManagerRollbackTest {
         override suspend fun applyAndAwait(data: ThemeExportData) {
             attempts += data
             throw failure()
+        }
+    }
+
+    private class RecordingThemeSettingsGateway(initial: ThemeExportData) :
+        ThemePackageSettingsGateway {
+        val attempts = mutableListOf<ThemeExportData>()
+        var failure: (() -> Exception)? = null
+        var current: ThemeExportData = initial
+            private set
+
+        override fun exportCurrent(): ThemeExportData = current
+
+        override suspend fun applyAndAwait(data: ThemeExportData) {
+            failure?.invoke()
+            attempts += data
+            current = data
         }
     }
 

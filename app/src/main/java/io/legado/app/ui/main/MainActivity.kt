@@ -45,7 +45,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
@@ -61,7 +60,6 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
-import androidx.window.core.layout.WindowSizeClass
 import io.legado.app.BuildConfig
 import io.legado.app.R
 import io.legado.app.base.BaseComposeActivity
@@ -102,9 +100,9 @@ import io.legado.app.ui.book.readaloud.morph.LocalReadAloudMorph
 import io.legado.app.ui.book.readaloud.morph.rememberReadAloudMorphState
 import io.legado.app.ui.book.readaloud.player.ReadAloudPlayerViewModel
 import io.legado.app.ui.main.bookshelf.BookshelfCoverPreloader
+import io.legado.app.feature.splash.CalligraphySplashOverlay
 import io.legado.app.ui.theme.LocalAppUiConfiguration
 import io.legado.app.ui.welcome.WelcomeActivity
-import io.legado.app.ui.widget.components.navigation.shouldUseRail
 import io.legado.app.ui.widget.components.privacy.PrivateAppStartGate
 import io.legado.app.utils.LogUtils
 import io.legado.app.utils.eventBus.FlowEventBus
@@ -124,6 +122,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicBoolean
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import kotlin.coroutines.resume
@@ -133,6 +132,8 @@ import kotlin.coroutines.suspendCoroutine
  * 主界面
  */
 open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
+
+    private val calligraphySplashActive = AtomicBoolean(true)
 
     private data class RouteEvent(
         val route: NavKey,
@@ -421,7 +422,9 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        installSplashScreen().apply {
+            setKeepOnScreenCondition { calligraphySplashActive.get() }
+        }
         shouldApplyDefaultToRead = savedInstanceState == null
         restoredReadBookRoute = savedInstanceState?.restoreReadBookRoute()
             ?: navRouteTracker.lastReadBookRoute()
@@ -532,7 +535,6 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
     override fun Content() {
         val configuration = LocalAppUiConfiguration.current
         val predictiveBackEnabled by rememberUpdatedState(configuration.appShell.predictiveBackEnabled)
-        val tabletInterface = configuration.appShell.tabletInterface
         val defaultToReadFlow = remember(otherSettingsGateway) {
             otherSettingsGateway.settings
                 .map { it.defaultToRead }
@@ -546,29 +548,9 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
         )
 
         // 判据来自当前窗口，旋转 / 折叠展开 / 自由窗口改尺寸都会重组，见 AppAdaptiveNavigation。
-        val baseAdaptiveEnvironment = currentMainAdaptiveLayoutEnvironment(
-            configuration.appShell.multiPaneMode, 0.dp,
+        val adaptiveEnvironment = currentMainAdaptiveLayoutEnvironment(
+            configuration.appShell.multiPaneMode,
         )
-        val navigationRegion = baseAdaptiveEnvironment.singlePaneBounds()
-        val requestedUseRail = shouldUseRail(
-            tabletInterface,
-            WindowSizeClass(navigationRegion.width, navigationRegion.height),
-            IntSize(
-                baseAdaptiveEnvironment.windowSize.width.value.toInt(),
-                baseAdaptiveEnvironment.windowSize.height.value.toInt()
-            ),
-        )
-        var navigationRailWidth by remember(
-            requestedUseRail,
-            configuration.appShell.composeEngine,
-            configuration.appShell.navExtended,
-        ) {
-            mutableStateOf(if (!requestedUseRail) 0.dp else if (configuration.appShell.navExtended) 220.dp else 96.dp)
-        }
-        val useRail =
-            requestedUseRail && navigationRegion.width >= MainPaneMinWidth + navigationRailWidth.value
-        val adaptiveEnvironment =
-            baseAdaptiveEnvironment.copy(navigationRailWidth = if (useRail) navigationRailWidth else 0.dp)
         val currentAdaptiveEnvironment by rememberUpdatedState(adaptiveEnvironment)
 
         val startRoutes = remember(defaultToRead) {
@@ -756,17 +738,10 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
         val capsuleAnchorPreview = if (playerVisible && pageShellShowCapsule) {
             PlaybackCapsuleState(source = playerSource)
         } else null
-        // 两种胶囊互斥：主页悬浮底栏用圆形胶囊，其余页面用全局可拖拽胶囊。
-        val currentRoute = backStack.lastOrNull()
-        val onMainRoute = currentRoute is MainRouteHome
-        val useFloatingBottomBar = LocalAppUiConfiguration.current.appShell.useFloatingBottomBar
-        val useHomeCapsule = shouldUseHomePlaybackCapsule(
-            onMainRoute, configuration.appShell.showBottomView, useFloatingBottomBar, useRail,
-        )
+        // 主页不再有底栏胶囊，朗读胶囊统一走全局可拖拽锚点。
         SideEffect {
             readAloudMorph.expectCapsuleAnchors(
-                if (!pageShellShowCapsule) null
-                else if (useHomeCapsule) CapsuleAnchorKind.HomeBar else CapsuleAnchorKind.Global,
+                if (!pageShellShowCapsule) null else CapsuleAnchorKind.Global,
             )
         }
 
@@ -818,11 +793,13 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
                     MainNavigator.onBackStackChanged()
                 }
         }
+        val mainDrawerHost = remember { MainDrawerHostState() }
         SharedTransitionLayout {
             // 启动验证做成单独的 screen：门槛未过时完全不组合应用界面，
             // 因此验证页背后看不到书架/阅读界面，也没有可交互的入口
             PrivateAppStartGate {
                 Box(modifier = Modifier.fillMaxSize()) {
+                  CompositionLocalProvider(LocalMainDrawerHost provides mainDrawerHost) {
                     Box(
                         Modifier
                             .fillMaxSize()
@@ -938,15 +915,20 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
                                     animationSpec = tween(easing = FastOutSlowInEasing)
                                 ) + fadeOut(animationSpec = tween()))
                             },
-                            onBack = { MainNavigator.navigateBack(this@MainActivity, backStack) },
+                            onBack = {
+                                // 抽屉展开时返回只关抽屉，不能把主页从栈里弹掉。
+                                if (mainDrawerHost.isOpen) {
+                                    mainDrawerHost.requestClose()
+                                } else {
+                                    MainNavigator.navigateBack(this@MainActivity, backStack)
+                                }
+                            },
                             entryProvider = mainEntryProvider(
                                 backStack = backStack,
                                 configuration = configuration,
                                 showMangaUi = mangaSettings.showMangaUi,
-                                useRail = useRail,
                                 sharedTransitionScope = this@SharedTransitionLayout,
                                 panesEnabled = listDetailEnabled,
-                                onNavigationRailWidthChanged = { navigationRailWidth = it },
                                 navigateToRoute = { route ->
                                     if (route is MainRouteAudioPlay) {
                                         pageShellCapsuleScope.launch {
@@ -973,23 +955,18 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
                                         navRouteTracker
                                     )
                                 },
-                                readAloudMorph = readAloudMorph.takeIf { useHomeCapsule },
-                                homePlaybackCapsuleEnabled = useHomeCapsule,
-                                capsuleAnchorPreview = capsuleAnchorPreview,
                             )
                         )
                     }
                     // 全局胶囊与导航容器并列，始终画在阅读等 Nav3 叠层之上。
-                    // 主页开启悬浮底栏时仍使用主页自己的圆形胶囊。
                     CompositionLocalProvider(
                         // 收起完成后不再用残留进度给可点击胶囊加透明层。
                         LocalReadAloudMorph provides readAloudMorph.takeIf {
-                            !useHomeCapsule && (playerVisible || readAloudMorph.progress.isRunning)
+                            playerVisible || readAloudMorph.progress.isRunning
                         }
                     ) {
                         ReadAloudShellHost(
                             showCapsule = pageShellShowCapsule,
-                            hidden = useHomeCapsule,
                             anchorPreview = capsuleAnchorPreview,
                             onCapsulePositionChanged = { x, y ->
                                 pageShellCapsuleScope.launch {
@@ -1069,19 +1046,29 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
                             )
                         }
                     }
+                  }
                 }
                 // 关闭预见性返回时由宿主在导航层之前接管返回：手势不跟手预览，
                 // 松手后走普通出栈，popTransitionSpec 的返回动画照常播放。
+                // 抽屉展开时优先关抽屉：宿主的处理器注册晚于 NavDisplay 与抽屉内部，
+                // 不在这里分流的话返回会直接出栈甚至退出应用。
                 BackHandler(
-                    enabled = shouldHandleActivityBack(
+                    enabled = mainDrawerHost.isOpen || shouldHandleActivityBack(
                         predictiveBackEnabled = configuration.appShell.predictiveBackEnabled,
                         playerPresent = playerVisible || morphPresent,
                     )
                 ) {
-                    MainNavigator.navigateBack(this@MainActivity, backStack)
+                    if (mainDrawerHost.isOpen) {
+                        mainDrawerHost.requestClose()
+                    } else {
+                        MainNavigator.navigateBack(this@MainActivity, backStack)
+                    }
                 }
             }
         }
+        CalligraphySplashOverlay(
+            onFinished = { calligraphySplashActive.set(false) },
+        )
         TextSheetHost()
     }
 

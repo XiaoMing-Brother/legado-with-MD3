@@ -41,7 +41,6 @@ internal data class MainAdaptiveLayoutEnvironment(
     val windowSize: DpSize,
     val hinges: ImmutableList<HingeInfo>,
     val mode: MultiPaneMode,
-    val navigationRailWidth: Dp,
 )
 
 @Stable
@@ -70,7 +69,6 @@ internal fun mainContentBounds(
 @Composable
 internal fun currentMainAdaptiveLayoutEnvironment(
     multiPaneMode: String,
-    navigationRailWidth: Dp,
 ): MainAdaptiveLayoutEnvironment {
     val localDensity = LocalDensity.current
     val density = localDensity.density
@@ -98,7 +96,6 @@ internal fun currentMainAdaptiveLayoutEnvironment(
             )
         }.toImmutableList(),
         mode = MultiPaneMode.parse(multiPaneMode),
-        navigationRailWidth = navigationRailWidth,
     )
 }
 
@@ -151,7 +148,7 @@ internal fun MainAdaptiveLayoutEnvironment.safeRegions(): List<Rect> {
 internal fun MainAdaptiveLayoutEnvironment.paneLayout(isContainer: Boolean): MainPaneLayout? {
     if (mode == MultiPaneMode.Off) return null
     if (mode == MultiPaneMode.Landscape && windowSize.width <= windowSize.height) return null
-    val listMinWidth = MainPaneMinWidth + if (isContainer) navigationRailWidth.value else 0f
+    val listMinWidth = MainPaneMinWidth
     val regions = safeRegions()
     // A fold is a natural split, even when the entire window is below a canonical breakpoint.
     if (regions.size > 1) {

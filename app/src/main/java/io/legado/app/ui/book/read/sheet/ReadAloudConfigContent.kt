@@ -21,7 +21,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.legado.app.R
 import io.legado.app.constant.ReadAloudBgMode
-import io.legado.app.domain.model.AiReasoningLevel
 import io.legado.app.domain.model.readaloud.ReadAloudContentSplitSetting
 import io.legado.app.domain.model.readaloud.ReadAloudSplitSymbol
 import io.legado.app.domain.model.settings.ReadAloudContentSplitMode
@@ -338,44 +337,6 @@ fun ReadAloudConfigContent(
 
                     SectionTitle(stringResource(R.string.read_aloud_section_analysis))
                     TinyDropdownSettingItem(
-                        title = stringResource(R.string.speech_analysis_mode),
-                        selectedValue = state.speechAnalysisMode,
-                        displayEntries = arrayOf(
-                            stringResource(R.string.speech_analysis_rule),
-                            stringResource(R.string.speech_analysis_rule_ai),
-                            stringResource(R.string.speech_analysis_ai),
-                        ),
-                        entryValues = arrayOf("rule", "rule_with_ai", "ai_understanding"),
-                        description = when (state.speechAnalysisMode) {
-                            "rule_with_ai" -> stringResource(R.string.speech_analysis_rule_ai_summary)
-                            "ai_understanding" -> stringResource(R.string.speech_analysis_ai_summary)
-                            else -> stringResource(R.string.speech_analysis_rule_summary)
-                        },
-                        onValueChange = { onIntent(ReadBookIntent.SetSpeechAnalysisMode(it)) },
-                    )
-                    TinyDropdownSettingItem(
-                        title = stringResource(R.string.speech_analysis_reasoning_level),
-                        selectedValue = state.speechAnalysisReasoningLevel,
-                        displayEntries = arrayOf(
-                            stringResource(R.string.ai_thinking_off),
-                            stringResource(R.string.ai_thinking_auto),
-                            stringResource(R.string.ai_reasoning_level_low),
-                            stringResource(R.string.ai_reasoning_level_medium),
-                            stringResource(R.string.ai_reasoning_level_high),
-                            stringResource(R.string.ai_reasoning_level_xhigh),
-                            stringResource(R.string.ai_reasoning_level_max),
-                        ),
-                        entryValues = AiReasoningLevel.entries
-                            .map { it.storageValue }
-                            .toTypedArray(),
-                        description = stringResource(
-                            R.string.speech_analysis_reasoning_level_summary
-                        ),
-                        onValueChange = {
-                            onIntent(ReadBookIntent.SetSpeechAnalysisReasoningLevel(it))
-                        },
-                    )
-                    TinyDropdownSettingItem(
                         title = stringResource(R.string.read_aloud_content_split_mode),
                         selectedValue = state.readAloudContentSplitMode,
                         displayEntries = arrayOf(
@@ -503,12 +464,6 @@ fun ReadAloudConfigContent(
                             onClick = {
                                 onIntent(ReadBookIntent.ShowSheet(ReadBookSheet.BgmSceneTable))
                             },
-                        )
-                        // 场景识别只依赖「背景音乐分配」这个副开关，与开不开多角色朗读无关
-                        TinyClickableSettingItem(
-                            title = stringResource(R.string.ai_scene_assign_entry),
-                            description = stringResource(R.string.ai_cast_scene_only_hint),
-                            onClick = { onIntent(ReadBookIntent.OpenAiSceneDialog) },
                         )
                     }
                 }

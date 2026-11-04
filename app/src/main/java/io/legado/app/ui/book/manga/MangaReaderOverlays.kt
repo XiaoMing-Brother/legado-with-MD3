@@ -46,7 +46,6 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
@@ -170,7 +169,6 @@ internal fun BoxScope.MangaReaderMenu(
     backdrop: Backdrop? = null,
     hazeState: HazeState? = null,
     menuSeedColor: Color? = null,
-    onOpenTranslation: () -> Unit = {},
 ) {
     val readingPageDescription = stringResource(R.string.manga_reader_page_semantics)
     val isDark = LegadoTheme.isDark
@@ -186,7 +184,7 @@ internal fun BoxScope.MangaReaderMenu(
         }
     }
     ProvideThemeOverride(menuTheme) {
-        MangaReaderMenuContent(state, onIntent, backdrop, hazeState, readingPageDescription, onOpenTranslation)
+        MangaReaderMenuContent(state, onIntent, backdrop, hazeState, readingPageDescription )
     }
 }
 
@@ -197,7 +195,6 @@ private fun BoxScope.MangaReaderMenuContent(
     backdrop: Backdrop?,
     hazeState: HazeState?,
     readingPageDescription: String,
-    onOpenTranslation: () -> Unit,
 ) {
     ReaderMenuDismissLayer(
         visible = state.menuVisible,
@@ -211,7 +208,7 @@ private fun BoxScope.MangaReaderMenuContent(
     ReaderMenuAnimatedBottom(
         visible = state.menuVisible,
     ) {
-        MangaMenuBottomBar(state, onIntent, backdrop, readingPageDescription, hazeState, onOpenTranslation)
+        MangaMenuBottomBar(state, onIntent, backdrop, readingPageDescription, hazeState )
     }
 }
 
@@ -439,7 +436,6 @@ private fun MangaMenuBottomBar(
     backdrop: Backdrop?,
     readingPageDescription: String,
     hazeState: HazeState? = null,
-    onOpenTranslation: () -> Unit = {},
 ) {
     // 悬浮底栏玻璃化表面；贴边底栏只玻璃化操作控件，和文章阅读菜单保持一致。
     val glass = state.settings.menuBottomBarLiquidGlass && readerMenuLiquidGlassAvailable(backdrop)
@@ -639,11 +635,6 @@ private fun MangaMenuBottomBar(
                                     },
                                 )
                                 )
-                                add(ReaderMenuAction(
-                                    Icons.Filled.Translate,
-                                    stringResource(R.string.manga_translation_title),
-                                    onClick = onOpenTranslation,
-                                ))
                                 add(
                                 ReaderMenuAction(
                                     Icons.Filled.Tune,

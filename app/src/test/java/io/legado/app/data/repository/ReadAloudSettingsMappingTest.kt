@@ -1,7 +1,6 @@
 package io.legado.app.data.repository
 
 import io.legado.app.constant.PreferKey
-import io.legado.app.domain.model.AiReasoningLevel
 import io.legado.app.domain.model.settings.ReadAloudContentSplitMode
 import io.legado.app.domain.model.settings.ReadAloudSettings
 import io.legado.app.domain.model.settings.ReadAloudTimerMode
@@ -71,12 +70,6 @@ class ReadAloudSettingsMappingTest {
         assertEquals(false, settings.finishCurrentChapterAfterTimer)
     }
 
-    @Test
-    fun `朗读分析推理级别默认关闭`() {
-        val settings = emptyMap<String, Any?>().toTestPreferences().toReadAloudSettings()
-
-        assertEquals(AiReasoningLevel.OFF.storageValue, settings.speechAnalysisReasoningLevel)
-    }
 }
 
 private const val CAPSULE_OFFSET_X = "read_aloud_capsule_offset_x"
@@ -93,7 +86,6 @@ private fun readAloudMappingSamples(): List<ReadAloudSettings> {
         ttsTimer = 33,
         ttsSpeechRate = 44,
         speechAnalysisMode = "ai",
-        speechAnalysisReasoningLevel = "medium",
         defaultInterface = "player",
         contentSelectSpeakMode = 55,
         audioPreDownloadNum = 66,
@@ -157,7 +149,6 @@ private fun ReadAloudSettings.expectedPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.ttsFollowSys to ttsFollowSys,
     PreferKey.ttsSpeechRate to ttsSpeechRate,
     PreferKey.speechAnalysisMode to speechAnalysisMode,
-    PreferKey.speechAnalysisReasoningLevel to speechAnalysisReasoningLevel,
     PreferKey.useMultiSpeaker to useMultiSpeaker,
     PreferKey.multiRoleCast to multiRoleCast,
     PreferKey.bgmAssign to bgmAssign,

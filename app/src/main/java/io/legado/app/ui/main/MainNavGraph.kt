@@ -55,8 +55,6 @@ import io.legado.app.service.AudioPlayService
 import io.legado.app.ui.about.AboutEffect
 import io.legado.app.ui.about.AboutScreen
 import io.legado.app.ui.about.AboutViewModel
-import io.legado.app.ui.ai.chat.AiChatRouteScreen
-import io.legado.app.ui.ai.chat.AiReadingContext
 import io.legado.app.ui.book.audio.AudioPlayEffect
 import io.legado.app.ui.book.audio.AudioPlayIntent
 import io.legado.app.ui.book.audio.AudioPlayScreenContent
@@ -141,14 +139,6 @@ import io.legado.app.ui.browser.WebViewModel
 import io.legado.app.ui.browser.WebViewRouteScreen
 import io.legado.app.ui.config.ConfigNavScreen
 import io.legado.app.feature.settings.manga.MangaConfigRouteScreen
-import io.legado.app.feature.manga.translation.MangaTranslationGlobalSettingsContent
-import io.legado.app.feature.manga.translation.MangaTranslationIntent
-import io.legado.app.feature.manga.translation.MangaTranslationViewModel
-import io.legado.app.ui.config.ai.AiConfigRouteScreen
-import io.legado.app.ui.config.ai.AiModelEditRouteScreen
-import io.legado.app.ui.config.ai.AiProviderEditRouteScreen
-import io.legado.app.ui.config.ai.prompt.AiPromptConfigRouteScreen
-import io.legado.app.ui.config.ai.summary.AiSummaryConfigRouteScreen
 import io.legado.app.ui.config.backupConfig.BackupConfigRouteScreen
 import io.legado.app.ui.config.coverConfig.CoverAlbumManageRouteScreen
 import io.legado.app.ui.config.coverConfig.CoverConfigRouteScreen
@@ -278,21 +268,10 @@ fun MainActivity.mainEntryProvider(
     backStack: MutableList<NavKey>,
     configuration: AppUiConfiguration,
     showMangaUi: Boolean,
-    useRail: Boolean,
     sharedTransitionScope: SharedTransitionScope,
     navigateToRoute: (NavKey) -> Unit,
     panesEnabled: Boolean,
-    onNavigationRailWidthChanged: (androidx.compose.ui.unit.Dp) -> Unit,
     onNavigateBack: () -> Unit,
-    /**
-     * 「胶囊 ↔ 听书播放页」的形变状态。
-     *
-     * 主界面要把听书胶囊排在悬浮底栏同一行里，需要把胶囊的锚点上报给同一个进度源，
-     * 所以这里透传（其余目的地不用）。
-     */
-    readAloudMorph: ReadAloudMorphState?,
-    homePlaybackCapsuleEnabled: Boolean,
-    capsuleAnchorPreview: io.legado.app.domain.model.PlaybackCapsuleState?,
 ) = mainPaneEntryProvider(backStack, panesEnabled, navRouteTracker, navigateToRoute) {
     entry<MainRouteToc> { route ->
         // VM 提到 entry 里，是为了让「规则列表选好的规则」能从这里回灌（SaveTocRegex）。
@@ -514,19 +493,11 @@ fun MainActivity.mainEntryProvider(
             mainUiState = mainUiState,
             onIntent = mainViewModel::onIntent,
             effects = mainViewModel.effects,
-            useRail = useRail,
-            readAloudMorph = readAloudMorph,
-            homePlaybackCapsuleEnabled = homePlaybackCapsuleEnabled,
-            capsuleAnchorPreview = capsuleAnchorPreview,
-            onNavigationRailWidthChanged = onNavigationRailWidthChanged,
             onMainDestinationChanged = {
                 if (panesEnabled) onNavigateToRoute(MainRouteHome)
             },
             onOpenSettings = {
                 onNavigateToRoute(MainRouteSettings)
-            },
-            onNavigateToChat = {
-                onNavigateToRoute(MainRouteAiChat())
             },
             onNavigateToSearch = { key ->
                 onNavigateToRoute(
@@ -676,13 +647,12 @@ fun MainActivity.mainEntryProvider(
             onBackClick = { onNavigateBack() },
             onNavigateToOther = { pushRoute(MainRouteSettingsOther) },
             onNavigateToRead = { pushRoute(MainRouteSettingsRead) },
-            onNavigateToManga = { pushRoute(MainRouteSettingsManga()) },
+            onNavigateToManga = { pushRoute(MainRouteSettingsManga) },
             // 朗读规则 hub：入口从「我的」移到设置，页面标题与这里统一叫「朗读设置」
             onNavigateToReadAloud = { pushRoute(MainRouteMultiRoleRule) },
             onNavigateToCover = { pushRoute(MainRouteSettingsCover) },
             onNavigateToTheme = { pushRoute(MainRouteSettingsTheme) },
             onNavigateToBackup = { pushRoute(MainRouteSettingsBackup) },
-            onNavigateToAi = { pushRoute(MainRouteSettingsAi) },
             onNavigateToDownloadCache = { pushRoute(MainRouteSettingsDownloadCache) },
             onNavigateToTranslation = { pushRoute(MainRouteSettingsTranslation) },
             onNavigateToLab = { pushRoute(MainRouteSettingsLabConfig) },
@@ -700,13 +670,7 @@ fun MainActivity.mainEntryProvider(
     }
 
     entry<MainRouteSettingsManga> { route ->
-        val translationViewModel: MangaTranslationViewModel = koinViewModel(key = "manga-settings-translation")
-        val translation by translationViewModel.uiState.collectAsStateWithLifecycle()
-        LaunchedEffect(translationViewModel) { translationViewModel.onIntent(MangaTranslationIntent.BindGlobal) }
         MangaConfigRouteScreen(onBackClick = { onNavigateBack() },
-            onOpenAiSettings = { pushRoute(MainRouteSettingsAi) },
-            translationContent = { MangaTranslationGlobalSettingsContent(translation, translationViewModel::onIntent) },
-            startAtTranslation = route.openTranslation, translationReady = translation.loaded,
             onOpenCacheSettings = { pushRoute(MainRouteSettingsDownloadCache) })
     }
 
@@ -735,77 +699,6 @@ fun MainActivity.mainEntryProvider(
         BackupConfigRouteScreen(onBackClick = { onNavigateBack() })
     }
 
-    entry<MainRouteSettingsAi> {
-        AiConfigRouteScreen(
-            onBackClick = { onNavigateBack() },
-            onNavigateToProviderEdit = { providerId ->
-                pushRoute(MainRouteSettingsAiProviderEdit(providerId = providerId))
-            },
-            onNavigateToModelEdit = { providerId, modelProfileId ->
-                pushRoute(
-                    MainRouteSettingsAiModelEdit(
-                        providerId = providerId,
-                        modelProfileId = modelProfileId
-                    )
-                )
-            },
-            onNavigateToTranslation = { pushRoute(MainRouteSettingsTranslation) },
-            onNavigateToAiSummary = { pushRoute(MainRouteSettingsAiSummary) },
-            onNavigateToAiPrompt = { pushRoute(MainRouteSettingsAiPrompt) }
-        )
-    }
-
-    entry<MainRouteSettingsAiSummary> {
-        AiSummaryConfigRouteScreen(onBackClick = { onNavigateBack() })
-    }
-
-    entry<MainRouteSettingsAiPrompt> {
-        AiPromptConfigRouteScreen(onBackClick = { onNavigateBack() })
-    }
-
-    entry<MainRouteSettingsAiProviderEdit> { route ->
-        AiProviderEditRouteScreen(
-            providerId = route.providerId,
-            onBackClick = { onNavigateBack() }
-        )
-    }
-
-    entry<MainRouteAiChat> { route ->
-        val readingContext = remember(route) {
-            route.bookUrl?.takeIf { it.isNotBlank() }?.let { bookUrl ->
-                AiReadingContext(
-                    bookUrl = bookUrl,
-                    bookName = route.bookName.orEmpty(),
-                    bookAuthor = route.bookAuthor.orEmpty(),
-                    chapterIndex = route.chapterIndex,
-                    chapterTitle = route.chapterTitle.orEmpty()
-                )
-            }
-        }
-        AiChatRouteScreen(
-            readingContext = readingContext,
-            onBackClick = { onNavigateBack() },
-            onOpenBookInfo = { book ->
-                onNavigateToRoute(
-                    MainRouteBookInfo(
-                        name = book.name,
-                        author = book.author,
-                        bookUrl = book.bookUrl,
-                        origin = book.origin,
-                        coverPath = book.coverPath
-                    )
-                )
-            }
-        )
-    }
-
-    entry<MainRouteSettingsAiModelEdit> { route ->
-        AiModelEditRouteScreen(
-            providerId = route.providerId,
-            modelProfileId = route.modelProfileId,
-            onBackClick = { onNavigateBack() }
-        )
-    }
 
     entry<MainRouteSettingsDownloadCache> {
         DownloadCacheConfigRouteScreen(
@@ -817,7 +710,6 @@ fun MainActivity.mainEntryProvider(
     entry<MainRouteSettingsTranslation> {
         TranslationConfigRouteScreen(
             onBackClick = { onNavigateBack() },
-            onNavigateToAi = { pushRoute(MainRouteSettingsAi) }
         )
     }
 
@@ -1049,17 +941,6 @@ fun MainActivity.mainEntryProvider(
                 onOpenVoiceCasting = { bookUrl ->
                     onNavigateToRoute(MainRouteBookVoiceCasting(bookUrl))
                 },
-                onOpenAiChat = { bookUrl, bookName, bookAuthor, chapterIndex, chapterTitle ->
-                    onNavigateToRoute(
-                        MainRouteAiChat(
-                            bookUrl = bookUrl,
-                            bookName = bookName,
-                            bookAuthor = bookAuthor,
-                            chapterIndex = chapterIndex,
-                            chapterTitle = chapterTitle,
-                        )
-                    )
-                },
                 onOpenReadAloudSubPage = { page ->
                     onNavigateToRoute(page.toMainRoute())
                 },
@@ -1171,7 +1052,6 @@ fun MainActivity.mainEntryProvider(
             chapterChanged = route.chapterChanged,
             openRequestId = route.openRequestId,
             viewModel = mangaViewModel,
-            onOpenMangaTranslationSettings = { pushRoute(MainRouteSettingsManga(openTranslation = true)) },
             onOpenToc = { bookUrl, page -> onNavigateToRoute(MainRouteToc(bookUrl, page)) },
             restoreSystemBarsVisible = configuration.appShell.showStatusBar,
             sharedTransitionScope = sharedTransitionScope.takeIf {

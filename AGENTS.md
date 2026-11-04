@@ -189,6 +189,21 @@ KMP 任务名在模块实际创建后才存在；不要假装运行尚未定义�
   APK 附件名必须带 `core`/`full` 产品标记，应用内更新按 `AppProduct` 只挑本产品那一份；
   R8 mapping 按产品分别上传。不再为减体积替换推理栈或引入扩展包路线。详见
   `docs/dev/manga-engine-extension-plan.md` §5.1。
+- **打包/发布前先确认签名**（清单见 `~/.android/legado-signing/README.md`）：本机只有
+  `legado-md3`（`~/.android/legado-md3-signing/`，CN=legado-md3，D9:25:55…），只能签 coexist/自测包；
+  线上 Release 由 CI 的 `secrets.SIGNING_KEY` 签名（CN=kudomaga，DD:C9:EB…），本机无私钥 → 要覆盖已装
+  正式版必须走 CI，不要在本地用 legado-md3 出“正式包”。`.github/workflows/legado.jks` 是 upstream
+  已公开的 `legado` key（93:A2:84…），**禁止用于发布**。
+- **签名与安装/打包（Agent 必问）**：用户要求**模拟器安装**、**USB 安装到真机**、**产出 APK/AAB**
+  （如 `assemble*`、`install*`）或说**「打包」**时，若未明确签名与安装场景，**必须先主动询问**使用哪一种
+  密钥/目标，不得静默默认。简要选项：
+  - **debug**：`debug.keystore`，日常开发、`installDebug`、模拟器/USB 调试安装。
+  - **legado-md3**：本机 Release/coexist 自测（`gradle.properties` 的 `RELEASE_STORE_FILE`）；无法覆盖
+    kudomaga 签的已装正式版。
+  - **kudomaga**：GitHub Actions 正式发版（`core` + `full`）；本机无私钥，需走 CI。
+  - **lyc486 公开 key**：仅兼容 `io.legado.app` 等老包排查，**禁止用于发布**。
+  同时确认 **`core` / `full` / `coexist`** 与 **debug / release** 变体；完整指纹与决策表见
+  `~/.android/legado-signing/README.md`。
 
 ## 交付说明
 

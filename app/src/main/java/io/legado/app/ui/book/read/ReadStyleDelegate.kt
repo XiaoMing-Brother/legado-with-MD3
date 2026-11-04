@@ -275,7 +275,7 @@ class ReadStyleDelegate(
                 )
                 return@launch
             }
-            readStyleGateway.setReadThemeBackgroundImage(path)
+            readStyleGateway.setReadThemeBackgroundImage(path, useForNight = theme.isNightBase)
             emitConfigUpdate(ConfigUpdateAction.UpdateBackground)
         }
     }

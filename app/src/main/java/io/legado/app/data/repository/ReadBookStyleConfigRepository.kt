@@ -14,7 +14,11 @@ import io.legado.app.domain.model.settings.READ_STYLE_PRESET_COUNT
 import io.legado.app.domain.model.settings.ReadStyleItem
 import io.legado.app.domain.model.settings.ReadStyleState
 import io.legado.app.domain.model.settings.ReadBackgroundPalette
+import io.legado.app.domain.model.settings.ReadThemeNightPalette
 import io.legado.app.domain.model.settings.ReadThemePreset
+import io.legado.app.domain.model.settings.deriveNightTextPalette
+import io.legado.app.domain.model.settings.isDarkBackgroundColor
+import io.legado.app.domain.model.settings.parseArgbColor
 import io.legado.app.domain.model.settings.toArgbHex
 import io.legado.app.domain.model.settings.themeMipmapUrlCandidates
 import io.legado.app.domain.model.settings.toStyle
@@ -109,9 +113,9 @@ class ReadBookStyleConfigRepository(
     /**
      * 应用内置主题。
      *
-     * 三种阅读模式都写同一套配色：主题在源数据里只有一份调色板，`dark` 字段全部为 false
-     * 且不可信（见 [ReadThemePreset.isDark]），没法拆成日/夜两份，只有全写才能保证「选什么
-     * 就是什么」。代价是选完主题后日/夜切换不再改变阅读配色——用户切回自己的样式即恢复。
+     * 白天写主题原色；夜间写 [ReadThemeStyle.nightBackground] 等派生值：主题底色够深就直接复用，
+     * 浅色主题按色相压暗成深底、正文/强调色反推成浅色。这样「选完主题再切夜间」仍然会变黑，
+     * 而不是把白天那张浅色纸原样搬进夜间。
      *
      * 底色、正文/强调色、状态栏图标按样式独立（[mutateCurrentStyle]）；页眉页脚色与边距属于
      * 排版项（[mutateEffective]），共享排版开着时改的是共享那份——与 [ReadStyleIntKey]
@@ -128,19 +132,19 @@ class ReadBookStyleConfigRepository(
                 // 样式名跟随所选主题：背景与文字弹层标题、样式卡片标签都读这个字段。
                 name = theme.name,
                 bgStr = style.background,
-                bgStrNight = style.background,
+                bgStrNight = style.nightBackground,
                 bgStrEInk = style.background,
                 bgType = READ_THEME_BG_TYPE,
                 bgTypeNight = READ_THEME_BG_TYPE,
                 bgTypeEInk = READ_THEME_BG_TYPE,
                 textColor = style.content,
-                textColorNight = style.content,
+                textColorNight = style.nightContent,
                 textColorEInk = style.content,
                 textAccentColor = style.control,
-                textAccentColorNight = style.control,
+                textAccentColorNight = style.nightControl,
                 textAccentColorEInk = style.control,
                 darkStatusIcon = style.darkStatusIcon,
-                darkStatusIconNight = style.darkStatusIcon,
+                darkStatusIconNight = style.darkStatusIconNight,
                 darkStatusIconEInk = style.darkStatusIcon,
             )
         }
@@ -152,9 +156,9 @@ class ReadBookStyleConfigRepository(
                 titleColor = 0,
                 titleColorNight = 0,
                 tipHeaderColor = style.secondary.toColorIntOrDefault(),
-                tipHeaderColorNight = style.secondary.toColorIntOrDefault(),
+                tipHeaderColorNight = style.nightSecondary.toColorIntOrDefault(),
                 tipFooterColor = style.secondary.toColorIntOrDefault(),
-                tipFooterColorNight = style.secondary.toColorIntOrDefault(),
+                tipFooterColorNight = style.nightSecondary.toColorIntOrDefault(),
                 paddingTop = style.paddingTop,
                 paddingBottom = style.paddingBottom,
                 paddingLeft = style.paddingHorizontal,
@@ -387,16 +391,32 @@ class ReadBookStyleConfigRepository(
         save()
     }
 
-    override fun setReadThemeBackgroundImage(path: String) {
+    /**
+     * 主题自带背景图落盘后写入排版配置。
+     *
+     * [useForNight] 来自 [ReadThemePreset.isNightBase]：主题底色本身够深时三种模式都用这张图；
+     * 浅色主题只写白天与墨水屏，夜间保留 [applyReadTheme] 写好的派生深色底——否则一张白天的亮图
+     * 会原样出现在夜间，等于没有黑夜模式。与 [setCurrentBackgroundImage] 的区别在写入范围。
+     */
+    override fun setReadThemeBackgroundImage(path: String, useForNight: Boolean) {
         mutateCurrentStyle {
-            it.copy(
-                bgType = READ_THEME_BG_TYPE_IMAGE,
-                bgStr = path,
-                bgTypeNight = READ_THEME_BG_TYPE_IMAGE,
-                bgStrNight = path,
-                bgTypeEInk = READ_THEME_BG_TYPE_IMAGE,
-                bgStrEInk = path,
-            )
+            if (useForNight) {
+                it.copy(
+                    bgType = READ_THEME_BG_TYPE_IMAGE,
+                    bgStr = path,
+                    bgTypeNight = READ_THEME_BG_TYPE_IMAGE,
+                    bgStrNight = path,
+                    bgTypeEInk = READ_THEME_BG_TYPE_IMAGE,
+                    bgStrEInk = path,
+                )
+            } else {
+                it.copy(
+                    bgType = READ_THEME_BG_TYPE_IMAGE,
+                    bgStr = path,
+                    bgTypeEInk = READ_THEME_BG_TYPE_IMAGE,
+                    bgStrEInk = path,
+                )
+            }
         }
         save()
     }
@@ -407,37 +427,59 @@ class ReadBookStyleConfigRepository(
      * [mutateCurrentStyle] 而不是 `mutateEffective`：这是「给这张图配一套色」，属于样式自己的
      * 背景相关项；共享排版开着时不覆盖共享那份（共享排版不拥有背景图）。
      *
-     * 三种模式写同一套：正文/强调色在 Config 里按模式分开存，而用户是照着**当前这张图**挑的色。
-     * 只写当前模式会让「切到夜间还是旧配色」，与 [applyReadTheme] 全写的理由一致。
+     * 白天与墨水屏写图片取色；夜间按夜间槽位自己的底色重算：主题派生/用户配置的夜间底通常是
+     * 纯色深底（见 [applyReadTheme]），把白天亮图上的深色文字原样压上去会糊成一片。夜间也用图时
+     * 保持三种模式同一套——那张图就是取色的对象。
      *
      * 页眉页脚色与 [applyReadTheme] 一样走 [mutateEffective]：这两项在 ReadBookConfig 里是
      * 「生效项」，落点必须与 [ReadStyleColorKey.TipHeader] 保持一致，否则共享排版开着时改的是
      * 另一份。状态栏图标（`darkStatusIcon*`）按样式走 [mutateCurrentStyle]。
      */
     override fun applyReadBackgroundPalette(palette: ReadBackgroundPalette) {
+        val night = configStore.configAt(ReadBookConfig.styleSelect).nightTextPaletteFor(palette)
+        val nightContent = night?.contentArgb ?: palette.contentArgb
+        val nightSecondary = night?.secondaryArgb ?: palette.secondaryArgb
+        val nightControl = night?.controlArgb ?: palette.controlArgb
+        val nightStatusIcon = night?.backgroundArgb
+            ?.let { !isDarkBackgroundColor(it.toArgbHex()) }
+            ?: palette.darkStatusIcon
         mutateCurrentStyle { config ->
             config
                 .withCurTextColor(palette.contentArgb)
                 .withCurTextAccentColor(palette.controlArgb)
                 .copy(
-                    textColorNight = palette.contentArgb.toArgbHex(),
+                    textColorNight = nightContent.toArgbHex(),
                     textColorEInk = palette.contentArgb.toArgbHex(),
-                    textAccentColorNight = palette.controlArgb.toArgbHex(),
+                    textAccentColorNight = nightControl.toArgbHex(),
                     textAccentColorEInk = palette.controlArgb.toArgbHex(),
                     darkStatusIcon = palette.darkStatusIcon,
-                    darkStatusIconNight = palette.darkStatusIcon,
+                    darkStatusIconNight = nightStatusIcon,
                     darkStatusIconEInk = palette.darkStatusIcon,
                 )
         }
         mutateEffective {
             it.copy(
                 tipHeaderColor = palette.secondaryArgb,
-                tipHeaderColorNight = palette.secondaryArgb,
+                tipHeaderColorNight = nightSecondary,
                 tipFooterColor = palette.secondaryArgb,
-                tipFooterColorNight = palette.secondaryArgb,
+                tipFooterColorNight = nightSecondary,
             )
         }
         save()
+    }
+
+    /** 夜间是纯色底时按这个底反推文字色；夜间用图（或颜色解析失败）时沿用图片取色。 */
+    private fun ReadBookConfig.Config.nightTextPaletteFor(
+        palette: ReadBackgroundPalette,
+    ): ReadThemeNightPalette? {
+        if (bgTypeNight != 0) return null
+        val nightBackground = parseArgbColor(bgStrNight) ?: return null
+        return deriveNightTextPalette(
+            backgroundArgb = nightBackground,
+            contentArgb = palette.contentArgb,
+            secondaryArgb = palette.secondaryArgb,
+            controlArgb = palette.controlArgb,
+        )
     }
 
     override fun setCurrentBackgroundImageForMode(path: String, isNight: Boolean) {

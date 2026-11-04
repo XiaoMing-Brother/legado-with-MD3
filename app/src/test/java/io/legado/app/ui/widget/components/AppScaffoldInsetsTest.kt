@@ -21,7 +21,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
@@ -36,7 +35,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import io.legado.app.domain.model.settings.AppShellSettings
 import io.legado.app.domain.model.settings.AppUiConfiguration
-import io.legado.app.ui.main.FloatingNavigationContainer
 import io.legado.app.ui.theme.AppTheme
 import io.legado.app.ui.theme.LocalLegadoThemeColors
 import io.legado.app.ui.widget.components.topbar.GlassMediumFlexibleTopAppBar
@@ -54,7 +52,7 @@ import java.time.Duration
 @Config(application = Application::class, sdk = [35], qualifiers = "mdpi")
 class AppScaffoldInsetsTest {
     private data class Case(
-        val engine: String, val floatingPreference: Boolean, val behindBars: Boolean,
+        val engine: String, val behindBars: Boolean,
         val parentConsumed: Boolean, val hasBottomBar: Boolean = true
     )
 
@@ -63,11 +61,10 @@ class AppScaffoldInsetsTest {
         val controller = Robolectric.buildActivity(ComponentActivity::class.java).setup().visible()
         val activity = controller.get()
         WindowCompat.setDecorFitsSystemWindows(activity.window, false)
-        var case by mutableStateOf(Case("material", false, false, false))
+        var case by mutableStateOf(Case("material", false, false))
         var probe by mutableStateOf("scaffold")
         var mediumBar by mutableStateOf(false)
         var contentBounds = Rect.Zero
-        var footerBounds = Rect.Zero
         var topBarHeight = 0
         val insets = WindowInsets(left = 0, top = 24, right = 0, bottom = 32)
         try {
@@ -77,7 +74,7 @@ class AppScaffoldInsetsTest {
                     LocalDensity provides Density(1f)
                 ) {
                     AppTheme(
-                        AppUiConfiguration(appShell = AppShellSettings(useFloatingBottomBar = case.floatingPreference)),
+                        AppUiConfiguration(appShell = AppShellSettings()),
                         applyBackground = false
                     ) {
                         val colors =
@@ -90,20 +87,7 @@ class AppScaffoldInsetsTest {
                                         if (case.parentConsumed) Modifier.windowInsetsPadding(insets) else Modifier
                                     )
                             ) {
-                                if (probe == "footer") {
-                                    FloatingNavigationContainer(
-                                        Modifier.align(Alignment.BottomCenter),
-                                        insets
-                                    ) {
-                                        Box(
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .height(64.dp)
-                                                .onGloballyPositioned {
-                                                    footerBounds = it.boundsInRoot()
-                                                })
-                                    }
-                                } else if (probe == "topbar") {
+                                if (probe == "topbar") {
                                     val modifier = Modifier.onGloballyPositioned {
                                         topBarHeight = it.size.height
                                     }
@@ -170,35 +154,27 @@ class AppScaffoldInsetsTest {
                 }
             }
             for (engine in listOf("material", "miuix")) {
-                for (floating in listOf(false, true)) {
-                    for (behind in listOf(false, true)) {
-                        for (consumed in listOf(false, true)) {
-                            for (hasBottom in listOf(false, true)) {
-                                case = Case(engine, floating, behind, consumed, hasBottom)
-                                frames()
-                                assertEquals("$case top", 80f, contentBounds.top, 0.5f)
-                                assertEquals(
-                                    "$case bottom",
-                                    if (hasBottom) 512f else 568f,
-                                    contentBounds.bottom,
-                                    0.5f
-                                )
-                            }
+                for (behind in listOf(false, true)) {
+                    for (consumed in listOf(false, true)) {
+                        for (hasBottom in listOf(false, true)) {
+                            case = Case(engine, behind, consumed, hasBottom)
+                            frames()
+                            assertEquals("$case top", 80f, contentBounds.top, 0.5f)
+                            assertEquals(
+                                "$case bottom",
+                                if (hasBottom) 512f else 568f,
+                                contentBounds.bottom,
+                                0.5f
+                            )
                         }
                     }
                 }
-            }
-            probe = "footer"
-            for (consumed in listOf(false, true)) {
-                case = Case("material", true, false, consumed)
-                frames()
-                assertEquals("footer parentConsumed=$consumed", 556f, footerBounds.bottom, 0.5f)
             }
             probe = "topbar"
             for (engine in listOf("material", "miuix")) {
                 for (medium in listOf(false, true)) {
                     for (consumed in listOf(false, true)) {
-                        case = Case(engine, false, false, consumed)
+                        case = Case(engine, false, consumed)
                         mediumBar = medium
                         frames()
                         val root = checkNotNull(composeRoot(activity.window.decorView))

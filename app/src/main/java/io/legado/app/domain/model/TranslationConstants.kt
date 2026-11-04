@@ -9,8 +9,8 @@ object TranslationConstants {
     const val MAX_TEMPERATURE = 2f
     const val DEFAULT_TEMPERATURE = 0.7f
 
-    val providerDisplayNames = listOf("Google Translate", "应用 AI 接口")
-    val providerValues = listOf(PROVIDER_GOOGLE, PROVIDER_APP_AI)
+    val providerDisplayNames = listOf("Google Translate")
+    val providerValues = listOf(PROVIDER_GOOGLE)
 
     val targetLanguages = listOf(
         "zh" to "简体中文",

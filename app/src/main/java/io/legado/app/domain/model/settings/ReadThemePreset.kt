@@ -48,6 +48,18 @@ data class ReadThemePreset(
      * 不用接口里的 `dark` 字段：它在全部主题里都是 false，区分不出深浅。
      */
     val isDark: Boolean get() = isDarkBackgroundColor(background)
+
+    /**
+     * 底色是否已经深到可以直接当夜间底。
+     *
+     * 与 [isDark] 分开：`isDark` 按 0.5 相对亮度判状态栏图标反色，米黄、中灰的纸也算「深色」；
+     * 夜间模式要求更严（见 [NIGHT_BASE_MAX_LUMINANCE]），不够深的一律派生深色底。
+     * 主题自带背景图时也用它决定夜间是否继续用那张图。
+     */
+    val isNightBase: Boolean
+        get() = parseArgbColor(background)
+            ?.let { relativeLuminance(it or 0xFF000000.toInt()) < NIGHT_BASE_MAX_LUMINANCE }
+            ?: false
 }
 
 /**
@@ -62,23 +74,50 @@ data class ReadThemeStyle(
     val content: String,
     val secondary: String,
     val control: String,
+    val nightBackground: String,
+    val nightContent: String,
+    val nightSecondary: String,
+    val nightControl: String,
     val paddingHorizontal: Int,
     val paddingTop: Int,
     val paddingBottom: Int,
     val darkStatusIcon: Boolean,
+    val darkStatusIconNight: Boolean,
 )
 
-/** 解析成可直接写入排版配置的目标值（底色深 -> 状态栏图标取浅色，反之亦然）。 */
-fun ReadThemePreset.toStyle(): ReadThemeStyle = ReadThemeStyle(
-    background = background,
-    content = content,
-    secondary = secondary,
-    control = control,
-    paddingHorizontal = horizontal.asReadPadding(),
-    paddingTop = top.asReadPadding(),
-    paddingBottom = bottom.asReadPadding(),
-    darkStatusIcon = !isDark,
-)
+/**
+ * 解析成可直接写入排版配置的目标值。
+ *
+ * 白天原样使用主题配色；夜间走 [deriveNightPalette]：底色够深的主题复用原色，浅色主题派生出
+ * 一套深底浅字的夜间配色，保证切换日夜时阅读页真的变黑。状态栏图标按各自底色反色。
+ */
+fun ReadThemePreset.toStyle(): ReadThemeStyle {
+    val night = deriveNightPalette(
+        backgroundArgb = parseArgbColor(background) ?: FALLBACK_LIGHT_BACKGROUND,
+        contentArgb = parseArgbColor(content) ?: FALLBACK_DARK_CONTENT,
+        secondaryArgb = parseArgbColor(secondary) ?: FALLBACK_DARK_CONTENT,
+        controlArgb = parseArgbColor(control) ?: FALLBACK_DARK_CONTENT,
+    )
+    return ReadThemeStyle(
+        background = background,
+        content = content,
+        secondary = secondary,
+        control = control,
+        nightBackground = night.backgroundArgb.toArgbHex(),
+        nightContent = night.contentArgb.toArgbHex(),
+        nightSecondary = night.secondaryArgb.toArgbHex(),
+        nightControl = night.controlArgb.toArgbHex(),
+        paddingHorizontal = horizontal.asReadPadding(),
+        paddingTop = top.asReadPadding(),
+        paddingBottom = bottom.asReadPadding(),
+        darkStatusIcon = !isDark,
+        darkStatusIconNight = !isDarkBackgroundColor(night.backgroundArgb.toArgbHex()),
+    )
+}
+
+/** 数据损坏时的兜底：按最常见的浅底深字处理，夜间派生仍是黑底浅字。 */
+private const val FALLBACK_LIGHT_BACKGROUND = 0xFFF1F3F4.toInt()
+private const val FALLBACK_DARK_CONTENT = 0xFF2D2D33.toInt()
 
 /** LightInk 边距允许为负（数据里最小 -28），Legado 的 padding 直接当 dp 用，负值会算出负的可用宽度。 */
 internal fun Int.asReadPadding(): Int = coerceAtLeast(0)

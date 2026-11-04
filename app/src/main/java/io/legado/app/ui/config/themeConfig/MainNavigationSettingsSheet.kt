@@ -40,7 +40,6 @@ fun MainNavigationSettingsSheet(
     onSetDefault: (String) -> Unit,
     onRequestNavigationIcon: (String) -> Unit,
     onClearNavigationIcon: (String) -> Unit,
-    onSetLabelVisibilityMode: (String) -> Unit,
 ) {
     var showNavigationIcons by remember(show) { mutableStateOf(false) }
     var navigationItems by remember(show) {
@@ -100,13 +99,6 @@ fun MainNavigationSettingsSheet(
                 displayEntries = visibleItems.map { stringResource(it.labelId) }.toTypedArray(),
                 entryValues = visibleItems.map { it.route }.toTypedArray(),
                 onValueChange = onSetDefault,
-            )
-            CompactDropdownSettingItem(
-                title = stringResource(R.string.nav_label_mode),
-                selectedValue = settings.labelVisibilityMode,
-                displayEntries = stringArrayResource(R.array.label_vis_mode),
-                entryValues = stringArrayResource(R.array.label_vis_mode_value),
-                onValueChange = onSetLabelVisibilityMode,
             )
             Spacer(modifier = Modifier.padding(bottom = 4.dp))
             val customIconCount = listOf(

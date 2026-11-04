@@ -61,6 +61,12 @@
         <item>4</item>
     </string-array>
 
+    <string-array name="image_night_mode_value">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
     <string-array name="double_page_value">
         <item>0</item>
         <item>1</item>
@@ -91,13 +97,6 @@
         <item>en</item>
     </string-array>
 
-    <string-array name="tabletInterface_value">
-        <item>auto</item>
-        <item>always</item>
-        <item>landscape</item>
-        <item>off</item>
-    </string-array>
-
     <string-array name="paletteStyle_value">
         <item>tonalSpot</item>
         <item>neutral</item>
@@ -123,13 +122,6 @@
     <string-array name="customMode_value">
         <item>global</item>
         <item>accent</item>
-    </string-array>
-
-    <string-array name="label_vis_mode_value">
-        <item>auto</item>
-        <item>selected</item>
-        <item>labeled</item>
-        <item>unlabeled</item>
     </string-array>
 
     <string-array name="book_info_background_blur_values">

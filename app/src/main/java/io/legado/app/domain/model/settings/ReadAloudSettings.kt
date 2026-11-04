@@ -1,6 +1,5 @@
 package io.legado.app.domain.model.settings
 
-import io.legado.app.domain.model.AiReasoningLevel
 
 /**
  * 听书内容划分方式：决定一段正文被切成多少个朗读单元。
@@ -89,7 +88,6 @@ data class ReadAloudSettings(
      * OFF by default: models that think by default (Zhipu GLM, …) return the JSON only in
      * `reasoning_content` and the analysis fails, so thinking must be opted into explicitly.
      */
-    val speechAnalysisReasoningLevel: String = AiReasoningLevel.OFF.storageValue,
     val useMultiSpeaker: Boolean = true,
     /**
      * 多角色分配：与 [useMultiSpeaker] 独立。开启后阅读器在对话开引号后渲染角色胶囊，

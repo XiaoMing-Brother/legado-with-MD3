@@ -77,7 +77,7 @@ data object MainRouteSettingsOther : MainRoute
 data object MainRouteSettingsRead : MainRoute
 
 @Serializable
-data class MainRouteSettingsManga(val openTranslation: Boolean = false) : MainRoute
+data object MainRouteSettingsManga : MainRoute
 
 @Serializable
 data object MainRouteSettingsCover : MainRoute
@@ -90,35 +90,6 @@ data object MainRouteSettingsTheme : MainRoute
 
 @Serializable
 data object MainRouteSettingsBackup : MainRoute
-
-@Serializable
-data object MainRouteSettingsAi : MainRoute
-
-@Serializable
-data class MainRouteAiChat(
-    val bookUrl: String? = null,
-    val bookName: String? = null,
-    val bookAuthor: String? = null,
-    val chapterIndex: Int? = null,
-    val chapterTitle: String? = null,
-) : MainRoute
-
-@Serializable
-data class MainRouteSettingsAiProviderEdit(
-    val providerId: String? = null
-) : MainRoute
-
-@Serializable
-data class MainRouteSettingsAiModelEdit(
-    val providerId: String? = null,
-    val modelProfileId: String? = null
-) : MainRoute
-
-@Serializable
-data object MainRouteSettingsAiSummary : MainRoute
-
-@Serializable
-data object MainRouteSettingsAiPrompt : MainRoute
 
 @Serializable
 data object MainRouteSettingsCustomTheme : MainRoute
@@ -372,10 +343,6 @@ object MainRouteConst {
     const val ROUTE_SETTINGS_COVER_ALBUMS = "settings/cover/albums"
     const val ROUTE_SETTINGS_THEME = "settings/theme"
     const val ROUTE_SETTINGS_BACKUP = "settings/backup"
-    const val ROUTE_SETTINGS_AI = "settings/ai"
-    const val ROUTE_SETTINGS_AI_SUMMARY = "settings/ai/summary"
-    const val ROUTE_SETTINGS_AI_PROMPT = "settings/ai/prompt"
-    const val ROUTE_AI_CHAT = "ai/chat"
     const val ROUTE_SETTINGS_CUSTOM_THEME = "settings/custom_theme"
     const val ROUTE_SETTINGS_BUBBLE = "settings/bubble"
     const val ROUTE_SETTINGS_PRIVATE = "settings/private"

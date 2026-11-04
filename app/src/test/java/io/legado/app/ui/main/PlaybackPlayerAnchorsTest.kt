@@ -46,19 +46,6 @@ class PlaybackPlayerAnchorsTest {
     }
 
     @Test
-    fun hiddenBottomBarAlwaysUsesGlobalCapsuleEvenIfFloatingBarIsEnabled() {
-        assertFalse(shouldUseHomePlaybackCapsule(true, false, true, false))
-        assertTrue(shouldUseHomePlaybackCapsule(true, true, true, false))
-    }
-
-    @Test
-    fun otherRoutesRailAndStandardBottomBarUseGlobalCapsule() {
-        assertFalse(shouldUseHomePlaybackCapsule(false, true, true, false))
-        assertFalse(shouldUseHomePlaybackCapsule(true, true, true, true))
-        assertFalse(shouldUseHomePlaybackCapsule(true, true, false, false))
-    }
-
-    @Test
     fun backNeverPopsTheCoveredRouteDuringPlayerOpeningOrClosing() {
         assertFalse(shouldHandleActivityBack(false, playerPresent = true))
         assertFalse(shouldHandleActivityBack(true, playerPresent = true))

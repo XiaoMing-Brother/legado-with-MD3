@@ -43,9 +43,6 @@ object ThemeConfig {
     val showRss get() = shell.showRss
     val showStatusBar get() = shell.showStatusBar
     val swipeAnimation get() = shell.swipeAnimation
-    val showBottomView get() = shell.showBottomView
-    val tabletInterface get() = shell.tabletInterface
-    val labelVisibilityMode get() = shell.labelVisibilityMode
     val defaultHomePage get() = shell.defaultHomePage
     val autoRefreshBook get() = other.autoRefresh
     val autoCheckNewBackup get() = backup.autoCheckNewBackup

@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -52,22 +51,19 @@ class CoverAlbumRepository(
     )
     private val indexFile = File(rootDir, INDEX_FILE_NAME)
 
-    private val initialSelection = runBlocking {
-        InitialSelection(
-            albumId = preferences.getPreference(
-                LocalPreferencesKeys.SELECTED_COVER_ALBUM_ID,
-                "",
-            ).first().ifBlank { null },
-            lightAlbumId = preferences.getPreference(
-                LocalPreferencesKeys.SELECTED_LIGHT_COVER_ALBUM_ID,
-                "",
-            ).first().ifBlank { null },
-            darkAlbumId = preferences.getPreference(
-                LocalPreferencesKeys.SELECTED_DARK_COVER_ALBUM_ID,
-                "",
-            ).first().ifBlank { null },
-        )
-    }
+    /**
+     * 选中项只在构造时读一次。取值走 [AppConfigStore] 的内存快照，不阻塞调用线程：
+     * 这个仓库由 Koin 在 UI 路径上惰性创建，原来的 `runBlocking { ... .first() }`
+     * 会在主线程做一次 DataStore 读。
+     */
+    private val initialSelection = InitialSelection(
+        albumId = AppConfigStore.getString(LocalPreferencesKeys.SELECTED_COVER_ALBUM_ID.name)
+            ?.ifBlank { null },
+        lightAlbumId = AppConfigStore.getString(LocalPreferencesKeys.SELECTED_LIGHT_COVER_ALBUM_ID.name)
+            ?.ifBlank { null },
+        darkAlbumId = AppConfigStore.getString(LocalPreferencesKeys.SELECTED_DARK_COVER_ALBUM_ID.name)
+            ?.ifBlank { null },
+    )
 
     private val _albums = MutableStateFlow(loadAlbums(initialSelection))
     override val albums: StateFlow<List<CoverAlbum>> = _albums.asStateFlow()

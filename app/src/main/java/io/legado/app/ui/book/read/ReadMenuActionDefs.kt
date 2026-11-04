@@ -251,21 +251,6 @@ internal fun readMenuButtonInfos(context: Context): List<ReadMenuButtonInfo> = l
         context.getString(R.string.bubble_config),
     ),
     ReadMenuButtonInfo(
-        "ai_chat",
-        Icons.AutoMirrored.Filled.Chat,
-        context.getString(R.string.ai_chat),
-    ),
-    ReadMenuButtonInfo(
-        "ai_summary",
-        Icons.Default.AutoAwesome,
-        context.getString(R.string.ai_chapter_summary),
-    ),
-    ReadMenuButtonInfo(
-        "ai_rewrite",
-        Icons.Default.Edit,
-        context.getString(R.string.ai_text_rewrite),
-    ),
-    ReadMenuButtonInfo(
         "multi_role_read",
         Icons.Default.Groups,
         context.getString(R.string.use_multi_speaker),
@@ -279,11 +264,6 @@ internal fun readMenuButtonInfos(context: Context): List<ReadMenuButtonInfo> = l
         "cast_table",
         Icons.Default.TableRows,
         context.getString(R.string.book_voice_casting),
-    ),
-    ReadMenuButtonInfo(
-        "ai_cast",
-        Icons.Default.SmartToy,
-        context.getString(R.string.ai_cast_roles),
     ),
     ReadMenuButtonInfo(
         "more_actions",
@@ -478,15 +458,6 @@ internal fun buildReadMenuActionDefs(
         def("bubble_style") {
             onIntent(ReadBookIntent.ShowSheet(ReadBookSheet.BubbleStyle))
         },
-        def("ai_chat") {
-            onIntent(ReadBookIntent.OpenAiChat)
-        },
-        def("ai_summary") {
-            onIntent(ReadBookIntent.OpenChapterSummary)
-        },
-        def("ai_rewrite") {
-            onIntent(ReadBookIntent.OpenAiCurrentChapterRewrite)
-        },
         def("multi_role_read", isActive = state.useMultiSpeaker) {
             onIntent(ReadBookIntent.SetUseMultiSpeaker(!state.useMultiSpeaker))
         },
@@ -495,9 +466,6 @@ internal fun buildReadMenuActionDefs(
         },
         def("cast_table") {
             onIntent(ReadBookIntent.OpenBookVoiceCasting)
-        },
-        def("ai_cast") {
-            onIntent(ReadBookIntent.OpenAiCastDialog)
         },
         def("more_actions") {
             onIntent(ReadBookIntent.ShowSheet(ReadBookSheet.MoreActions))

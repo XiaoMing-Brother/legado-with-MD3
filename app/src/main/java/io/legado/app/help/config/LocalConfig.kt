@@ -5,15 +5,9 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import io.legado.app.data.local.preferences.LocalPreferencesKeys
 import io.legado.app.constant.PreferKey
-import io.legado.app.data.repository.SettingsRepository
 import io.legado.app.utils.getBoolean
 import io.legado.app.utils.putBoolean
 import io.legado.app.utils.putLong
-import io.legado.app.utils.putString
-import io.legado.app.utils.remove
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
-import org.koin.java.KoinJavaComponent.get
 import splitties.init.appCtx
 
 @Suppress("ConstPropertyName")
@@ -28,52 +22,29 @@ by appCtx.getSharedPreferences("local", Context.MODE_PRIVATE) {
     private const val RSS_SOURCE_VERSION = 6
     private const val DICT_RULE_VERSION = 3
 
-    private val localPreferencesRepository: SettingsRepository
-        by lazy { get(SettingsRepository::class.java) }
-
     /**
      * 本地密码,用来对需要备份的敏感信息加密,如 webdav 配置等
+     *
+     * 读写都走 [AppConfigStore] 的内存快照：`App.onCreate` 首行已完成预加载，
+     * 这里不再 `runBlocking` 挂起调用线程（旧实现在主线程布局/点击路径上会阻塞）。
+     * 写侧沿用 AppConfigStore 的 pending overlay 语义，写完立即能读到新值。
      */
     var password: String?
-        get() = runBlocking {
-            localPreferencesRepository.getPreference(LocalPreferencesKeys.PASSWORD, "").first()
-                .ifEmpty { null }
-        }
+        get() = AppConfigStore.getString(LocalPreferencesKeys.PASSWORD.name)?.ifEmpty { null }
         set(value) {
-            runBlocking {
-                localPreferencesRepository.updatePreference(
-                    LocalPreferencesKeys.PASSWORD, value ?: ""
-                )
-            }
+            AppConfigStore.putString(LocalPreferencesKeys.PASSWORD.name, value ?: "")
         }
 
     var lastBackup: Long
-        get() = runBlocking {
-            localPreferencesRepository.getPreference(LocalPreferencesKeys.LAST_BACKUP, 0L).first()
-        }
+        get() = AppConfigStore.getLong(LocalPreferencesKeys.LAST_BACKUP.name) ?: 0L
         set(value) {
-            runBlocking {
-                localPreferencesRepository.updatePreference(LocalPreferencesKeys.LAST_BACKUP, value)
-            }
+            AppConfigStore.putLong(LocalPreferencesKeys.LAST_BACKUP.name, value)
         }
 
     var privacyPolicyOk: Boolean
-        get() = runBlocking {
-            localPreferencesRepository.getPreference(LocalPreferencesKeys.PRIVACY_POLICY_OK, false)
-                .first()
-        }
+        get() = AppConfigStore.getBoolean(LocalPreferencesKeys.PRIVACY_POLICY_OK.name) ?: false
         set(value) {
-            runBlocking {
-                localPreferencesRepository.updatePreference(
-                    LocalPreferencesKeys.PRIVACY_POLICY_OK, value
-                )
-            }
-        }
-
-    var navExtended: Boolean
-        get() = getBoolean(PreferKey.navExtended)
-        set(value) {
-            putBoolean(PreferKey.navExtended, value)
+            AppConfigStore.putBoolean(LocalPreferencesKeys.PRIVACY_POLICY_OK.name, value)
         }
 
     /** 旧版语言偏好是否已迁移到 AppCompat per-app locales（App.onCreate 一次性迁移） */

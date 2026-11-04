@@ -129,34 +129,12 @@ object MainNavigator {
                 }
             }
 
-            is MainRouteAiChat -> {
-                if (
-                    currentRoute == MainRouteSettingsAi ||
-                    currentRoute == MainRouteHome ||
-                    currentRoute is MainRouteReadBook ||
-                    currentRoute is MainRouteReadManga
-                ) {
-                    backStack.add(route)
-                } else {
-                    backStack.clear()
-                    backStack.add(MainRouteHome)
-                    backStack.add(MainRouteSettings)
-                    backStack.add(MainRouteSettingsAi)
-                    backStack.add(route)
-                }
-            }
-
             MainRouteSettingsOther,
             MainRouteSettingsRead,
             is MainRouteSettingsManga,
             MainRouteSettingsCover,
             MainRouteSettingsTheme,
             MainRouteSettingsBackup,
-            MainRouteSettingsAi,
-            is MainRouteSettingsAiProviderEdit,
-            is MainRouteSettingsAiModelEdit,
-            MainRouteSettingsAiSummary,
-            MainRouteSettingsAiPrompt,
             MainRouteSettingsCustomTheme,
             MainRouteSettingsThemeManage,
             MainRouteSettingsDownloadCache,
@@ -254,8 +232,7 @@ object MainNavigator {
                     currentRoute is MainRouteBookInfo ||
                     currentRoute is MainRouteCache ||
                     currentRoute is MainRouteReadBook ||
-                    currentRoute is MainRouteReadManga ||
-                    currentRoute is MainRouteAiChat
+                    currentRoute is MainRouteReadManga
                 ) {
                     backStack.add(route)
                 } else {
@@ -550,12 +527,10 @@ object MainNavigator {
             MainRouteConst.ROUTE_SETTINGS -> MainRouteSettings
             MainRouteConst.ROUTE_SETTINGS_OTHER -> MainRouteSettingsOther
             MainRouteConst.ROUTE_SETTINGS_READ -> MainRouteSettingsRead
-            MainRouteConst.ROUTE_SETTINGS_MANGA -> MainRouteSettingsManga()
+            MainRouteConst.ROUTE_SETTINGS_MANGA -> MainRouteSettingsManga
             MainRouteConst.ROUTE_SETTINGS_COVER -> MainRouteSettingsCover
             MainRouteConst.ROUTE_SETTINGS_THEME -> MainRouteSettingsTheme
             MainRouteConst.ROUTE_SETTINGS_BACKUP -> MainRouteSettingsBackup
-            MainRouteConst.ROUTE_SETTINGS_AI -> MainRouteSettingsAi
-            MainRouteConst.ROUTE_AI_CHAT -> MainRouteAiChat()
             MainRouteConst.ROUTE_SETTINGS_CUSTOM_THEME -> MainRouteSettingsCustomTheme
             MainRouteConst.ROUTE_SETTINGS_BUBBLE -> MainRouteSettingsBubble
             MainRouteConst.ROUTE_SETTINGS_PRIVATE -> MainRouteSettingsPrivate

@@ -26,8 +26,7 @@ class FeatureSettingsMappingTest {
             stringPreferencesKey(PreferKey.themeMode) to "2",
             stringPreferencesKey(PreferKey.fontScale) to "13",
             stringPreferencesKey(PreferKey.showStatusBar) to "false",
-            stringPreferencesKey(PreferKey.useFloatingBottomBar) to "true",
-            stringPreferencesKey(PreferKey.tabletInterface) to "landscape",
+            stringPreferencesKey(PreferKey.multiPaneMode) to "always",
         )
 
         val settings = preferences.toAppShellSettings()
@@ -35,8 +34,7 @@ class FeatureSettingsMappingTest {
         assertEquals("2", settings.themeMode)
         assertEquals(13, settings.fontScale)
         assertEquals(false, settings.showStatusBar)
-        assertEquals(true, settings.useFloatingBottomBar)
-        assertEquals("landscape", settings.tabletInterface)
+        assertEquals("always", settings.multiPaneMode)
     }
 
     @Test

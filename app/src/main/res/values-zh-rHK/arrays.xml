@@ -7,6 +7,11 @@
         <item>停用點擊</item>
         <item>雙擊</item>
     </string-array>
+    <string-array name="image_night_mode_title">
+        <item>不處理</item>
+        <item>色彩反轉</item>
+        <item>降低亮度</item>
+    </string-array>
 
     <string-array name="book_type">
         <item>文本</item>

@@ -41,15 +41,11 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun MangaConfigRouteScreen(
     onBackClick: () -> Unit,
-    onOpenAiSettings: () -> Unit,
     onOpenCacheSettings: () -> Unit,
-    translationContent: @Composable () -> Unit = {},
-    startAtTranslation: Boolean = false,
-    translationReady: Boolean = true,
     viewModel: MangaConfigViewModel = koinViewModel(),
 ) {
     MangaConfigScreen(viewModel.uiState.collectAsStateWithLifecycle().value, viewModel::onIntent,
-        onBackClick, onOpenAiSettings, onOpenCacheSettings, translationContent, startAtTranslation, translationReady)
+        onBackClick, onOpenCacheSettings)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,11 +54,7 @@ fun MangaConfigScreen(
     state: MangaConfigUiState,
     onIntent: (MangaConfigIntent) -> Unit,
     onBackClick: () -> Unit,
-    onOpenAiSettings: () -> Unit,
     onOpenCacheSettings: () -> Unit,
-    translationContent: @Composable () -> Unit = {},
-    startAtTranslation: Boolean = false,
-    translationReady: Boolean = true,
 ) {
     val settings = state.settings
     val webtoon = settings.scrollMode in setOf(MangaScrollMode.WEBTOON, MangaScrollMode.WEBTOON_WITH_GAP)
@@ -70,13 +62,6 @@ fun MangaConfigScreen(
     val scrollBehavior = GlassTopAppBarDefaults.defaultScrollBehavior()
     var pickBackground by rememberSaveable { mutableStateOf(false) }
     val listState = rememberLazyListState()
-    var translationFocused by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(startAtTranslation, translationReady) {
-        if (startAtTranslation && translationReady && !translationFocused) {
-            listState.scrollToItem(TranslationGroupIndex)
-            translationFocused = true
-        }
-    }
     AppScaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
         GlassMediumFlexibleTopAppBar(title = stringResource(R.string.manga_config), scrollBehavior = scrollBehavior,
             navigationIcon = { TopBarNavigationButton(onClick = onBackClick) })
@@ -200,18 +185,6 @@ fun MangaConfigScreen(
                     ClickableSettingItem(stringResource(R.string.download_cache_config), onClick = onOpenCacheSettings)
                 }
             }
-            item("translation") {
-                Column {
-                    SplicedColumnGroup(title = stringResource(R.string.manga_translation_title)) {
-                        SwitchSettingItem(stringResource(R.string.manga_translation_automatic_global), checked = state.automaticTranslation,
-                            description = stringResource(R.string.manga_config_translation_hint), enabled = state.translationLoaded) {
-                            onIntent(MangaConfigIntent.SetAutomaticTranslation(it))
-                        }
-                        ClickableSettingItem(stringResource(R.string.ai_config), onClick = onOpenAiSettings)
-                    }
-                    translationContent()
-                }
-            }
             state.error?.let { error -> item("error") {
                 AppText(error, color = LegadoTheme.colorScheme.error, modifier = Modifier.padding(16.dp), style = LegadoTheme.typography.bodyMedium)
                 SmallPlainButton(onClick = { onIntent(MangaConfigIntent.DismissError) }, text = stringResource(R.string.close))
@@ -224,7 +197,6 @@ fun MangaConfigScreen(
         })
 }
 
-private const val TranslationGroupIndex = 5
 
 @Composable
 private fun MangaConfigDropdown(title: Int, value: Int, labels: Array<Int>, values: IntRange = labels.indices,

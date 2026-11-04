@@ -1,7 +1,6 @@
 package io.legado.app.ui.book.knowledge
 
 import androidx.compose.runtime.Stable
-import io.legado.app.domain.model.AiReasoningLevel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
@@ -11,27 +10,6 @@ data class CharacterListUiState(
     val isLoading: Boolean = false,
     val roleFilter: String = "",
     val characters: ImmutableList<CharacterListItemUi> = persistentListOf(),
-    val aiSheet: CharacterIdentifySheet? = null,
-    val isAiSheetVisible: Boolean = false,
-)
-
-@Stable
-data class CharacterIdentifySheet(
-    val reasoningLevel: AiReasoningLevel = AiReasoningLevel.AUTO,
-    val loading: Boolean = false,
-    val error: String? = null,
-    val candidates: ImmutableList<CharacterIdentifyCandidateUi> = persistentListOf(),
-    val reasoning: String = "",
-    val toolNames: ImmutableList<String> = persistentListOf(),
-    val startedAt: Long = 0L,
-)
-
-@Stable
-data class CharacterIdentifyCandidateUi(
-    val id: String,
-    val name: String,
-    val summary: String,
-    val selected: Boolean = true
 )
 
 @Stable
@@ -48,12 +26,6 @@ sealed interface CharacterListIntent {
     data class SetRoleFilter(val role: String) : CharacterListIntent
     data class OpenCharacter(val characterId: String) : CharacterListIntent
     data object AddCharacter : CharacterListIntent
-    data object OpenAiIdentify : CharacterListIntent
-    data object RunAiIdentify : CharacterListIntent
-    data class SetAiIdentifyReasoningLevel(val level: AiReasoningLevel) : CharacterListIntent
-    data class ToggleAiCandidate(val id: String) : CharacterListIntent
-    data object SaveAiCandidates : CharacterListIntent
-    data object DismissAiIdentify : CharacterListIntent
 }
 
 sealed interface CharacterListEffect {

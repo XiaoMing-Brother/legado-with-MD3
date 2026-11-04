@@ -19,12 +19,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.legado.app.R
 import io.legado.app.data.repository.ReadPreferences
 import io.legado.app.domain.usecase.BookmarkTargetVerdict
-import io.legado.app.ui.book.read.sheet.AiRewritePresetConfigSheet
-import io.legado.app.ui.book.read.sheet.AiTextCleanSheet
-import io.legado.app.ui.book.read.sheet.AiTextRewriteSheet
 import io.legado.app.ui.book.read.sheet.BgTextConfigSheet
 import io.legado.app.ui.book.read.sheet.ChangeChapterSourceSheet
-import io.legado.app.ui.book.read.sheet.ChapterSummarySheet
 import io.legado.app.ui.book.read.sheet.CharsetConfigSheet
 import io.legado.app.ui.book.read.sheet.ClickActionConfigSheet
 import io.legado.app.ui.book.read.sheet.ContentEditSheet
@@ -80,12 +76,6 @@ fun ReadBookOverlayRoute(
     sheetsVisible: Boolean = true,
     additionalSheetContent: @Composable (ReadBookSheet, Boolean, () -> Unit) -> Unit = { _, _, _ -> },
 ) {
-    val aiActive = rememberFeatureActivated(
-        state.findSheet<ReadBookSheet.ChapterSummary>() != null ||
-                state.findSheet<ReadBookSheet.AiTextClean>() != null ||
-                state.findSheet<ReadBookSheet.AiTextRewrite>() != null ||
-                state.findSheet<ReadBookSheet.AiRewritePresetConfig>() != null
-    )
     val highlightActive = rememberFeatureActivated(
         state.findSheet<ReadBookSheet.HighlightRuleConfig>() != null
     )
@@ -95,9 +85,6 @@ fun ReadBookOverlayRoute(
     val contentProcessActive = rememberFeatureActivated(
         state.findSheet<ReadBookSheet.TextProcessing>() != null
     )
-    val aiState = if (aiActive) {
-        viewModel.aiState.collectAsStateWithLifecycle().value
-    } else ReadAiUiState()
     val highlightRuleState = if (highlightActive) {
         viewModel.highlightRuleState.collectAsStateWithLifecycle().value
     } else HighlightRuleConfigUiState()
@@ -114,7 +101,6 @@ fun ReadBookOverlayRoute(
         state = state,
         sheetsVisible = sheetsVisible,
         additionalSheetContent = additionalSheetContent,
-        aiState = aiState,
         highlightRuleState = highlightRuleState,
         markingState = markingState,
         contentEditState = contentEditState,
@@ -142,7 +128,6 @@ fun ReadBookScreen(
     state: ReadBookUiState,
     sheetsVisible: Boolean = true,
     additionalSheetContent: @Composable (ReadBookSheet, Boolean, () -> Unit) -> Unit = { _, _, _ -> },
-    aiState: ReadAiUiState,
     highlightRuleState: HighlightRuleConfigUiState,
     markingState: MarkingUiState,
     contentEditState: ContentEditUiState,
@@ -378,8 +363,7 @@ fun ReadBookScreen(
                     ),
                     sheetsVisible = visible,
                     onOpenBubbleManage = onOpenBubbleManage,
-                    aiState = aiState,
-                    highlightRuleState = highlightRuleState,
+                                highlightRuleState = highlightRuleState,
                     markingState = markingState,
                     contentEditState = contentEditState,
                     contentProcessState = contentProcessState,
@@ -425,7 +409,6 @@ internal data class ReaderSheetLayer(
 private fun ReadBookSheetContent(
     state: ReadBookUiState,
     sheetsVisible: Boolean,
-    aiState: ReadAiUiState,
     highlightRuleState: HighlightRuleConfigUiState,
     markingState: MarkingUiState,
     contentEditState: ContentEditUiState,
@@ -476,15 +459,6 @@ private fun ReadBookSheetContent(
         )
     }
 
-    // AI 分配角色弹层
-    if (state.activeSheet is ReadBookSheet.AiCastDialog) {
-        io.legado.app.ui.book.read.sheet.AiCastDialogSheet(
-            show = visibleState.findSheet<ReadBookSheet.AiCastDialog>() != null,
-            sceneOnly = visibleState.findSheet<ReadBookSheet.AiCastDialog>()?.sceneOnly == true,
-            onDismissRequest = dismissSheet(visibleState.findSheet<ReadBookSheet.AiCastDialog>()),
-            onIntent = onIntent,
-        )
-    }
     // 听书下载：项目通用 AppModalBottomSheet，和其它弹层一样 by show 驱动进出场
     if (state.activeSheet is ReadBookSheet.AudioDownload) {
         io.legado.app.ui.book.read.sheet.ReaderAudioDownloadSheet(
@@ -649,38 +623,6 @@ private fun ReadBookSheetContent(
             state = contentEditState,
             onIntent = onIntent,
             onDismissRequest = dismissSheet(visibleState.findSheet<ReadBookSheet.ContentEdit>()),
-        )
-    }
-    if (state.activeSheet is ReadBookSheet.ChapterSummary) {
-        ChapterSummarySheet(
-            show = visibleState.findSheet<ReadBookSheet.ChapterSummary>() != null,
-            state = aiState.chapterSummary,
-            onIntent = onIntent,
-            onDismissRequest = dismissSheet(visibleState.findSheet<ReadBookSheet.ChapterSummary>()),
-        )
-    }
-    if (state.activeSheet is ReadBookSheet.AiTextClean) {
-        AiTextCleanSheet(
-            show = visibleState.findSheet<ReadBookSheet.AiTextClean>() != null,
-            state = aiState.aiTextClean,
-            onIntent = onIntent,
-            onDismissRequest = dismissSheet(visibleState.findSheet<ReadBookSheet.AiTextClean>()),
-        )
-    }
-    if (state.activeSheet is ReadBookSheet.AiTextRewrite) {
-        AiTextRewriteSheet(
-            show = visibleState.findSheet<ReadBookSheet.AiTextRewrite>() != null,
-            state = aiState.aiTextRewrite,
-            onIntent = onIntent,
-            onDismissRequest = dismissSheet(visibleState.findSheet<ReadBookSheet.AiTextRewrite>()),
-        )
-    }
-    if (state.activeSheet is ReadBookSheet.AiRewritePresetConfig) {
-        AiRewritePresetConfigSheet(
-            show = visibleState.findSheet<ReadBookSheet.AiRewritePresetConfig>() != null,
-            state = aiState.aiRewritePresetConfig,
-            onIntent = onIntent,
-            onDismissRequest = { onIntent(ReadBookIntent.CloseAiRewritePresetConfig) },
         )
     }
     if (state.activeSheet is ReadBookSheet.MoreConfig) {

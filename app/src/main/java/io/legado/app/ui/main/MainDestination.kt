@@ -6,16 +6,16 @@ import kotlinx.collections.immutable.persistentListOf
 
 sealed class MainDestination(
     val route: String,
-    @StringRes val labelId: Int
+    @StringRes val labelId: Int,
 ) {
     object Home : MainDestination(
         route = "home",
-        labelId = R.string.home
+        labelId = R.string.home,
     )
 
     object Bookshelf : MainDestination(
         route = "bookshelf",
-        labelId = R.string.bookshelf
+        labelId = R.string.bookshelf,
     )
 
     object Explore : MainDestination(
@@ -25,12 +25,12 @@ sealed class MainDestination(
 
     object Rss : MainDestination(
         route = "rss",
-        labelId = R.string.rss
+        labelId = R.string.rss,
     )
 
     object My : MainDestination(
         route = "my",
-        labelId = R.string.my
+        labelId = R.string.my,
     )
 
     companion object {

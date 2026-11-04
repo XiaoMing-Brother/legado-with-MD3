@@ -155,29 +155,6 @@
             android:title="@string/show_swipe_animation"
             app:iconSpaceReserved="false" />
 
-        <io.legado.app.lib.prefs.SwitchPreference
-            android:defaultValue="true"
-            android:key="showBottomView"
-            android:summary="@string/be_swiped"
-            android:title="@string/show_bottom_nav"
-            app:iconSpaceReserved="false" />
-
-        <io.legado.app.lib.prefs.NameListPreference
-            android:defaultValue="auto"
-            android:key="tabletInterface"
-            android:title="@string/tabletInterface"
-            app:entries="@array/tabletInterface"
-            app:entryValues="@array/tabletInterface_value" />
-
-        <io.legado.app.lib.prefs.NameListPreference
-            android:defaultValue="auto"
-            android:key="labelVisibilityMode"
-            android:title="@string/nav_label_mode"
-            app:allowDividerAbove="false"
-            app:allowDividerBelow="false"
-            app:entries="@array/label_vis_mode"
-            app:entryValues="@array/label_vis_mode_value" />
-
         <io.legado.app.lib.prefs.NameListPreference
             android:defaultValue="bookshelf"
             android:key="defaultHomePage"

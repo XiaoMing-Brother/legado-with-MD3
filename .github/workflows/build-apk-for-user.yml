@@ -22,6 +22,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: github.repository == 'HapeLee/legado-with-MD3'
     env:
       PRODUCT: ${{ github.event.inputs.product }}
       PRODUCT_TAG: "${{ github.event.inputs.product == 'appFull' && 'full' || 'core' }}"

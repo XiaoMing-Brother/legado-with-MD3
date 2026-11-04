@@ -175,13 +175,6 @@
         <item>透明</item>
     </string-array>
 
-    <string-array name="tabletInterface">
-        <item>自动</item>
-        <item>侧栏导航（空间足够时）</item>
-        <item>横向窗口使用侧栏</item>
-        <item>底部导航</item>
-    </string-array>
-
     <string-array name="paletteStyle">
         <item>柔和</item>
         <item>中性</item>
@@ -204,13 +197,6 @@
         <item>仅强调色</item>
     </string-array>
 
-    <string-array name="label_vis_mode" >
-        <item>自动</item>
-        <item>选中时显示</item>
-        <item>常驻</item>
-        <item>不显示</item>
-    </string-array>
-
     <string-array name="read_slider_mode">
         <item>常驻</item>
         <item>不显示</item>
@@ -222,6 +208,12 @@
         <item>经典</item>
         <item>禁用点击</item>
         <item>双击</item>
+    </string-array>
+
+    <string-array name="image_night_mode_title">
+        <item>不处理</item>
+        <item>色彩反转</item>
+        <item>降低亮度</item>
     </string-array>
 
     <string-array name="top_bar_button_style">

@@ -131,6 +131,96 @@ class ReadThemePresetTest {
     }
 
     @Test
+    fun `浅色主题的夜间配色派生成深底浅字`() {
+        val style = theme(background = "#fff1f3f4").toStyle()
+        val nightBackground = parseArgbColor(style.nightBackground)!!
+        val nightContent = parseArgbColor(style.nightContent)!!
+        val nightSecondary = parseArgbColor(style.nightSecondary)!!
+        val nightControl = parseArgbColor(style.nightControl)!!
+
+        assertTrue(
+            "浅色主题切到夜间必须变黑：${style.nightBackground}",
+            relativeLuminance(nightBackground) < 0.1,
+        )
+        assertTrue(
+            "夜间正文要满足 WCAG 4.5:1",
+            contrastRatio(nightContent, nightBackground) >= 4.5,
+        )
+        assertTrue(
+            "夜间页眉页脚要满足 WCAG 4.5:1",
+            contrastRatio(nightSecondary, nightBackground) >= 4.5,
+        )
+        assertTrue(
+            "夜间强调色至少要看得见（3:1）",
+            contrastRatio(nightControl, nightBackground) >= 3.0,
+        )
+        assertFalse("深色夜间底要用浅色状态栏图标", style.darkStatusIconNight)
+    }
+
+    @Test
+    fun `暖色主题的夜间底色保留色相`() {
+        val nightBackground = parseArgbColor(
+            theme(background = "#ff98886a").toStyle().nightBackground
+        )!!
+        val red = (nightBackground shr 16) and 0xFF
+        val blue = nightBackground and 0xFF
+
+        assertTrue("暖纸主题的夜间底应偏暖，不能变成中性灰：red=$red blue=$blue", red > blue)
+    }
+
+    @Test
+    fun `深色主题的夜间配色直接复用原色`() {
+        val style = theme(
+            background = "#ff111826",
+            content = "#ffffffff",
+            secondary = "#ffc8c8c8",
+            control = "#ff9eb2d1",
+        ).toStyle()
+
+        assertEquals("#ff111826", style.nightBackground)
+        assertEquals("#ffffffff", style.nightContent)
+        assertEquals("#ffc8c8c8", style.nightSecondary)
+        assertEquals("#ff9eb2d1", style.nightControl)
+        assertTrue("主题本身够深，背景图夜间也能继续用", theme(background = "#ff111826").isNightBase)
+    }
+
+    @Test
+    fun `半透明主题色在夜间会被补成可读的不透明浅色`() {
+        val style = theme(background = "#fff1f3f4", content = "#8e000000").toStyle()
+        val nightContent = parseArgbColor(style.nightContent)!!
+
+        assertEquals("夜间正文不允许半透明", 0xFF, nightContent ushr 24)
+        assertTrue(
+            contrastRatio(nightContent, parseArgbColor(style.nightBackground)!!) >= 4.5,
+        )
+    }
+
+    @Test
+    fun `所有内置主题的夜间配色都可读`() {
+        val unreadable = loadThemes().mapNotNull { preset ->
+            val style = preset.toStyle()
+            val background = parseArgbColor(style.nightBackground) ?: return@mapNotNull "${preset.name}: 底色解析失败"
+            val content = parseArgbColor(style.nightContent) ?: return@mapNotNull "${preset.name}: 正文解析失败"
+            val secondary = parseArgbColor(style.nightSecondary) ?: return@mapNotNull "${preset.name}: 页眉页脚解析失败"
+            val control = parseArgbColor(style.nightControl) ?: return@mapNotNull "${preset.name}: 强调色解析失败"
+            val contentContrast = contrastRatio(content, background)
+            val secondaryContrast = contrastRatio(secondary, background)
+            val controlContrast = contrastRatio(control, background)
+            val darkness = relativeLuminance(background)
+            val problem = when {
+                darkness >= 0.1 -> "夜间底色不够深($darkness)"
+                contentContrast < 4.5 -> "正文对比度 ${"%.2f".format(contentContrast)}"
+                secondaryContrast < 4.5 -> "页眉页脚对比度 ${"%.2f".format(secondaryContrast)}"
+                controlContrast < 3.0 -> "强调色对比度 ${"%.2f".format(controlContrast)}"
+                else -> null
+            }
+            problem?.let { "${preset.name}(${preset.id}): $it" }
+        }
+
+        assertTrue("夜间配色不可读：$unreadable", unreadable.isEmpty())
+    }
+
+    @Test
     fun `缺 mipmap 的主题只有配色`() {
         val restored = gson.fromJson<ReadThemePreset>(
             """{"id":8,"name":"纯色","background":"#fff1f3f4","content":"#ff2d2d33",
@@ -147,6 +237,9 @@ class ReadThemePresetTest {
 
     private fun theme(
         background: String = "#fff1f3f4",
+        content: String = "#ff000000",
+        secondary: String = "#80000000",
+        control: String = "#ff3473e7",
         horizontal: Int = 0,
         top: Int = 0,
         bottom: Int = 0,
@@ -154,9 +247,9 @@ class ReadThemePresetTest {
         id = 1,
         name = "t",
         background = background,
-        content = "#ff000000",
-        secondary = "#80000000",
-        control = "#ff3473e7",
+        content = content,
+        secondary = secondary,
+        control = control,
         horizontal = horizontal,
         top = top,
         bottom = bottom,

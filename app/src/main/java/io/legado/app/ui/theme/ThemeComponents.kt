@@ -280,7 +280,7 @@ fun MaterialThemeWrapper(
         colorScheme = colorScheme,
         typography = materialTypography,
         motionScheme = MotionScheme.expressive(),
-        shapes = Shapes()
+        shapes = appShapes()
     ) {
         val legadoTypography = remember(materialTypography, customFontFamily) {
             materialTypography.toLegadoTypography().withFont(customFontFamily)

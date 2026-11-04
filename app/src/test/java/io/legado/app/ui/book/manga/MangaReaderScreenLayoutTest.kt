@@ -80,9 +80,6 @@ class MangaReaderScreenLayoutTest {
     private val visible = mutableStateOf(true)
     private val reports = mutableListOf<MangaReaderIntent.VisibleItemChanged>()
     private val intents = mutableListOf<MangaReaderIntent>()
-    private val translatedPages = mutableListOf<Pair<String, Boolean>>()
-    private val hasTranslation = mutableStateOf(false)
-    private val recomposedPages = mutableListOf<String>()
     private val prefetchOutcomes = java.util.Collections.synchronizedList(mutableListOf<String>())
 
     /** 按 imageUrl 覆盖原图尺寸，预览可以使用不同的采样比例。 */
@@ -145,10 +142,6 @@ class MangaReaderScreenLayoutTest {
                                 ::onIntent,
                                 imageLoader = imageLoader,
                                 canHandleBack = false,
-                                onTranslatePage = { key, force -> translatedPages += key to force },
-                                onRecomposePage = { key -> recomposedPages += key },
-                                canRecomposePage = { it == "page:2:0" },
-                                hasTranslatedPage = { it == "page:2:0" && hasTranslation.value },
                             )
                         }
                         content()
@@ -189,24 +182,6 @@ class MangaReaderScreenLayoutTest {
         }
         assertTrue(intents.filterIsInstance<MangaReaderIntent.PageSourceLoaded>().any { it.requestId.key == "page:1:56" })
         assertEquals(0, reader.value.currentPage)
-    }
-
-    @Test fun `image menu routes translation and retypesetting to the held adjacent page`() {
-        val app = RuntimeEnvironment.getApplication()
-        val sheet = MangaReaderSheet.PageActions("page:2:0")
-        reader.value = reader.value.copy(pages = (currentPages + pages(2, 1)).toImmutableList(), activeSheet = sheet)
-        compose.onNodeWithText(app.getString(R.string.feature_manga_retranslate_short)).assertDoesNotExist()
-        compose.onNodeWithText(app.getString(R.string.feature_manga_translate_short)).performScrollTo().performClick()
-        assertEquals(listOf("page:2:0" to false), translatedPages)
-        assertTrue(intents.contains(MangaReaderIntent.DismissSheet))
-        compose.runOnIdle { hasTranslation.value = true }
-        compose.onNodeWithText(app.getString(R.string.feature_manga_translate_short)).assertDoesNotExist()
-        compose.onNodeWithText(app.getString(R.string.feature_manga_retranslate_short)).performScrollTo().performClick()
-        assertEquals("page:2:0" to true, translatedPages.last())
-        compose.onNodeWithText(app.getString(R.string.feature_manga_recompose_short)).performScrollTo().performClick()
-        assertEquals(listOf("page:2:0"), recomposedPages)
-        reader.value = reader.value.copy(activeSheet = MangaReaderSheet.PageActions("untranslated"))
-        compose.onNodeWithText(app.getString(R.string.feature_manga_recompose_short)).assertIsNotEnabled()
     }
 
     @Test

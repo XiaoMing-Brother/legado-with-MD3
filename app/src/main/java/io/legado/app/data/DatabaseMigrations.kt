@@ -22,7 +22,22 @@ object DatabaseMigrations {
             migration_39_40, migration_40_41, migration_41_42, migration_42_43,
             migration_82_83, migration_98_99, migration_99_100,
             migration_102_103, migration_123_124, migration_124_125, migration_127_128,
+            migration_133_134,
         )
+    }
+
+
+    /**
+     * 133 → 134：AI 助手功能整体下线，丢弃其专属表。
+     * 这些表只存 AI 会话/模型/提示词/产物，不与阅读数据关联。
+     */
+    private val migration_133_134 = object : Migration(133, 134) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            listOf(
+                "ai_artifacts", "ai_chat_conversations", "ai_chat_messages", "ai_memory",
+                "ai_model_profiles", "ai_prompt_presets", "ai_provider_profiles", "ai_task_presets",
+            ).forEach { db.execSQL("DROP TABLE IF EXISTS `$it`") }
+        }
     }
 
     /**

@@ -11,14 +11,6 @@ internal fun capsuleMatchesPlayer(
 ): Boolean = capsule.source == source &&
         (source == PlaybackCapsuleSource.ReadAloud || bookUrl.isBlank() || capsule.bookUrl == bookUrl)
 
-/** 与主页底栏的实际组合条件一致，隐藏底栏时由全局胶囊提供锚点。 */
-internal fun shouldUseHomePlaybackCapsule(
-    onMainRoute: Boolean,
-    showBottomView: Boolean,
-    useFloatingBottomBar: Boolean,
-    useRail: Boolean,
-): Boolean = onMainRoute && showBottomView && useFloatingBottomBar && !useRail
-
 /**
  * 关闭预测性返回时，宿主必须在所有层级接管返回，不能只兜底根页面的退出。
  *

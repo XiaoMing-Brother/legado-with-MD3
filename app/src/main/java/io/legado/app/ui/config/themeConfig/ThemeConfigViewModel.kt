@@ -119,23 +119,8 @@ class ThemeConfigViewModel(
             is ThemeConfigIntent.SetSwipeAnimation -> updateAppShell {
                 it.copy(swipeAnimation = intent.enabled)
             }
-            is ThemeConfigIntent.SetShowBottomView -> updateAppShell {
-                it.copy(showBottomView = intent.visible)
-            }
-            is ThemeConfigIntent.SetUseFloatingBottomBar -> updateAppShell {
-                it.copy(useFloatingBottomBar = intent.enabled)
-            }
-            is ThemeConfigIntent.SetUseFloatingBottomBarLiquidGlass -> updateAppShell {
-                it.copy(useFloatingBottomBarLiquidGlass = intent.enabled)
-            }
-            is ThemeConfigIntent.SetTabletInterface -> updateAppShell {
-                it.copy(tabletInterface = intent.value)
-            }
             is ThemeConfigIntent.SetMultiPaneMode -> updateAppShell {
                 it.copy(multiPaneMode = intent.value)
-            }
-            is ThemeConfigIntent.SetLabelVisibilityMode -> updateAppShell {
-                it.copy(labelVisibilityMode = intent.value)
             }
             is ThemeConfigIntent.SetMiuixMonet -> setMiuixMonet(intent.enabled)
             is ThemeConfigIntent.SetDynamicColors -> setDynamicColors(intent.enabled)

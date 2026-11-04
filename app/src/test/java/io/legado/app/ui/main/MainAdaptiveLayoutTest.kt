@@ -31,7 +31,7 @@ class MainAdaptiveLayoutTest {
 
     @Test
     fun strategyRejectsInsufficientSpaceAndRestoresSameEntriesAfterResize() {
-        var env = environment(width = 900f, railWidth = 240f)
+        var env = environment(width = 700f)
         val home =
             NavEntry<NavKey>(MainRouteHome, metadata = ListDetailSceneStrategy.containerPane()) {}
         val settings = NavEntry<NavKey>(
@@ -42,26 +42,25 @@ class MainAdaptiveLayoutTest {
         val strategy = ListDetailSceneStrategy(isEnabled = { true }, environment = { env })
         val scope = SceneStrategyScope<NavKey>()
         assertNull(with(strategy) { scope.calculateScene(entries) })
-        env = environment(width = 1100f, railWidth = 240f)
+        env = environment(width = 1100f)
         val scene =
             checkNotNull(with(strategy) { scope.calculateScene(entries) } as? ListDetailScene)
         assertEquals(entries, scene.entries)
         assertNotNull(scene.metadata[NavDisplay.TransitionKey])
         assertNotNull(scene.metadata[NavDisplay.PopTransitionKey])
         assertNotNull(scene.metadata[NavDisplay.PredictivePopTransitionKey])
-        assertTrue(checkNotNull(scene.layout).listBounds.width >= 600f)
+        assertTrue(checkNotNull(scene.layout).listBounds.width >= MainPaneMinWidth)
     }
 
     private fun environment(
         width: Float = 1000f,
         height: Float = 1000f,
         mode: MultiPaneMode = MultiPaneMode.Auto,
-        railWidth: Float = 0f,
         bounds: Rect = Rect(0f, 0f, width, height),
         vararg hinges: HingeInfo,
     ) = MainAdaptiveLayoutEnvironment(
         bounds, DpSize(width.dp, height.dp),
-        hinges.toList().toImmutableList(), mode, railWidth.dp
+        hinges.toList().toImmutableList(), mode
     )
 
     private fun fold(
@@ -73,27 +72,27 @@ class MainAdaptiveLayoutTest {
         HingeInfo(bounds, false, vertical, separating, occluding)
 
     @Test
-    fun expandedSidebarMustLeaveEnoughActualContentSpace() {
-        assertNull(environment(width = 900f, railWidth = 240f).paneLayout(true))
-        val layout = checkNotNull(environment(width = 1000f, railWidth = 240f).paneLayout(true))
-        assertTrue(layout.listBounds.width - 240f >= MainPaneMinWidth)
+    fun containerPaneLeavesEnoughActualContentSpace() {
+        assertNull(environment(width = 743f, mode = MultiPaneMode.Always).paneLayout(true))
+        val layout = checkNotNull(
+            environment(width = 744f, mode = MultiPaneMode.Always).paneLayout(true)
+        )
+        assertTrue(layout.listBounds.width >= MainPaneMinWidth)
         assertTrue(layout.detailBounds.width >= MainPaneMinWidth)
-        assertNotNull(environment(width = 900f, railWidth = 240f).paneLayout(false))
+        assertNotNull(environment(width = 744f, mode = MultiPaneMode.Always).paneLayout(false))
     }
 
     @Test
     fun alwaysModeCannotOverrideMinimumContentOrHeight() {
         assertNull(
             environment(
-                width = 839f,
-                railWidth = 96f,
+                width = 743f,
                 mode = MultiPaneMode.Always
             ).paneLayout(true)
         )
         assertNotNull(
             environment(
-                width = 840f,
-                railWidth = 96f,
+                width = 744f,
                 mode = MultiPaneMode.Always
             ).paneLayout(true)
         )

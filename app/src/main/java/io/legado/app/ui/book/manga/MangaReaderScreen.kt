@@ -191,12 +191,6 @@ fun MangaReaderScreen(
     imageLoader: ImageLoader = koinInject(),
     hazeState: HazeState? = null,
     canHandleBack: Boolean = true,
-    onOpenTranslation: () -> Unit = {},
-    onTranslatePage: ((String, Boolean) -> Unit)? = null,
-    onClearTranslatedPage: ((String) -> Unit)? = null,
-    onRecomposePage: ((String) -> Unit)? = null,
-    canRecomposePage: (String) -> Boolean = { false },
-    hasTranslatedPage: (String) -> Boolean = { false },
     footerStatus: @Composable () -> Unit = {},
 ) {
     val canMorphBack = state.inBookshelf &&
@@ -345,7 +339,6 @@ fun MangaReaderScreen(
             MangaReaderMenu(
                 state = state,
                 onIntent = onIntent,
-                onOpenTranslation = onOpenTranslation,
                 backdrop = menuBackdrop,
                 hazeState = hazeState,
                 menuSeedColor = when (state.settings.menuColorSource) {
@@ -368,25 +361,7 @@ fun MangaReaderScreen(
         MangaReaderClickActionsSheet(state, onIntent)
     }
     (state.activeSheet as? MangaReaderSheet.PageActions)?.let { sheet ->
-        MangaReaderPageActionsSheet(sheet.companionPageKey != null, onIntent,
-            hasTranslation = hasTranslatedPage(sheet.pageKey),
-            onSaveTranslation = (state.pages.firstOrNull { it.key == sheet.pageKey } as? MangaReaderItemUi.Page)
-                ?.translatedImageUrl?.let { url -> {
-                    onIntent(MangaReaderIntent.DismissSheet)
-                    onIntent(MangaReaderIntent.SaveTranslatedImage(url))
-                } },
-            onClearTranslation = onClearTranslatedPage?.takeIf { hasTranslatedPage(sheet.pageKey) }?.let { action -> {
-                onIntent(MangaReaderIntent.DismissSheet)
-                action(sheet.pageKey)
-            } },
-            onTranslate = onTranslatePage?.let { action -> { force ->
-                onIntent(MangaReaderIntent.DismissSheet)
-                action(sheet.pageKey, force)
-            } },
-            onRecompose = onRecomposePage?.takeIf { canRecomposePage(sheet.pageKey) }?.let { action -> {
-                onIntent(MangaReaderIntent.DismissSheet)
-                action(sheet.pageKey)
-            } })
+        MangaReaderPageActionsSheet(sheet.companionPageKey != null, onIntent)
     }
     if (state.activeSheet == MangaReaderSheet.ChangeSource) {
         val oldBook = remember(state.changeSourceBook) {
@@ -1799,7 +1774,6 @@ private fun MangaPageImage(
     val imagePipelineKey = remember(
         page.key,
         page.bookUrl,
-        page.translatedImageUrl,
         paged,
         settings.sourceOrigin,
         settings.enableEInk,
@@ -1812,8 +1786,7 @@ private fun MangaPageImage(
         listOf(
             page.key,
             page.bookUrl,
-            page.translatedImageUrl,
-            paged,
+                paged,
             settings.sourceOrigin,
             settings.enableEInk,
             settings.eInkThreshold,
@@ -2216,11 +2189,10 @@ internal fun MangaReaderItemUi.Page.imageRequest(
     onSuccess: () -> Unit = {},
     onError: (String?) -> Unit = {},
 ): ImageRequest {
-    val displayIdentity = translatedImageUrl?.let { "$imageUrl:translated:$it" } ?: imageUrl
-    val memoryCacheKey = "manga-page-v2:$bookUrl:$displayIdentity:${settings.sourceOrigin}:" +
+    val memoryCacheKey = "manga-page-v2:$bookUrl:$imageUrl:${settings.sourceOrigin}:" +
         "${settings.enableEInk}:${settings.eInkThreshold}:${settings.enableGray}:${fileOwner != null}:$retryRevision"
     return ImageRequest.Builder(context)
-        .data(translatedImageUrl?.let { java.io.File(requireNotNull(android.net.Uri.parse(it).path)) } ?: imageUrl)
+        .data(imageUrl)
         .allowHardware(true)
         // 稳定解码目标避免条漫首次占位高度参与降采样。
         // Coil 检查缓存预览是否满足目标尺寸；分页放大清晰度由原图区域解码补足。
@@ -2268,7 +2240,7 @@ private fun MangaReaderItemUi.Page.backgroundColorRequest(
     fileOwner: MangaImageFileOwner? = null,
     onColors: (MangaPageEdgeColors) -> Unit,
 ): ImageRequest = ImageRequest.Builder(context)
-    .data(translatedImageUrl?.let { java.io.File(requireNotNull(android.net.Uri.parse(it).path)) } ?: imageUrl)
+    .data(imageUrl)
     .let { builder ->
         backgroundDecodeSize(aspectRatio).let { size ->
             builder.size(size.width, size.height)

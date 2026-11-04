@@ -16,7 +16,6 @@ import io.legado.app.data.repository.BookRepository
 import io.legado.app.data.repository.BookSourceRepository
 import io.legado.app.data.repository.BookshelfRepository
 import io.legado.app.data.repository.UploadRepository
-import io.legado.app.domain.gateway.AppShellSettingsGateway
 import io.legado.app.domain.gateway.BookshelfSettingsGateway
 import io.legado.app.domain.gateway.DownloadCacheSettingsGateway
 import io.legado.app.domain.gateway.PrivateAccessGateway
@@ -98,7 +97,6 @@ class BookshelfViewModel(
     private val importBookshelfUseCase: ImportBookshelfUseCase,
     private val exportBookshelfUseCase: ExportBookshelfUseCase,
     private val bookshelfSettingsGateway: BookshelfSettingsGateway,
-    private val appShellSettingsGateway: AppShellSettingsGateway,
     private val themeSettingsGateway: ThemeSettingsGateway,
     private val downloadCacheSettingsGateway: DownloadCacheSettingsGateway,
     private val privateAccessGateway: PrivateAccessGateway,
@@ -132,7 +130,6 @@ class BookshelfViewModel(
 
     private val bookshelfSettings = bookshelfSettingsGateway.settings
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), initialSettings)
-    private val initialAppShellSettings = appShellSettingsGateway.currentSettings
     private val initialThemeSettings = themeSettingsGateway.currentSettings
 
     private val sortConfigFlow: StateFlow<BookshelfSortConfig> = bookshelfSettings
@@ -709,13 +706,12 @@ class BookshelfViewModel(
     val uiState: StateFlow<BookshelfUiState> = combine(
         contentUiState,
         bookshelfSettings,
-        appShellSettingsGateway.settings,
         themeSettingsGateway.settings,
         pendingUploadUrlFlow,
-    ) { state, settings, appShellSettings, themeSettings, pendingUploadUrl ->
+    ) { state, settings, themeSettings, pendingUploadUrl ->
         state.copy(
             settings = settings,
-            useRaisedBottomInset = appShellSettings.useFloatingBottomBar || themeSettings.enableBlur,
+            useRaisedBottomInset = themeSettings.enableBlur,
             enableCustomTagColors = themeSettings.enableCustomTagColors,
             customTagColors = parseTagColors(themeSettings.customTagColorsJson),
             themeColor = themeSettings.themeColor,
@@ -734,7 +730,7 @@ class BookshelfViewModel(
             selectedGroupId = initialSettings.saveTabPosition,
             isInFolderRoot = initialSettings.bookGroupStyle == 2,
             bookGroupStyle = initialSettings.bookGroupStyle,
-            useRaisedBottomInset = initialAppShellSettings.useFloatingBottomBar || initialThemeSettings.enableBlur,
+            useRaisedBottomInset = initialThemeSettings.enableBlur,
             enableCustomTagColors = initialThemeSettings.enableCustomTagColors,
             customTagColors = parseTagColors(initialThemeSettings.customTagColorsJson),
             themeColor = initialThemeSettings.themeColor,

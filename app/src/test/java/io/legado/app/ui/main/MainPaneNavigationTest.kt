@@ -11,8 +11,8 @@ class MainPaneNavigationTest {
         val stack = mutableListOf<NavKey>(MainRouteHome, MainRouteSettings)
         val tracker = MainNavRouteTracker()
         val navigation = MainEntryNavigation(MainRouteSettings, stack, true, tracker) { error("Pane navigation should handle settings") }
-        navigation.pushRoute(MainRouteSettingsManga())
-        assertEquals(listOf(MainRouteHome, MainRouteSettings, MainRouteSettingsManga()), stack)
+        navigation.pushRoute(MainRouteSettingsManga)
+        assertEquals(listOf(MainRouteHome, MainRouteSettings, MainRouteSettingsManga), stack)
         assertTrue(supportsMainPanes(MainRouteSettingsManga::class))
         stack.removeAt(stack.lastIndex)
         assertEquals(MainRouteSettings, stack.last())

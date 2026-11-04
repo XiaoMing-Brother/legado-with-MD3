@@ -22,7 +22,6 @@ enum class ReadAloudConfigOption {
     SystemMediaCompat,
     StreamAudio,
     SpeechAnalysisMode,
-    SpeechAnalysisReasoningLevel,
     UseMultiSpeaker,
     MultiRoleCast,
     BgmAssign,

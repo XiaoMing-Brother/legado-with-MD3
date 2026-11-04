@@ -3,11 +3,9 @@ package io.legado.app.ui.book.knowledge
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.legado.app.R
-import io.legado.app.data.entities.AiArtifact
 import io.legado.app.data.entities.BookCharacterProfile
 import io.legado.app.domain.gateway.BookKnowledgeGateway
 import io.legado.app.help.readaloud.cast.CastProfileMirror
-import io.legado.app.domain.usecase.IdentifyBookCharactersUseCase
 import io.legado.app.utils.GSON
 import io.legado.app.utils.fromJsonArray
 import kotlinx.collections.immutable.toImmutableList
@@ -33,7 +31,6 @@ private val ROLE_ORDER = mapOf(
 class BookCharacterListViewModel(
     bookUrl: String,
     private val bookKnowledgeGateway: BookKnowledgeGateway,
-    private val identifyBookCharacters: IdentifyBookCharactersUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -45,12 +42,9 @@ class BookCharacterListViewModel(
     val effects = _effects.asSharedFlow()
 
     private var allProfiles: List<BookCharacterProfile> = emptyList()
-    private var identifiedCandidates: List<IdentifyBookCharactersUseCase.Candidate> = emptyList()
 
     init {
         load()
-        loadPersistedCandidates()
-        observeIdentifyTask()
     }
 
     fun onIntent(intent: CharacterListIntent) {
@@ -77,25 +71,6 @@ class BookCharacterListViewModel(
                     )
                 )
             }
-            CharacterListIntent.OpenAiIdentify -> _uiState.update {
-                it.copy(
-                    aiSheet = it.aiSheet ?: CharacterIdentifySheet(),
-                    isAiSheetVisible = true,
-                )
-            }
-
-            CharacterListIntent.DismissAiIdentify -> _uiState.update { it.copy(isAiSheetVisible = false) }
-            CharacterListIntent.RunAiIdentify -> identifyCharacters()
-            is CharacterListIntent.SetAiIdentifyReasoningLevel -> _uiState.update { state ->
-                state.copy(aiSheet = state.aiSheet?.copy(reasoningLevel = intent.level))
-            }
-            is CharacterListIntent.ToggleAiCandidate -> _uiState.update { state ->
-                state.copy(aiSheet = state.aiSheet?.copy(candidates = state.aiSheet.candidates.map { candidate ->
-                    if (candidate.id == intent.id) candidate.copy(selected = !candidate.selected) else candidate
-                }.toImmutableList()))
-            }
-
-            CharacterListIntent.SaveAiCandidates -> saveIdentifiedCandidates()
         }
     }
 
@@ -145,153 +120,4 @@ class BookCharacterListViewModel(
             }.toImmutableList()
         _uiState.update { it.copy(isLoading = false, characters = characters) }
     }
-
-    private fun loadPersistedCandidates() {
-        val bookUrl = _uiState.value.bookUrl
-        viewModelScope.launch {
-            val candidates = withContext(Dispatchers.IO) {
-                identifyBookCharacters.loadLatest(bookUrl)
-            }
-            if (candidates.isNotEmpty()) {
-                identifiedCandidates = candidates
-                _uiState.update { state ->
-                    val sheet = state.aiSheet
-                    if (sheet?.loading == true || sheet?.candidates?.isNotEmpty() == true) state else {
-                        state.copy(
-                            aiSheet = sheet?.copy(candidates = candidates.toCandidateUi())
-                                ?: CharacterIdentifySheet(candidates = candidates.toCandidateUi())
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    private fun observeIdentifyTask() {
-        val bookUrl = _uiState.value.bookUrl
-        viewModelScope.launch {
-            identifyBookCharacters.observeTask(bookUrl).collectLatest { task ->
-                when (task?.status) {
-                    AiArtifact.STATUS_RUNNING -> _uiState.update { state ->
-                        val sheet = state.aiSheet ?: CharacterIdentifySheet()
-                        state.copy(
-                            aiSheet = sheet.copy(
-                                loading = true,
-                                error = null,
-                                reasoning = task.reasoning,
-                                toolNames = task.toolNames.toImmutableList(),
-                                startedAt = if (sheet.startedAt == 0L) System.currentTimeMillis() else sheet.startedAt,
-                            )
-                        )
-                    }
-
-                    AiArtifact.STATUS_SUCCESS -> {
-                        identifiedCandidates = identifyBookCharacters.decodeCandidates(task.output)
-                        _uiState.update { state ->
-                            state.copy(
-                                aiSheet = (state.aiSheet ?: CharacterIdentifySheet()).copy(
-                                    loading = false,
-                                    error = null,
-                                    candidates = identifiedCandidates.toCandidateUi(),
-                                    reasoning = task.reasoning,
-                                    toolNames = task.toolNames.toImmutableList(),
-                                )
-                            )
-                        }
-                    }
-
-                    AiArtifact.STATUS_FAILED -> _uiState.update { state ->
-                        state.copy(
-                            aiSheet = (state.aiSheet ?: CharacterIdentifySheet()).copy(
-                                loading = false,
-                                error = task.errorMessage ?: appCtx.getString(R.string.load_failed),
-                            )
-                        )
-                    }
-
-                    else -> Unit
-                }
-            }
-        }
-    }
-
-    private fun identifyCharacters() {
-        val bookUrl = _uiState.value.bookUrl
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    aiSheet = CharacterIdentifySheet(
-                        reasoningLevel = _uiState.value.aiSheet?.reasoningLevel
-                            ?: io.legado.app.domain.model.AiReasoningLevel.AUTO,
-                        loading = true,
-                        startedAt = System.currentTimeMillis()
-                    ),
-                    isAiSheetVisible = true,
-                )
-            }
-            try {
-                withContext(Dispatchers.IO) {
-                    identifyBookCharacters.start(
-                        bookUrl,
-                        _uiState.value.aiSheet?.reasoningLevel
-                            ?: io.legado.app.domain.model.AiReasoningLevel.AUTO,
-                    )
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                _uiState.update {
-                    it.copy(
-                        aiSheet = CharacterIdentifySheet(
-                            error = e.localizedMessage ?: appCtx.getString(R.string.load_failed)
-                        ),
-                        isAiSheetVisible = true,
-                    )
-                }
-            }
-        }
-    }
-
-    private fun saveIdentifiedCandidates() {
-        val sheet = _uiState.value.aiSheet ?: return
-        val selected = sheet.candidates.filter { it.selected }.mapNotNull { item ->
-            identifiedCandidates.getOrNull(item.id.toIntOrNull() ?: -1)
-        }
-        if (selected.isEmpty()) return
-        viewModelScope.launch {
-            _uiState.update { it.copy(aiSheet = sheet.copy(loading = true)) }
-            try {
-                withContext(Dispatchers.IO) {
-                    identifyBookCharacters.save(
-                        _uiState.value.bookUrl,
-                        selected
-                    )
-                }
-                _uiState.update { it.copy(aiSheet = null, isAiSheetVisible = false) }
-                load()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                _uiState.update {
-                    it.copy(
-                        aiSheet = sheet.copy(
-                            loading = false,
-                            error = e.localizedMessage ?: appCtx.getString(R.string.save_failed)
-                        )
-                    )
-                }
-            }
-        }
-    }
 }
-
-private fun List<IdentifyBookCharactersUseCase.Candidate>.toCandidateUi() =
-    mapIndexed { index, candidate ->
-        CharacterIdentifyCandidateUi(
-            id = index.toString(),
-            name = candidate.name,
-            summary = listOf(candidate.summary, candidate.evidence)
-                .filter(String::isNotBlank)
-                .joinToString("\n"),
-        )
-    }.toImmutableList()

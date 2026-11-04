@@ -358,17 +358,6 @@ fun ThemeConfigScreen(
                         },
                     )
                     DropdownListSettingItem(
-                        title = stringResource(R.string.tabletInterface),
-                        selectedValue = appShell.tabletInterface,
-                        displayEntries = stringArrayResource(R.array.tabletInterface),
-                        entryValues = stringArrayResource(R.array.tabletInterface_value),
-                        onValueChange = {
-                            onIntent(
-                                ThemeConfigIntent.SetTabletInterface(it)
-                            )
-                        }
-                    )
-                    DropdownListSettingItem(
                         title = stringResource(R.string.multi_pane_layout),
                         selectedValue = appShell.multiPaneMode,
                         displayEntries = stringArrayResource(R.array.multi_pane_layout_entries),
@@ -874,14 +863,10 @@ fun ThemeConfigScreen(
         onSetDefault = { onIntent(ThemeConfigIntent.SetDefaultHomePage(it)) },
         onRequestNavigationIcon = { onIntent(ThemeConfigIntent.RequestNavigationIcon(it)) },
         onClearNavigationIcon = { onIntent(ThemeConfigIntent.SelectNavigationIcon(it, "")) },
-        onSetLabelVisibilityMode = {
-            onIntent(ThemeConfigIntent.SetLabelVisibilityMode(it))
-        },
     )
 
     TopBottomBarSettingsSheet(
         show = state.activeSheet == ThemeConfigSheet.TopBottomBar,
-        appShell = appShell,
         theme = theme,
         isMiuixEngine = ThemeResolver.isMiuixEngine(appShell.composeEngine),
         onDismissRequest = { onIntent(ThemeConfigIntent.DismissSheet) },

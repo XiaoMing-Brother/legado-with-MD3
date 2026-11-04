@@ -25,8 +25,8 @@ class ThemePackageSettingsMappingTest {
             baseCardBorderColor = 0x11223344,
             baseCardBorderColorNight = 0x55667788,
             disableSplicedColumnGroupCornerRadius = true,
-            bottomBarLensRadius = 31.5f,
             mainNavigationOrder = "bookshelf,home,my",
+            showStatusBar = false,
             bgImageLight = "/light.jpg",
             largeContainerBackgroundImageLight = "/large-light.9.png",
             itemBackgroundImageDark = "/item-dark.png",
@@ -49,8 +49,8 @@ class ThemePackageSettingsMappingTest {
         assertEquals(0x11223344, values[PreferKey.baseCardBorderColor])
         assertEquals(0x55667788, values[PreferKey.baseCardBorderColorNight])
         assertEquals(true, values[PreferKey.disableSplicedColumnGroupCornerRadius])
-        assertEquals(31.5f, values[PreferKey.bottomBarLensRadius])
         assertEquals("bookshelf,home,my", values[PreferKey.mainNavigationOrder])
+        assertEquals(true, values[PreferKey.showStatusBar])
         assertEquals("/light.jpg", values[PreferKey.bgImage])
         assertEquals(
             "/large-light.9.png",

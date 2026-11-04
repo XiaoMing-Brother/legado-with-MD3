@@ -4,7 +4,7 @@
 
 ## 职责
 
-- `MainActivity` 组装同窗口播放浮层；主页启用悬浮底栏、底栏显示且不使用侧边导航时显示圆形入口，其余页面使用可拖拽胶囊。
+- `MainActivity` 组装同窗口播放浮层；主界面导航改为左右滑动后不再有底栏胶囊，所有页面统一使用可拖拽胶囊。
 - `core/ui/player/PlayerMorphHost` 共用于朗读和有声书，管理布局锚点、飞行封面、返回与下拉手势；
   `PlayerMorphCover` 统一终点封面的请求与交接；`ReadAloudMorphState` 是唯一动画进度源。朗读宿主只保留朗读设置与经典控制动作。
 - `ReadAloudCapsule` 共用于应用内与应用外；`ReadAloudOverlayWindow` 负责 Android

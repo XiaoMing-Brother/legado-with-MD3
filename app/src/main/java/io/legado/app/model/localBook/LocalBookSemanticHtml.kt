@@ -35,7 +35,8 @@ object LocalBookSemanticHtml {
 
     private val allowedImgAttrs = setOf("src", "alt", "width", "height", "class", "style")
 
-    private val allowedCssProps = setOf("text-align", "font-weight", "font-style", "text-decoration")
+    private val allowedCssProps =
+        setOf("text-align", "font-weight", "font-style", "text-decoration", "font-family")
 
     data class CssRule(
         val tag: String?,

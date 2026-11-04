@@ -363,9 +363,6 @@ private fun moreActionSpecs(
         applicable = isReadMenuActionApplicable("charset", state),
         onClick = { onIntent(ReadBookIntent.ShowSheet(ReadBookSheet.Charset)) }),
     MoreActionSpec(
-        "ai_chat", stringResource(R.string.ai_chat), Icons.AutoMirrored.Filled.Chat,
-        onClick = { dispatch(ReadBookIntent.OpenAiChat) }),
-    MoreActionSpec(
         "edit_content", stringResource(R.string.edit_content), Icons.Default.Edit,
         onClick = { dispatch(ReadBookIntent.OpenContentEdit) }),
     MoreActionSpec(

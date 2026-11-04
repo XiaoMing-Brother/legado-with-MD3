@@ -69,7 +69,6 @@ sealed interface MangaReaderItemUi {
         val loadState: MangaPageLoadState = MangaPageLoadState.Queued,
         val retryRevision: Int = 0,
         /** Derived raster, leaving source identity and load callbacks unchanged. */
-        val translatedImageUrl: String? = null,
         /** Original data is available, including data-only prefetch before display. */
         val sourceReady: Boolean = false,
     ) : MangaReaderItemUi
@@ -284,7 +283,6 @@ sealed interface MangaReaderIntent {
         val companionBeforePage: Boolean = false,
     ) : MangaReaderIntent
 
-    data class SaveTranslatedImage(val url: String) : MangaReaderIntent
     data class ExecutePageAction(val action: MangaPageAction) : MangaReaderIntent
     data class MessageShown(val id: Long) : MangaReaderIntent
 }

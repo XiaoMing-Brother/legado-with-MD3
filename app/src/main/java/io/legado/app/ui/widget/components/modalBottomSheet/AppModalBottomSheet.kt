@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -29,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.style.TextAlign
@@ -36,6 +38,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import io.legado.app.ui.theme.LegadoTheme
+import io.legado.app.ui.theme.appShapes
+import io.legado.app.ui.theme.LocalAppUiConfiguration
 import io.legado.app.ui.theme.LocalLegadoThemeColors
 import io.legado.app.ui.theme.ProvideAppContentColor
 import io.legado.app.ui.theme.ProvideAppDensity
@@ -62,6 +66,14 @@ fun AppModalBottomSheet(
     val sheetContainerColor = LegadoTheme.colorScheme.surfaceContainer
     val sheetContentColor = LegadoTheme.colorScheme.onSurface
     val sheetDragHandleColor = LegadoTheme.colorScheme.onSurfaceVariant
+    // 弹层圆角跟随主题的"卡片圆角覆盖"：预设（如清墨 20dp）一开，卡片与弹层是同一个
+    // 轮廓语言；没开覆盖的主题仍用 M3 默认 28dp，不受影响。
+    val themeSettings = LocalAppUiConfiguration.current.theme
+    val sheetShape: Shape = if (themeSettings.overrideBaseCardCornerRadius) {
+        RoundedCornerShape(themeSettings.baseCardCornerRadius.dp)
+    } else {
+        BottomSheetDefaults.ExpandedShape
+    }
 
     if (ThemeResolver.isMiuixEngine(LegadoTheme.composeEngine)) {
         WindowBottomSheet(
@@ -140,11 +152,12 @@ fun AppModalBottomSheet(
                 colorScheme = colorScheme,
                 typography = Typography(),
                 motionScheme = MotionScheme.expressive(),
-                shapes = Shapes()
+                shapes = appShapes()
             ) {
                 ModalBottomSheet(
                     onDismissRequest = onDismissRequest,
                     sheetState = sheetState,
+                    shape = sheetShape,
                     containerColor = sheetContainerColor,
                     contentColor = sheetContentColor,
                     dragHandle = { BottomSheetDefaults.DragHandle(color = sheetDragHandleColor) },

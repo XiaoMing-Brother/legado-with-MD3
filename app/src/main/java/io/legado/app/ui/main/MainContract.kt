@@ -8,11 +8,6 @@ import kotlinx.collections.immutable.ImmutableList
 data class MainUiState(
     val destinations: ImmutableList<MainDestination> = MainDestination.mainDestinations,
     val defaultHomePage: String = "bookshelf",
-    val showBottomView: Boolean = true,
-    val useFloatingBottomBar: Boolean = false,
-    val useFloatingBottomBarLiquidGlass: Boolean = false,
-    val labelVisibilityMode: String = "auto",
-    val navExtended: Boolean = false,
     val navIconHome: String = "",
     val navIconBookshelf: String = "",
     val navIconExplore: String = "",
@@ -45,7 +40,6 @@ data class MainUiState(
 }
 
 sealed interface MainUiIntent {
-    data class SetNavigationRailExpanded(val expanded: Boolean) : MainUiIntent
     data class HandlePreferenceClick(val event: PrefClickEvent) : MainUiIntent
 }
 

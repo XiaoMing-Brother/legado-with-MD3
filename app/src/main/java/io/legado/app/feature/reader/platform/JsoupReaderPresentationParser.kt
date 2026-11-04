@@ -5,6 +5,7 @@ import io.legado.app.feature.reader.core.layout.ReaderParagraphDecorationKind
 import io.legado.app.feature.reader.core.layout.ReaderTextAlignment
 import io.legado.app.feature.reader.core.source.ReaderLocalPresentation
 import io.legado.app.feature.reader.core.source.ReaderInlineSourceStyle
+import io.legado.app.help.epub.EpubFontFaceParser
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
 import org.jsoup.nodes.TextNode
@@ -40,7 +41,12 @@ internal object JsoupReaderPresentationParser {
     private class ListLevel(val ordered: Boolean, var next: Int, val step: Int)
     private class ListItem(val label: String?, var emitted: Boolean = false)
 
-    fun project(body: Element, html: String): ReaderLocalPresentation {
+    fun project(
+        body: Element,
+        html: String,
+        /** 把 CSS 里的族名换成排版器认识的字体路径/令牌；未登记返回 null。 */
+        fontToken: (String) -> String? = { null },
+    ): ReaderLocalPresentation {
         val spans = mutableListOf<ReaderLocalPresentation.Span>()
         val paragraphs = mutableListOf<ReaderLocalPresentation.Paragraph>()
         val rules = mutableListOf<Int>()
@@ -129,7 +135,13 @@ internal object JsoupReaderPresentationParser {
         current = blockGeometry(context, 10f, 1f)
         body.childNodes().forEach { walk(it, InlineCtx(), context) }
         flush()
-        return ReaderLocalPresentation(html, spans, paragraphs, rules, anchors)
+        return ReaderLocalPresentation(html, spans.map { span ->
+            // 内嵌字体：CSS 里的族名在这里换成字体令牌，排版器就能加载包内字体文件。
+            // 未登记者保留原族名（仍走系统字体），回退名本来就不在登记表里。
+            val family = span.style.fontFamily ?: return@map span
+            val token = fontToken(family) ?: return@map span
+            span.copy(style = span.style.copy(fontFamily = token))
+        }, paragraphs, rules, anchors)
     }
 
     private data class BlockGeo(
@@ -282,6 +294,14 @@ internal object JsoupReaderPresentationParser {
                 val lower = v.lowercase()
                 if ("underline" in lower) out = out.copy(underline = true)
                 if ("line-through" in lower) out = out.copy(strike = true)
+            }
+            // 内嵌字体：族名在 project() 末尾统一换成字体令牌，这里只保留族名。
+            // 它属于「适配特殊样式」的一部分：`ContentProcessor` 只在 adaptSpecialStyle 开启时
+            // 才读本地呈现，关掉这个开关就完全不会走到这里，书里的字体不会顶掉用户选定的字体。
+            declarations["font-family"]?.let { v ->
+                EpubFontFaceParser.normalizeFamily(v)?.let { family ->
+                    out = out.copy(fontFamily = family)
+                }
             }
             // Ignores original color/background/font-size
         // TODO: kept in DOM.

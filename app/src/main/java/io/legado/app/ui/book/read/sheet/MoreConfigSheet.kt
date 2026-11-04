@@ -162,6 +162,9 @@ fun MoreConfigSheet(
                 onClickImgWayChange = {
                     onIntent(ReadBookIntent.UpdateConfig(ConfigUpdate.ClickImgWay(it)))
                 },
+                onImageNightModeChange = {
+                    onIntent(ReadBookIntent.UpdateConfig(ConfigUpdate.ImageNightMode(it)))
+                },
                 onOpenClickRegionalConfig = onOpenClickRegionalConfig,
                 onOpenPageKeyConfig = onOpenPageKeyConfig,
                 onOpenTextSelectMenuConfig = onOpenTextSelectMenuConfig,
@@ -345,6 +348,7 @@ private fun OtherSettings(
     onNoAnimScrollPageChange: (Boolean) -> Unit,
     onOptimizeRenderChange: (Boolean) -> Unit,
     onClickImgWayChange: (String) -> Unit,
+    onImageNightModeChange: (String) -> Unit,
     onOpenClickRegionalConfig: () -> Unit,
     onDisableReturnKeyChange: (Boolean) -> Unit,
     onOpenPageKeyConfig: () -> Unit,
@@ -354,6 +358,8 @@ private fun OtherSettings(
 ) {
     val clickImageWayEntries = stringArrayResource(R.array.click_image_way_title)
     val clickImageWayValues = stringArrayResource(R.array.click_image_way_value)
+    val imageNightEntries = stringArrayResource(R.array.image_night_mode_title)
+    val imageNightValues = stringArrayResource(R.array.image_night_mode_value)
 
     TinySwitchSettingItem(
         title = stringResource(R.string.enable_slider_vibrator),
@@ -435,6 +441,13 @@ private fun OtherSettings(
         displayEntries = clickImageWayEntries,
         entryValues = clickImageWayValues,
         onValueChange = onClickImgWayChange,
+    )
+    TinyDropdownSettingItem(
+        title = stringResource(R.string.image_night_mode),
+        selectedValue = preferences.imageNightMode,
+        displayEntries = imageNightEntries,
+        entryValues = imageNightValues,
+        onValueChange = onImageNightModeChange,
     )
     TinyClickableSettingItem(
         title = stringResource(R.string.click_regional_config),

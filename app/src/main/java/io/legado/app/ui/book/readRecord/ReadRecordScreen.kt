@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -61,12 +60,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -1224,25 +1219,26 @@ fun LatestReadItem(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
+            // 清墨把它拆成两行：一行累计阅读时长，一行最后阅读时间。
+            // 脱敏时两行都不给——它们暴露的是"这本书读了多久、什么时候读的"。
             AppText(
-                modifier = Modifier
-                    .basicMarquee(
-                        iterations = Int.MAX_VALUE,
-                        repeatDelayMillis = 2000,
-                        initialDelayMillis = 1000
-                    ),
-                // 脱敏时整行不给：这里拼的是阅读时长 + 最后读到的章节（内容级信息）
-                text = if (locked) AnnotatedString("") else buildAnnotatedString {
-                    withStyle(style = SpanStyle(color = LegadoTheme.colorScheme.outline)) {
-                        append(formatDuring(record.readTime))
-                        append(" • ")
-                    }
-                    withStyle(style = SpanStyle(color = LegadoTheme.colorScheme.primary)) {
-                        append(lastReadText)
-                    }
-                },
+                text = if (locked) "" else stringResource(
+                    R.string.read_record_total_duration,
+                    formatDuring(record.readTime),
+                ),
                 style = LegadoTheme.typography.labelSmall,
+                color = LegadoTheme.colorScheme.outline,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            AppText(
+                text = if (locked) "" else stringResource(
+                    R.string.read_record_last_read,
+                    lastReadText,
+                ),
+                style = LegadoTheme.typography.labelSmall,
+                color = LegadoTheme.colorScheme.outline,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

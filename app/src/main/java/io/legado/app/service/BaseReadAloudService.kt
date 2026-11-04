@@ -41,7 +41,6 @@ import io.legado.app.constant.PreferKey
 import io.legado.app.constant.Status
 import io.legado.app.domain.gateway.PlaybackCapsuleGateway
 import io.legado.app.domain.gateway.ReadAloudSettingsGateway
-import io.legado.app.domain.model.AiReasoningLevel
 import io.legado.app.domain.model.PlaybackCapsuleSource
 import io.legado.app.domain.model.PlaybackTimer
 import io.legado.app.domain.model.readaloud.CanonicalSpeechParagraph
@@ -657,10 +656,6 @@ abstract class BaseReadAloudService : BaseService(),
                 } else {
                     SpeechAnalysisMode.Rule
                 },
-                analysisReasoningLevel = AiReasoningLevel.fromStorage(
-                    aloudSettings.speechAnalysisReasoningLevel,
-                    AiReasoningLevel.OFF,
-                ),
                 useMultiSpeaker = multiSpeakerOn,
                 policy = splitPolicy,
             )

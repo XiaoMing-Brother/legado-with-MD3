@@ -143,6 +143,7 @@ class ConfigUpdateActionsInvariantTest {
             "SliderVibrator",
             "SelectVibrator",
             "ClickImgWay",
+            "ImageNightMode",
             "DisableReturnKey",
             "NoAnimScrollPage",
             // 文本选择菜单

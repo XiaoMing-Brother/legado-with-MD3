@@ -8,5 +8,4 @@
     <string name="manga_config_default_padding">默认条漫留白</string>
     <string name="manga_config_defaults_hint">未单独设置的漫画生效</string>
     <string name="manga_config_cache_shared">章节数量与正文阅读共用</string>
-    <string name="manga_config_translation_hint">每本漫画还需在阅读器中单独开启</string>
 </resources>

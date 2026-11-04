@@ -51,6 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.legado.app.R
+import io.legado.app.ui.main.MainDrawerNavigationIcon
 import io.legado.app.ui.file.FileManageActivity
 import io.legado.app.ui.theme.adaptiveContentPadding
 import io.legado.app.ui.widget.components.AppScaffold
@@ -70,7 +71,6 @@ import org.koin.androidx.compose.koinViewModel
 fun MyRouteScreen(
     viewModel: MyViewModel = koinViewModel(),
     onOpenSettings: () -> Unit,
-    onNavigateToChat: () -> Unit,
     onNavigate: (PrefClickEvent) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -101,7 +101,6 @@ fun MyRouteScreen(
         state = uiState,
         onIntent = viewModel::onIntent,
         onOpenSettings = onOpenSettings,
-        onNavigateToChat = onNavigateToChat,
         onNavigate = onNavigate,
     )
 }
@@ -112,7 +111,6 @@ fun MyScreen(
     state: MyUiState,
     onIntent: (MyIntent) -> Unit,
     onOpenSettings: () -> Unit,
-    onNavigateToChat: () -> Unit,
     onNavigate: (PrefClickEvent) -> Unit,
 ) {
     val scrollBehavior = GlassTopAppBarDefaults.defaultScrollBehavior()
@@ -123,6 +121,7 @@ fun MyScreen(
         topBar = {
             GlassMediumFlexibleTopAppBar(
                 title = stringResource(R.string.my),
+                navigationIcon = { MainDrawerNavigationIcon() },
                 actions = {},
                 scrollBehavior = scrollBehavior
             )
@@ -193,11 +192,6 @@ fun MyScreen(
             SplicedColumnGroup(
                 title = stringResource(R.string.other)
             ) {
-                ClickableSettingItem(
-                    title = stringResource(R.string.ai_chat),
-                    imageVector = Icons.Default.AutoAwesome,
-                    onClick = onNavigateToChat
-                )
                 ClickableSettingItem(
                     title = stringResource(R.string.setting),
                     imageVector = Icons.Default.Settings,

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialExpressiveTheme
@@ -38,6 +39,8 @@ import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
 import io.legado.app.ui.theme.LegadoTheme
+import io.legado.app.ui.theme.appShapes
+import io.legado.app.ui.theme.LocalAppUiConfiguration
 import io.legado.app.ui.theme.ProvideAppContentColor
 import io.legado.app.ui.theme.ProvideAppDensity
 import io.legado.app.ui.theme.ThemeResolver
@@ -58,6 +61,7 @@ fun RoundDropdownMenu(
     verticalSpacing: Dp = 8.dp,
     content: @Composable ColumnScope.(dismiss: () -> Unit) -> Unit
 ) {
+    val resolvedShape = resolveMenuShape(shape)
     val isMiuix = ThemeResolver.isMiuixEngine(LegadoTheme.composeEngine)
     val popupContainerColor = LegadoTheme.colorScheme.surfaceContainer
 
@@ -88,7 +92,7 @@ fun RoundDropdownMenu(
             expanded = expanded,
             onDismissRequest = onDismissRequest,
             modifier = modifier,
-            shape = shape,
+            shape = resolvedShape,
             shadowElevation = shadowElevation,
             containerColor = popupContainerColor
         ) {
@@ -97,7 +101,7 @@ fun RoundDropdownMenu(
                     colorScheme = colorScheme,
                     typography = Typography(),
                     motionScheme = MotionScheme.expressive(),
-                    shapes = Shapes()
+                    shapes = appShapes()
                 ) {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(verticalSpacing)
@@ -134,6 +138,7 @@ fun RoundDropdownMenuLazy(
     }
     val isMiuix = ThemeResolver.isMiuixEngine(LegadoTheme.composeEngine)
     val popupContainerColor = LegadoTheme.colorScheme.surfaceContainer
+    val resolvedShape = resolveMenuShape(shape)
 
     if (isMiuix) {
         val popupContentColor = LegadoTheme.colorScheme.onSurface
@@ -167,7 +172,7 @@ fun RoundDropdownMenuLazy(
             expanded = expanded,
             onDismissRequest = onDismissRequest,
             modifier = modifier,
-            shape = shape,
+            shape = resolvedShape,
             shadowElevation = shadowElevation,
             containerColor = popupContainerColor
         ) {
@@ -176,7 +181,7 @@ fun RoundDropdownMenuLazy(
                     colorScheme = colorScheme,
                     typography = Typography(),
                     motionScheme = MotionScheme.expressive(),
-                    shapes = Shapes()
+                    shapes = appShapes()
                 ) {
                     LazyMenuViewport(menuWidth, viewportHeight) {
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(verticalSpacing)) {
@@ -242,4 +247,18 @@ internal fun LazyMenuViewport(width: Dp, maxHeight: Dp, content: @Composable () 
         }
     }
     Layout(content = content, measurePolicy = policy)
+}
+
+/**
+ * 弹层轮廓跟随主题的「卡片圆角覆盖」：开启后卡片、弹层、下拉菜单共用同一套圆角，
+ * 预设（如清墨 20dp）改一处就统一；没开覆盖的主题继续用调用方传入的 M3 形状。
+ */
+@Composable
+private fun resolveMenuShape(fallback: Shape): Shape {
+    val themeSettings = LocalAppUiConfiguration.current.theme
+    return if (themeSettings.overrideBaseCardCornerRadius) {
+        RoundedCornerShape(themeSettings.baseCardCornerRadius.dp)
+    } else {
+        fallback
+    }
 }

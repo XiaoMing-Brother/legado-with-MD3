@@ -8,13 +8,14 @@ import io.legado.app.data.entities.BookCharacterProfile
 import io.legado.app.domain.model.readaloud.BookVoiceBinding
 import io.legado.app.feature.reader.core.cast.CastMarkers
 import io.legado.app.utils.GSON
+import io.legado.app.utils.fromJsonArray
 import kotlinx.coroutines.sync.withLock
 
 /**
  * 本书角色记忆 ↔ 官方人物档案 的两个方向。
  *
  * 记忆是 AI 每章滚出来的一表『主名｜别名/身份｜关系｜池』（见
- * `AiCastPresetStore.DEFAULT_CONTRACT` 的 memory 字段约定），人物档案是用户在人物详情页
+ * 角色记忆的字段约定），人物档案是用户在人物详情页
  * 编辑的那一份。本类让两边互读：AI 归并好的别名进人物页，用户在人物页补的别名回给 AI，
  * 否则每一趟分配都要重新猜一遍同一个人。
  *
@@ -160,11 +161,11 @@ object CastMemoryMirror {
         previousName: String,
         name: String,
         pool: String,
-    ) = AiCastPresetStore.memoryMutex.withLock {
+    ) = CastMemoryStore.memoryMutex.withLock {
         if (bookUrl.isBlank()) return@withLock
         appDb.bookKnowledgeDao.getCharacterProfiles(bookUrl, 500)
             .filter { it.name == previousName || it.name == name }
-            .forEach { AiCastPresetStore.markProfileEdited(bookUrl, it.id, identityEdited = false) }
+            .forEach { CastMemoryStore.markProfileEdited(bookUrl, it.id, identityEdited = false) }
         val row = appDb.bookCastMemoryDao.get(bookUrl) ?: return@withLock
         val next = renameLinePool(row.memory, previousName, name, pool) ?: return@withLock
         appDb.bookCastMemoryDao.upsert(
@@ -399,9 +400,9 @@ object CastMemoryMirror {
     suspend fun applyProfileToMemory(
         bookUrl: String,
         profile: BookCharacterProfile,
-    ) = AiCastPresetStore.memoryMutex.withLock {
+    ) = CastMemoryStore.memoryMutex.withLock {
         if (bookUrl.isBlank() || profile.name.isBlank()) return@withLock
-        AiCastPresetStore.markProfileEdited(bookUrl, profile.id, identityEdited = true)
+        CastMemoryStore.markProfileEdited(bookUrl, profile.id, identityEdited = true)
         val row = appDb.bookCastMemoryDao.get(bookUrl) ?: return@withLock
         val aliases = profile.aliasNames()
         val pool = VoicePoolStore.poolNameOrEmpty(profile.voiceAgeBand)
@@ -463,7 +464,7 @@ object CastMemoryMirror {
     suspend fun pruneStaleProfiles(
         bookUrl: String,
         memory: String,
-    ): Int = AiCastPresetStore.memoryMutex.withLock {
+    ): Int = CastMemoryStore.memoryMutex.withLock {
         if (bookUrl.isBlank() || memory.isBlank()) return@withLock 0
         appDb.withTransaction {
             val known = HashSet<String>()
@@ -474,7 +475,7 @@ object CastMemoryMirror {
             val refs = appDb.chapterRoleAssignmentDao.getCastRefsForBook(bookUrl)
             val spokenIds = refs.map { it.characterId }.toSet()
             val spokenNames = refs.map { it.characterName }.toSet()
-            val ledger = AiCastPresetStore.identityOwnership(bookUrl)
+            val ledger = CastMemoryStore.identityOwnership(bookUrl)
             val rows = appDb.castCharacterDao.getByBook(bookUrl)
             val lockedIds = appDb.readAloudVoiceDao.getBindings(bookUrl)
                 .filter { it.subjectType == BookVoiceBinding.SUBJECT_CHARACTER && it.locked }
@@ -527,3 +528,10 @@ private val EXTRA_TITLES = setOf(
 
 /** 记忆那一侧每人的别名上限（用户在人物页自己补的那些不受这一条约束，见 [mergeIdentity]）。 */
 private const val MAX_ALIAS_COUNT = 12
+
+/**
+ * 档案里记的别名（JSON 字符串数组）；读坏了当没有。
+ * 称呼归并与记忆并档读同一份，别各自再解析一遍。
+ */
+internal fun BookCharacterProfile.aliasNames(): List<String> =
+    GSON.fromJsonArray<String>(aliasesJson).getOrNull().orEmpty().map { it.trim() }
