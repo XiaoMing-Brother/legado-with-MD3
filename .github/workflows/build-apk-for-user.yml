@@ -28,7 +28,7 @@ jobs:
       PRODUCT_TAG: "${{ github.event.inputs.product == 'appFull' && 'full' || 'core' }}"
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.inputs.branch }}
           fetch-depth: 0
