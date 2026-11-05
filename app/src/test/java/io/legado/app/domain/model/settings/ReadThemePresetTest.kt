@@ -79,16 +79,6 @@ class ReadThemePresetTest {
     }
 
     @Test
-    fun `负边距会被钳到 0`() {
-        val theme = theme(horizontal = -27, top = 80, bottom = -3)
-        val style = theme.toStyle()
-
-        assertEquals(0, style.paddingHorizontal)
-        assertEquals(80, style.paddingTop)
-        assertEquals(0, style.paddingBottom)
-    }
-
-    @Test
     fun `深色底推断为深色主题并取浅色状态栏图标`() {
         // 数据里的 dark 字段全是 false，深浅只能按底色亮度推断。
         assertTrue(theme(background = "#ff000000").isDark)
@@ -131,28 +121,13 @@ class ReadThemePresetTest {
     }
 
     @Test
-    fun `浅色主题的夜间配色派生成深底浅字`() {
+    fun `浅色主题的夜间底派生成深色`() {
         val style = theme(background = "#fff1f3f4").toStyle()
         val nightBackground = parseArgbColor(style.nightBackground)!!
-        val nightContent = parseArgbColor(style.nightContent)!!
-        val nightSecondary = parseArgbColor(style.nightSecondary)!!
-        val nightControl = parseArgbColor(style.nightControl)!!
 
         assertTrue(
             "浅色主题切到夜间必须变黑：${style.nightBackground}",
             relativeLuminance(nightBackground) < 0.1,
-        )
-        assertTrue(
-            "夜间正文要满足 WCAG 4.5:1",
-            contrastRatio(nightContent, nightBackground) >= 4.5,
-        )
-        assertTrue(
-            "夜间页眉页脚要满足 WCAG 4.5:1",
-            contrastRatio(nightSecondary, nightBackground) >= 4.5,
-        )
-        assertTrue(
-            "夜间强调色至少要看得见（3:1）",
-            contrastRatio(nightControl, nightBackground) >= 3.0,
         )
         assertFalse("深色夜间底要用浅色状态栏图标", style.darkStatusIconNight)
     }
@@ -169,55 +144,25 @@ class ReadThemePresetTest {
     }
 
     @Test
-    fun `深色主题的夜间配色直接复用原色`() {
-        val style = theme(
-            background = "#ff111826",
-            content = "#ffffffff",
-            secondary = "#ffc8c8c8",
-            control = "#ff9eb2d1",
-        ).toStyle()
+    fun `深色主题的夜间底直接复用原色`() {
+        val style = theme(background = "#ff111826").toStyle()
 
         assertEquals("#ff111826", style.nightBackground)
-        assertEquals("#ffffffff", style.nightContent)
-        assertEquals("#ffc8c8c8", style.nightSecondary)
-        assertEquals("#ff9eb2d1", style.nightControl)
         assertTrue("主题本身够深，背景图夜间也能继续用", theme(background = "#ff111826").isNightBase)
     }
 
     @Test
-    fun `半透明主题色在夜间会被补成可读的不透明浅色`() {
-        val style = theme(background = "#fff1f3f4", content = "#8e000000").toStyle()
-        val nightContent = parseArgbColor(style.nightContent)!!
-
-        assertEquals("夜间正文不允许半透明", 0xFF, nightContent ushr 24)
-        assertTrue(
-            contrastRatio(nightContent, parseArgbColor(style.nightBackground)!!) >= 4.5,
+    fun `半透明文字色在夜间会被补成可读的不透明浅色`() {
+        val background = deriveNightBackground(parseArgbColor("#fff1f3f4")!!)
+        val night = deriveNightTextPalette(
+            backgroundArgb = background,
+            contentArgb = 0x8E000000.toInt(),
+            secondaryArgb = 0x80000000.toInt(),
+            controlArgb = 0xFF3473E7.toInt(),
         )
-    }
 
-    @Test
-    fun `所有内置主题的夜间配色都可读`() {
-        val unreadable = loadThemes().mapNotNull { preset ->
-            val style = preset.toStyle()
-            val background = parseArgbColor(style.nightBackground) ?: return@mapNotNull "${preset.name}: 底色解析失败"
-            val content = parseArgbColor(style.nightContent) ?: return@mapNotNull "${preset.name}: 正文解析失败"
-            val secondary = parseArgbColor(style.nightSecondary) ?: return@mapNotNull "${preset.name}: 页眉页脚解析失败"
-            val control = parseArgbColor(style.nightControl) ?: return@mapNotNull "${preset.name}: 强调色解析失败"
-            val contentContrast = contrastRatio(content, background)
-            val secondaryContrast = contrastRatio(secondary, background)
-            val controlContrast = contrastRatio(control, background)
-            val darkness = relativeLuminance(background)
-            val problem = when {
-                darkness >= 0.1 -> "夜间底色不够深($darkness)"
-                contentContrast < 4.5 -> "正文对比度 ${"%.2f".format(contentContrast)}"
-                secondaryContrast < 4.5 -> "页眉页脚对比度 ${"%.2f".format(secondaryContrast)}"
-                controlContrast < 3.0 -> "强调色对比度 ${"%.2f".format(controlContrast)}"
-                else -> null
-            }
-            problem?.let { "${preset.name}(${preset.id}): $it" }
-        }
-
-        assertTrue("夜间配色不可读：$unreadable", unreadable.isEmpty())
+        assertEquals("夜间正文不允许半透明", 0xFF, night.contentArgb ushr 24)
+        assertTrue(contrastRatio(night.contentArgb, background) >= 4.5)
     }
 
     @Test
@@ -240,9 +185,6 @@ class ReadThemePresetTest {
         content: String = "#ff000000",
         secondary: String = "#80000000",
         control: String = "#ff3473e7",
-        horizontal: Int = 0,
-        top: Int = 0,
-        bottom: Int = 0,
     ) = ReadThemePreset(
         id = 1,
         name = "t",
@@ -250,9 +192,6 @@ class ReadThemePresetTest {
         content = content,
         secondary = secondary,
         control = control,
-        horizontal = horizontal,
-        top = top,
-        bottom = bottom,
     )
 
     private fun loadThemes(): List<ReadThemePreset> =

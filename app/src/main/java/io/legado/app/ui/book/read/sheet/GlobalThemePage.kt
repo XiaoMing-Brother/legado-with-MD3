@@ -349,7 +349,7 @@ fun GlobalThemePage(
 
         Spacer(Modifier.height(8.dp))
 
-        // 内置主题入口：一次改掉配色 + 边距 + 背景图，比逐项调更省事。
+        // 内置主题入口：换背景色与背景图，字体颜色、字号和边距保持不动。
         TinySettingItem(
             title = stringResource(R.string.read_theme),
             description = stringResource(R.string.read_theme_summary),

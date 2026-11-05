@@ -11,13 +11,15 @@ import kotlin.math.pow
  * 反序列化类必须在 proguard-rules.pro 里保留——仓库既有做法是就地标注（见
  * `domain/model/HomepageModels.kt`），不要靠维护 proguard 白名单。
  *
- * 字段与 LightInk 主题编辑器一一对应：
+ * 字段与 LightInk 主题编辑器一一对应。Legado 只消费底色（[background]）与背景图
+ * （[mipmap]）：字体颜色、字号、边距是用户的排版设置，不随主题覆盖；其余字段保留原值以便
+ * 对照数据源。
  * - [background] 阅读背景（按钮等背景也复用它）
- * - [foreground] 目录背景，Legado 侧暂无对应的持久化槽位，保留原值以便对照数据源
- * - [content] 正文与标题
- * - [secondary] 其余文字（Legado 侧映射到页眉页脚）
- * - [control] 菜单标记与图标（Legado 侧映射到强调色）
- * - [horizontal] / [top] / [bottom] 边距
+ * - [foreground] 目录背景，Legado 侧暂无对应的持久化槽位
+ * - [content] 主题正文与标题色（不应用）
+ * - [secondary] 主题其余文字色（不应用）
+ * - [control] 主题强调色（不应用）
+ * - [horizontal] / [top] / [bottom] 主题边距（不应用）
  * - [mipmap] 阅读背景图，可为空
  *
  * 颜色是 `#AARRGGBB`。
@@ -63,64 +65,40 @@ data class ReadThemePreset(
 }
 
 /**
- * 内置主题落到排版配置上的目标值。
+ * 内置主题落到阅读样式上的目标值。
  *
- * 与 `ReadBookConfig.Config` 分开，是为了让「边距钳制」「深浅判定」这些规则能在纯 JVM 单测里
- * 验证——直接改 Config 会经过 `ReadStyleResolver`，需要 Koin 才能跑起来。
+ * 只含背景与状态栏图标：字体颜色、字号、页边距都属于用户自己的排版设置，应用主题时不得覆盖。
+ * 与 `ReadBookConfig.Config` 分开，是为了让「深浅判定」「夜间底色派生」这些规则能在纯 JVM
+ * 单测里验证——直接改 Config 会经过 `ReadStyleResolver`，需要 Koin 才能跑起来。
  */
 @Stable
 data class ReadThemeStyle(
     val background: String,
-    val content: String,
-    val secondary: String,
-    val control: String,
     val nightBackground: String,
-    val nightContent: String,
-    val nightSecondary: String,
-    val nightControl: String,
-    val paddingHorizontal: Int,
-    val paddingTop: Int,
-    val paddingBottom: Int,
     val darkStatusIcon: Boolean,
     val darkStatusIconNight: Boolean,
 )
 
 /**
- * 解析成可直接写入排版配置的目标值。
+ * 解析成可直接写入样式的背景目标值。
  *
- * 白天原样使用主题配色；夜间走 [deriveNightPalette]：底色够深的主题复用原色，浅色主题派生出
- * 一套深底浅字的夜间配色，保证切换日夜时阅读页真的变黑。状态栏图标按各自底色反色。
+ * 白天原样使用主题底色；夜间走 [deriveNightBackground]：底色够深的主题复用原色，浅色主题
+ * 派生出深色底，保证切换日夜时阅读页真的变黑。状态栏图标按各自底色反色。
  */
 fun ReadThemePreset.toStyle(): ReadThemeStyle {
-    val night = deriveNightPalette(
-        backgroundArgb = parseArgbColor(background) ?: FALLBACK_LIGHT_BACKGROUND,
-        contentArgb = parseArgbColor(content) ?: FALLBACK_DARK_CONTENT,
-        secondaryArgb = parseArgbColor(secondary) ?: FALLBACK_DARK_CONTENT,
-        controlArgb = parseArgbColor(control) ?: FALLBACK_DARK_CONTENT,
+    val nightBackgroundArgb = deriveNightBackground(
+        parseArgbColor(background) ?: FALLBACK_LIGHT_BACKGROUND
     )
     return ReadThemeStyle(
         background = background,
-        content = content,
-        secondary = secondary,
-        control = control,
-        nightBackground = night.backgroundArgb.toArgbHex(),
-        nightContent = night.contentArgb.toArgbHex(),
-        nightSecondary = night.secondaryArgb.toArgbHex(),
-        nightControl = night.controlArgb.toArgbHex(),
-        paddingHorizontal = horizontal.asReadPadding(),
-        paddingTop = top.asReadPadding(),
-        paddingBottom = bottom.asReadPadding(),
+        nightBackground = nightBackgroundArgb.toArgbHex(),
         darkStatusIcon = !isDark,
-        darkStatusIconNight = !isDarkBackgroundColor(night.backgroundArgb.toArgbHex()),
+        darkStatusIconNight = !isDarkBackgroundColor(nightBackgroundArgb.toArgbHex()),
     )
 }
 
-/** 数据损坏时的兜底：按最常见的浅底深字处理，夜间派生仍是黑底浅字。 */
+/** 数据损坏时的兜底：按最常见的浅色纸处理，夜间派生仍是深色底。 */
 private const val FALLBACK_LIGHT_BACKGROUND = 0xFFF1F3F4.toInt()
-private const val FALLBACK_DARK_CONTENT = 0xFF2D2D33.toInt()
-
-/** LightInk 边距允许为负（数据里最小 -28），Legado 的 padding 直接当 dp 用，负值会算出负的可用宽度。 */
-internal fun Int.asReadPadding(): Int = coerceAtLeast(0)
 
 /** 深色判定阈值，与 `io.legado.app.utils.ColorUtils.isColorLight` 的口径一致。 */
 private const val DARK_LUMINANCE_THRESHOLD = 0.5

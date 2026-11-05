@@ -85,7 +85,7 @@ class ReadConfigJsonRoundTripTest {
         assertEquals("没有走构造函数的话，默认值不会生效，这里会读到 0", 20, restored.textSize)
         assertEquals(100, restored.bgAlpha)
         assertEquals("　　", restored.paragraphIndent)
-        assertEquals(12, restored.lineSpacingExtra)
+        assertEquals(14, restored.lineSpacingExtra)
         assertEquals("缺字段应回落到适中挡（2 = 统一基准 360ms）", 2, restored.getPageAnimSpeed())
     }
 

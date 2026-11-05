@@ -189,14 +189,6 @@ class ReadStyleThemeTransferTest {
             "浅色主题的夜间底色必须变深：${config.bgStrNight}",
             relativeLuminance(nightBackground) < 0.1,
         )
-        assertTrue(
-            "夜间正文对比度不足",
-            contrastRatio(parseArgbColor(config.getTextColorNight())!!, nightBackground) >= 4.5,
-        )
-        assertTrue(
-            "夜间页眉页脚对比度不足",
-            contrastRatio(config.tipHeaderColorNight, nightBackground) >= 4.5,
-        )
         assertFalse("夜间深底要用浅色状态栏图标", config.getDarkStatusIconNight())
     }
 
@@ -207,7 +199,50 @@ class ReadStyleThemeTransferTest {
 
         val config = store.configAt(5)
         assertEquals(theme.background, config.bgStrNight)
-        assertEquals(theme.content, config.getTextColorNight())
+    }
+
+    @Test
+    fun applyingABuiltInThemeKeepsTypographyAndMargins() {
+        val mine = ReadBookConfig.Config(
+            name = "mine",
+            textColor = "#ff112233",
+            textColorNight = "#ff445566",
+            textColorEInk = "#ff778899",
+            textAccentColor = "#ff0a0b0c",
+            textAccentColorNight = "#ff0d0e0f",
+            textAccentColorEInk = "#ff101112",
+            titleColor = 0xFF131415.toInt(),
+            titleColorNight = 0xFF161718.toInt(),
+            tipHeaderColor = 0xFF191A1B.toInt(),
+            tipHeaderColorNight = 0xFF1C1D1E.toInt(),
+            tipFooterColor = 0xFF1F2021.toInt(),
+            tipFooterColorNight = 0xFF222324.toInt(),
+            textSize = 33,
+            paddingTop = 11,
+            paddingBottom = 12,
+            paddingLeft = 13,
+            paddingRight = 14,
+        )
+        store.updateStyleAt(5) { mine }
+
+        val theme = DefaultData.readThemes.first { it.id == 312 }
+        assertTrue(gateway.applyReadTheme(theme.id))
+
+        val after = store.configAt(5)
+        assertEquals("背景仍然按主题应用", theme.background, after.bgStr)
+        assertEquals("样式名保持用户设置", "mine", after.name)
+        val beforeJson = GSON.toJsonTree(mine).asJsonObject
+        val afterJson = GSON.toJsonTree(after).asJsonObject
+        listOf(
+            "textColor", "textColorNight", "textColorEInk",
+            "textAccentColor", "textAccentColorNight", "textAccentColorEInk",
+            "titleColor", "titleColorNight",
+            "tipHeaderColor", "tipHeaderColorNight",
+            "tipFooterColor", "tipFooterColorNight",
+            "textSize", "paddingTop", "paddingBottom", "paddingLeft", "paddingRight",
+        ).forEach { key ->
+            assertEquals("应用主题不应修改 $key", beforeJson.get(key), afterJson.get(key))
+        }
     }
 
     @Test

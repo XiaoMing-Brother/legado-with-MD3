@@ -113,56 +113,27 @@ class ReadBookStyleConfigRepository(
     /**
      * 应用内置主题。
      *
-     * 白天写主题原色；夜间写 [ReadThemeStyle.nightBackground] 等派生值：主题底色够深就直接复用，
-     * 浅色主题按色相压暗成深底、正文/强调色反推成浅色。这样「选完主题再切夜间」仍然会变黑，
-     * 而不是把白天那张浅色纸原样搬进夜间。
+     * **只改背景**：白天写主题底色；夜间写 [ReadThemeStyle.nightBackground]——主题底色够深就
+     * 直接复用，浅色主题按色相压成深底，保证「选完主题再切夜间」真的变黑。状态栏图标按各模式
+     * 底色反色，与背景一起走 [mutateCurrentStyle]。
      *
-     * 底色、正文/强调色、状态栏图标按样式独立（[mutateCurrentStyle]）；页眉页脚色与边距属于
-     * 排版项（[mutateEffective]），共享排版开着时改的是共享那份——与 [ReadStyleIntKey]
-     * 里 PaddingTop / ReadStyleColorKey 里 TipHeader 既有的落点保持一致。
-     *
-     * 标题色写 0 表示「跟随正文」：主题没有单独的标题色，[ReadThemePreset.content] 同时是
-     * 正文与标题色。它与页眉页脚色一样归排版项，见下面 mutateEffective 里的说明。
+     * 字体颜色、字号、标题/页眉页脚颜色、边距与样式名都是用户自己的设置，应用主题时保持不变；
+     * 也不碰共享排版那份（背景与状态栏图标本来就不属于共享排版）。
      */
     override fun applyReadTheme(themeId: Int): Boolean {
         val theme = DefaultData.readThemes.firstOrNull { it.id == themeId } ?: return false
         val style = theme.toStyle()
         mutateCurrentStyle {
             it.copy(
-                // 样式名跟随所选主题：背景与文字弹层标题、样式卡片标签都读这个字段。
-                name = theme.name,
                 bgStr = style.background,
                 bgStrNight = style.nightBackground,
                 bgStrEInk = style.background,
                 bgType = READ_THEME_BG_TYPE,
                 bgTypeNight = READ_THEME_BG_TYPE,
                 bgTypeEInk = READ_THEME_BG_TYPE,
-                textColor = style.content,
-                textColorNight = style.nightContent,
-                textColorEInk = style.content,
-                textAccentColor = style.control,
-                textAccentColorNight = style.nightControl,
-                textAccentColorEInk = style.control,
                 darkStatusIcon = style.darkStatusIcon,
                 darkStatusIconNight = style.darkStatusIconNight,
                 darkStatusIconEInk = style.darkStatusIcon,
-            )
-        }
-        mutateEffective {
-            it.copy(
-                // 主题只有一套配色，标题跟随正文；不覆盖会残留上一个样式的标题色。
-                // 标题色与页眉页脚色在 ReadBookConfig 里是「生效项」（共享排版开着时读共享那份），
-                // 与 ReadStyleColorKey.Title/TipHeader 的落点一致，故不能放进 mutateCurrentStyle。
-                titleColor = 0,
-                titleColorNight = 0,
-                tipHeaderColor = style.secondary.toColorIntOrDefault(),
-                tipHeaderColorNight = style.nightSecondary.toColorIntOrDefault(),
-                tipFooterColor = style.secondary.toColorIntOrDefault(),
-                tipFooterColorNight = style.nightSecondary.toColorIntOrDefault(),
-                paddingTop = style.paddingTop,
-                paddingBottom = style.paddingBottom,
-                paddingLeft = style.paddingHorizontal,
-                paddingRight = style.paddingHorizontal,
             )
         }
         save()

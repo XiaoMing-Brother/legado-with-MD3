@@ -612,8 +612,11 @@ object ReadBookConfig {
         private val shadowColor: String = "#3E3D3B",
         private val shadowColorN: String = "#3E3D3B",
         val letterSpacing: Float = 0.1f,//字间距
-        val lineSpacingExtra: Int = 12,//行间距
-        val paragraphSpacing: Int = 2,//段距
+        // 行间距：渲染时按 `lineSpacingExtra / 10` 乘以字体行高（系统无衬线体约 1.17em），
+        // 14 ⇒ 行高约 1.64em。段距：`paragraphSpacing / 10` 乘以同一个行高，5 ⇒ 约 0.6em。
+        // 这组默认值（20sp / 1.64em 行高 / 0.6em 段距 / 两字缩进）即阅读页的典雅基线。
+        val lineSpacingExtra: Int = 14,//行间距
+        val paragraphSpacing: Int = 5,//段距
         val titleMode: Int = 0,//标题位置 0:居左 1:居中 2:隐藏
         val titleSize: Int = 4,//标题字号：相对模式为相对正文的偏移，绝对模式为绝对 sp
         val titleSizeRelative: Boolean? = null,//是否相对正文：null 表示按旧值自动识别

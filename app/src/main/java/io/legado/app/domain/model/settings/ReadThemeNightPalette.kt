@@ -7,16 +7,9 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 /**
- * 由内置主题的白天配色派生出的夜间配色。
+ * 一套夜间配色（底色 + 正文/页眉页脚/强调色）。
  *
- * 主题商店的数据里每个主题只有一套调色板（`dark` 字段全为 false，见 [ReadThemePreset.isDark]），
- * 直接写进夜间槽位会让「切到夜间」和白天一模一样——浅色主题的夜间页就是一张白纸。
- * 这里按底色深浅决定：
- * - 底色已经够深（亮度低于 [NIGHT_BASE_MAX_LUMINANCE]）：夜间直接复用主题原色，主题本来就长这样；
- * - 浅色主题：保留底色的色相、压低明度与饱和度得到夜间底色；正文/页眉页脚/强调色保留各自色相，
- *   反推成与夜间底色满足 WCAG 对比度的浅色。
- *
- * 纯函数，可在 JVM 单测里跑（同 [buildReadBackgroundPalette]）。
+ * 用于「从背景图取色」这种确实有一整套配色的场景；应用内置主题只换底色，不覆盖文字色。
  */
 @Stable
 data class ReadThemeNightPalette(
@@ -57,31 +50,19 @@ private const val LIGHTNESS_STEP = 0.02f
 private const val MAX_NIGHT_LIGHTNESS = 0.96f
 
 /**
- * 派生夜间配色。
+ * 按白天底色派生夜间底色。
  *
- * 颜色按 `#AARRGGBB` 的 int 传入；解析失败由调用方兜底，这里只处理合法颜色。
+ * 底色够深就原样复用；浅色主题保留色相、压低明度与饱和度，避免米黄/中灰的纸在夜间仍然刺眼。
  */
-internal fun deriveNightPalette(
-    backgroundArgb: Int,
-    contentArgb: Int,
-    secondaryArgb: Int,
-    controlArgb: Int,
-): ReadThemeNightPalette {
+internal fun deriveNightBackground(backgroundArgb: Int): Int {
     val dayBackground = backgroundArgb or OPAQUE_MASK
-    val nightBackground = if (relativeLuminance(dayBackground) < NIGHT_BASE_MAX_LUMINANCE) {
-        dayBackground
-    } else {
-        val hsl = dayBackground.toHsl()
-        hsl.toArgb(
-            saturation = min(hsl.saturation, NIGHT_BACKGROUND_MAX_SATURATION),
-            lightness = NIGHT_BACKGROUND_LIGHTNESS,
-        )
+    if (relativeLuminance(dayBackground) < NIGHT_BASE_MAX_LUMINANCE) {
+        return dayBackground
     }
-    return deriveNightTextPalette(
-        backgroundArgb = nightBackground,
-        contentArgb = contentArgb,
-        secondaryArgb = secondaryArgb,
-        controlArgb = controlArgb,
+    val hsl = dayBackground.toHsl()
+    return hsl.toArgb(
+        saturation = min(hsl.saturation, NIGHT_BACKGROUND_MAX_SATURATION),
+        lightness = NIGHT_BACKGROUND_LIGHTNESS,
     )
 }
 

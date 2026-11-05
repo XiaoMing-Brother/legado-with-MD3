@@ -65,6 +65,7 @@ android {
         versionCode = System.getenv("COMMIT_NUMBER")?.toInt()?.let { 10000 + it } ?: 32640
         versionName = System.getenv("APP_VERSION_NAME") ?: projectVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["APP_CHANNEL_VALUE"] = "app"
 
         buildConfigField("String", "Cronet_Version", "\"${project.findProperty("CronetVersion")}\"")
         buildConfigField(
@@ -137,26 +138,6 @@ android {
             reset()
             include("armeabi-v7a", "arm64-v8a")
             isUniversalApk = true
-        }
-    }
-
-    // 维度顺序决定变体名：appCoreDebug / appFullDebug。
-    flavorDimensions += listOf("mode", "engine")
-    productFlavors {
-        create("app") {
-            dimension = "mode"
-            manifestPlaceholders["APP_CHANNEL_VALUE"] = "app"
-        }
-        // 轻量产品：不含本地推理运行时与内置模型；云端 OCR、AI 识图/翻译保持可用。
-        create("core") {
-            dimension = "engine"
-            buildConfigField("boolean", "MANGA_LOCAL_ENGINE", "false")
-        }
-        // 完整产品：内置 ML Kit、ONNX Runtime、气泡模型和本地引擎装配。
-        create("full") {
-            dimension = "engine"
-            buildConfigField("boolean", "MANGA_LOCAL_ENGINE", "true")
-            proguardFile("proguard-manga-engine.pro")
         }
     }
 
@@ -317,13 +298,6 @@ dependencies {
     implementation(libs.telephoto.zoomable.image.coil3)
     implementation(libs.accompanist.webview)
     implementation(libs.kotlinx.coroutines.android)
-    // Bundled recognizers work without Google Play Services or first-use downloads.
-    // 仅 full 产品内置；core 用 UnavailableMangaLocalEngine 装配，依赖图里不得出现这些库。
-    "fullImplementation"(libs.onnxruntime.android)
-    "fullImplementation"("com.google.mlkit:text-recognition:${libs.versions.mlkitText.get()}")
-    "fullImplementation"("com.google.mlkit:text-recognition-japanese:${libs.versions.mlkitText.get()}")
-    "fullImplementation"("com.google.mlkit:text-recognition-chinese:${libs.versions.mlkitText.get()}")
-    "fullImplementation"("com.google.mlkit:text-recognition-korean:${libs.versions.mlkitText.get()}")
     implementation(libs.kotlinx.datetime)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)

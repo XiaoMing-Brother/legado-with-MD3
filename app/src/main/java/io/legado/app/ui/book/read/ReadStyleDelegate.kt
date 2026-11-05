@@ -253,8 +253,9 @@ class ReadStyleDelegate(
     /**
      * 应用内置主题。
      *
-     * 配色与边距经 gateway 一次写入并落盘，随即通知渲染；主题自带背景图时**不阻塞**这一步——
-     * 图片下载完成后才补 `bgType=2` 与本地路径。下载失败只提示一次，配色保留。
+     * 只写背景（含夜间派生底色）与状态栏图标并落盘，随即通知渲染；字体颜色、字号与边距保持
+     * 用户当前设置。主题自带背景图时**不阻塞**这一步——图片下载完成后才补 `bgType=2`
+     * 与本地路径。下载失败只提示一次，背景色保留。
      */
     fun applyReadTheme(themeId: Int) {
         val theme = DefaultData.readThemes.firstOrNull { it.id == themeId } ?: return
@@ -262,7 +263,6 @@ class ReadStyleDelegate(
         emitConfigUpdate(
             ConfigUpdateAction.UpdateBackground,
             ConfigUpdateAction.UpdateStyle,
-            ConfigUpdateAction.UpdateLayout,
             ConfigUpdateAction.UpdateSystemUi,
             ConfigUpdateAction.ReloadContent,
         )

@@ -132,7 +132,7 @@
     <string name="dashed_border">Dashed</string>
     <string name="dash_gap">Dash Gap</string>
     <string name="other_setting">Other Settings</string>
-    <string name="other_setting_s">Language • Other Settings</string>
+    <string name="other_setting_s">Language • Main screen • Calligraphy splash</string>
     <string name="about">About</string>
     <string name="donate">Donations</string>
     <string name="exit">Exit</string>
@@ -1886,9 +1886,10 @@
     <string name="welcome_book_folder_tip">Set where local books are stored. You can change it later in Settings.</string>
     <string name="welcome_book_folder_not_selected">No folder selected</string>
     <string name="onboarding_title_welcome">Welcome</string>
-    <string name="calligraphy_splash_line1">欲买桂花同载酒</string>
-    <string name="calligraphy_splash_line2">终不似少年游</string>
-    <string name="calligraphy_splash_seal">游</string>
+    <string name="calligraphy_splash_enabled_title">Calligraphy welcome screen</string>
+    <string name="calligraphy_splash_enabled_summary">Show the paper-style calligraphy splash when the app cold-starts</string>
+    <string name="calligraphy_splash_once_per_day_title">Once per day</string>
+    <string name="calligraphy_splash_once_per_day_summary">After the splash is shown once each day, skip it until the next day</string>
     <string name="onboarding_title_backup">Backup &amp; Restore</string>
     <string name="onboarding_title_book_folder">Book Folder</string>
     <string name="onboarding_title_theme">Theme Style</string>
@@ -3592,9 +3593,9 @@
     <string name="reader_paragraph_image_action_unsupported">This image uses a paragraph-rule action that this version does not support.</string>
     <!--Built-in read themes (LightInk store snapshot)-->
     <string name="read_theme">Built-in Themes</string>
-    <string name="read_theme_summary">Tap a theme to apply its colors, margins and background image.</string>
+    <string name="read_theme_summary">Tap a theme to apply only its background color and image; text color, size and margins stay unchanged.</string>
     <string name="read_theme_download_count">%1$d downloads</string>
-    <string name="read_theme_image_failed">Theme colors applied, but the background image failed to download.</string>
+    <string name="read_theme_image_failed">Background color applied, but the background image failed to download.</string>
     <!--Extract a color scheme from the current reading background image-->
     <string name="read_bg_palette">Pick Colors from Image</string>
     <string name="read_bg_palette_summary">Apply text and accent colors extracted from the current background image.</string>

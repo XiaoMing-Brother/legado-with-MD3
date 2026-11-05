@@ -63,6 +63,7 @@ fun ConfigNavScreen(
                     )
                     ClickableSettingItem(
                         title = stringResource(R.string.other_setting),
+                        description = stringResource(R.string.other_setting_s),
                         onClick = onNavigateToOther
                     )
                     ClickableSettingItem(

@@ -13,6 +13,8 @@ data class OtherConfigUiState(
     val webServiceAutoStart: Boolean = false,
     val autoRefresh: Boolean = false,
     val defaultToRead: Boolean = false,
+    val calligraphySplashEnabled: Boolean = true,
+    val calligraphySplashOncePerDay: Boolean = false,
 
     val defaultBookTreeUri: String? = null,
     val antiAlias: Boolean = false,
@@ -84,6 +86,8 @@ sealed interface OtherConfigIntent {
     data class WebServiceAutoStartChanged(val value: Boolean) : OtherConfigIntent
     data class AutoRefreshChanged(val value: Boolean) : OtherConfigIntent
     data class DefaultToReadChanged(val value: Boolean) : OtherConfigIntent
+    data class CalligraphySplashEnabledChanged(val value: Boolean) : OtherConfigIntent
+    data class CalligraphySplashOncePerDayChanged(val value: Boolean) : OtherConfigIntent
 
     data class DefaultBookTreeUriChanged(val value: String?) : OtherConfigIntent
     data class AntiAliasChanged(val value: Boolean) : OtherConfigIntent

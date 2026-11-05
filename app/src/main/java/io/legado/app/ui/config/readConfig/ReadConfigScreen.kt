@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import io.legado.app.R
 import io.legado.app.ui.book.read.sheet.ClickActionConfigSheet
 import io.legado.app.ui.book.read.sheet.EyeProtectionConfigSheet
+import io.legado.app.ui.book.read.sheet.ReadThemePresetSheet
 import io.legado.app.ui.theme.adaptiveContentPadding
 import io.legado.app.ui.widget.components.AppScaffold
 import io.legado.app.ui.widget.components.SplicedColumnGroup
@@ -52,6 +53,15 @@ fun ReadConfigScreen(
                 bottom = 120.dp
             )
         ) {
+            item {
+                SplicedColumnGroup(title = stringResource(R.string.read_style)) {
+                    ClickableSettingItem(
+                        title = stringResource(R.string.read_theme),
+                        description = stringResource(R.string.read_theme_summary),
+                        onClick = { onIntent(ReadConfigIntent.OpenReadThemePicker) },
+                    )
+                }
+            }
             item {
                 SplicedColumnGroup(title = stringResource(R.string.screen_settings)) {
                 DropdownListSettingItem(
@@ -448,6 +458,12 @@ fun ReadConfigScreen(
             onDismissRequest = { onIntent(ReadConfigIntent.DismissSheet) },
         )
     }
+
+    ReadThemePresetSheet(
+        show = state.activeSheet == ReadConfigSheet.ReadThemePicker,
+        onDismissRequest = { onIntent(ReadConfigIntent.DismissSheet) },
+        onSelectTheme = { onIntent(ReadConfigIntent.ApplyReadTheme(it)) },
+    )
 
     EyeProtectionConfigSheet(
         show = state.activeSheet == ReadConfigSheet.EyeProtection,

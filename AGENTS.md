@@ -185,10 +185,9 @@ KMP 任务名在模块实际创建后才存在；不要假装运行尚未定义�
 - Rhino 书源/RSS/TTS 规则、Android 服务、Web 服务和阅读器渲染属于高行为风险平台能力，迁移前必须建立兼容测试或
   capability 边界。
 - `modules/web` 必须连接应用内 Ktor WebService；开发环境通过 `VITE_API` 指向设备服务地址。
-- 发布形态为 **`core` + `full` 双包**（2026-10-31 定案）：同一 Release、同签名、同 versionCode。
-  APK 附件名必须带 `core`/`full` 产品标记，应用内更新按 `AppProduct` 只挑本产品那一份；
-  R8 mapping 按产品分别上传。不再为减体积替换推理栈或引入扩展包路线。详见
-  `docs/dev/manga-engine-extension-plan.md` §5.1。
+- 发布形态为**单包**（2026-11-04 起）：一个 Release、一份签名、APK 附件名不带产品标记
+  （`legado-<版本>-<abi>.apk`），R8 mapping 只上传一份 `mapping.txt`。旧的 `core`/`full` 双包
+  已删除，full 内置的本地推理栈与模型无代码消费，属于死重；不要再引入按功能分包或扩展包。
 - **打包/发布前先确认签名**（清单见 `~/.android/legado-signing/README.md`）：本机只有
   `legado-md3`（`~/.android/legado-md3-signing/`，CN=legado-md3，D9:25:55…），只能签 coexist/自测包；
   线上 Release 由 CI 的 `secrets.SIGNING_KEY` 签名（CN=kudomaga，DD:C9:EB…），本机无私钥 → 要覆盖已装

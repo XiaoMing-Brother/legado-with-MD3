@@ -101,6 +101,7 @@ import io.legado.app.ui.book.readaloud.morph.rememberReadAloudMorphState
 import io.legado.app.ui.book.readaloud.player.ReadAloudPlayerViewModel
 import io.legado.app.ui.main.bookshelf.BookshelfCoverPreloader
 import io.legado.app.feature.splash.CalligraphySplashOverlay
+import io.legado.app.feature.splash.CalligraphySplashPolicy
 import io.legado.app.ui.theme.LocalAppUiConfiguration
 import io.legado.app.ui.welcome.WelcomeActivity
 import io.legado.app.ui.widget.components.privacy.PrivateAppStartGate
@@ -134,6 +135,7 @@ import kotlin.coroutines.suspendCoroutine
 open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
 
     private val calligraphySplashActive = AtomicBoolean(true)
+    private var showCalligraphySplash = false
 
     private data class RouteEvent(
         val route: NavKey,
@@ -161,6 +163,12 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
         private const val SYSTEM_BARS_RESTORE_DELAY_MILLIS = 200L
 
         private val startupUpdateCheckGate = ProcessStartupUpdateCheckGate()
+
+        /**
+         * 进程内首个 [MainActivity] 创建即冷启动。Activity 重建（字号/密度/主题等配置变化）、
+         * 从后台重新进入都不会再次置为 true，因此书法开屏只在冷启动出现。
+         */
+        private val coldStartSplashPending = AtomicBoolean(true)
 
         @Volatile
         var hasActiveReadBookRoute: Boolean = false
@@ -430,7 +438,13 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
             ?: navRouteTracker.lastReadBookRoute()
         super.onCreate(savedInstanceState)
 
+        val isColdStart = coldStartSplashPending.compareAndSet(true, false)
         if (checkStartupRoute()) return
+        showCalligraphySplash = isColdStart && CalligraphySplashPolicy.shouldShow(
+            otherSettingsGateway.currentSettings,
+        )
+        // 书法欢迎屏用 Compose 全屏层展示，不占用系统 Splash 等待主界面整树组合完成。
+        calligraphySplashActive.set(false)
         val shouldAutoCheckUpdate = startupUpdateCheckGate.consume(
             otherSettingsGateway.currentSettings.autoCheckUpdateOnStart
         )
@@ -533,6 +547,15 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
     @OptIn(ExperimentalSharedTransitionApi::class)
     @Composable
     override fun Content() {
+        if (showCalligraphySplash) {
+            CalligraphySplashOverlay(
+                onFinished = {
+                    lifecycleScope.launch {
+                        CalligraphySplashPolicy.markShown(otherSettingsGateway)
+                    }
+                },
+            )
+        }
         val configuration = LocalAppUiConfiguration.current
         val predictiveBackEnabled by rememberUpdatedState(configuration.appShell.predictiveBackEnabled)
         val defaultToReadFlow = remember(otherSettingsGateway) {
@@ -1066,9 +1089,6 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
                 }
             }
         }
-        CalligraphySplashOverlay(
-            onFinished = { calligraphySplashActive.set(false) },
-        )
         TextSheetHost()
     }
 

@@ -31,9 +31,10 @@ interface ReadStyleGateway {
     /**
      * 应用一个内置阅读主题（清墨 LightInk 主题商店快照，见 `assets/defaultData/readThemes.json`）。
      *
-     * 一次写入底色、正文/页眉页脚色、强调色与边距，并落盘；返回 false 表示主题 id 不存在。
-     * 主题自带背景图时这里**只**写配色——图片由 [downloadReadThemeBackground] 异步落盘后
-     * 再经 [setReadThemeBackgroundImage] 补上，配色先一步生效，不等下载。
+     * **只写底色与状态栏图标**：字体颜色、字号、页边距属于用户排版设置，应用主题时不得覆盖。
+     * 返回 false 表示主题 id 不存在。主题自带背景图时这里**只**写背景色——图片由
+     * [downloadReadThemeBackground] 异步落盘后再经 [setReadThemeBackgroundImage] 补上，
+     * 背景色先一步生效，不等下载。
      */
     fun applyReadTheme(themeId: Int): Boolean
 

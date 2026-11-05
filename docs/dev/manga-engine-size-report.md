@@ -3,6 +3,10 @@
 2026-10-31。范围：arm64-v8a Release（不含 universal），目标是 full 单包 ≤ 50 MB，
 达成后不再需要 `core/full` 分包，也不进入扩展包路线。
 
+> **2026-11-04 更新**：`core`/`full` 双包已删除，`full` 的 ONNX Runtime、ML Kit、检测模型
+> 与 flavor 配置一并移除，发布恢复为单包（arm64 Release 约 21 MB）。本报告只作历史记录，
+> 不再描述当前产物。
+
 > **2026-11-02 更新**：漫画 AI 翻译、云端 OCR、本地视觉模型与擦字／排版管线已整体下线，
 > `MangaLocalEngine`、`MangaPaddleModelCatalog` 等源码与 Koin 装配一并删除。本报告的数字
 > 只作为当时的体积基线保留，不再描述当前 `full` 变体的内容；现行发布形态见

@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.legado.app.R
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 
@@ -21,6 +22,14 @@ fun ReadConfigRouteScreen(
             when (effect) {
                 is ReadConfigEffect.SettingsUpdateFailed -> {
                     Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
+                }
+
+                ReadConfigEffect.ReadThemeBackgroundFailed -> {
+                    Toast.makeText(
+                        context,
+                        R.string.read_theme_image_failed,
+                        Toast.LENGTH_SHORT,
+                    ).show()
                 }
             }
         }

@@ -3,9 +3,11 @@ package io.legado.app.ui.config.readConfig
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.legado.app.domain.gateway.ReadSettingsGateway
+import io.legado.app.domain.gateway.ReadStyleGateway
 import io.legado.app.domain.gateway.ThemeSettingsGateway
 import io.legado.app.domain.model.settings.ReadSettings
 import io.legado.app.domain.model.settings.ThemeSettings
+import io.legado.app.help.DefaultData
 import io.legado.app.ui.book.read.EyeProtectionUiState
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +19,7 @@ import kotlinx.coroutines.launch
 class ReadConfigViewModel(
     private val settingsGateway: ReadSettingsGateway,
     private val themeSettingsGateway: ThemeSettingsGateway,
+    private val readStyleGateway: ReadStyleGateway,
     private val applyReadSetting: ApplyReadSettingUseCase,
 ) : ViewModel() {
 
@@ -54,6 +57,8 @@ class ReadConfigViewModel(
             ReadConfigIntent.OpenPageKeys -> setSheet(ReadConfigSheet.PageKeys)
             ReadConfigIntent.OpenClickActions -> setSheet(ReadConfigSheet.ClickActions)
             ReadConfigIntent.OpenEyeProtection -> setSheet(ReadConfigSheet.EyeProtection)
+            ReadConfigIntent.OpenReadThemePicker -> setSheet(ReadConfigSheet.ReadThemePicker)
+            is ReadConfigIntent.ApplyReadTheme -> applyReadTheme(intent.themeId)
             ReadConfigIntent.DismissSheet -> setSheet(null)
             is ReadConfigIntent.EyeProtectionEnabledChanged -> updateEyeProtection {
                 it.copy(eyeProtectionEnabled = intent.value)
@@ -79,6 +84,27 @@ class ReadConfigViewModel(
 
     private fun updateEyeProtection(transform: (ThemeSettings) -> ThemeSettings) {
         viewModelScope.launch { themeSettingsGateway.update(transform) }
+    }
+
+    /**
+     * 应用内置阅读主题：只写背景与状态栏图标，自带背景图异步下载后补上；字体颜色、字号、
+     * 边距和样式名保持用户当前设置。
+     *
+     * 与阅读页 `ReadStyleDelegate.applyReadTheme` 同一套 gateway 调用，区别只是这里没有渲染器，
+     * 不需要发 ConfigUpdate —— 正在阅读的会话订阅 gateway.state 会自行重建快照。
+     */
+    private fun applyReadTheme(themeId: Int) {
+        val theme = DefaultData.readThemes.firstOrNull { it.id == themeId } ?: return
+        if (!readStyleGateway.applyReadTheme(themeId)) return
+        if (theme.mipmap == null) return
+        viewModelScope.launch {
+            val path = readStyleGateway.downloadReadThemeBackground(theme)
+            if (path == null) {
+                _effects.tryEmit(ReadConfigEffect.ReadThemeBackgroundFailed)
+                return@launch
+            }
+            readStyleGateway.setReadThemeBackgroundImage(path, useForNight = theme.isNightBase)
+        }
     }
 
     private fun setSheet(sheet: ReadConfigSheet?) {
@@ -158,6 +184,8 @@ private fun ReadConfigIntent.toSettingsTransform(): (ReadSettings) -> ReadSettin
     ReadConfigIntent.OpenPageKeys,
     ReadConfigIntent.OpenClickActions,
     ReadConfigIntent.OpenEyeProtection,
+    ReadConfigIntent.OpenReadThemePicker,
+    is ReadConfigIntent.ApplyReadTheme,
     ReadConfigIntent.DismissSheet -> error("Sheet intents do not update settings")
 }
 

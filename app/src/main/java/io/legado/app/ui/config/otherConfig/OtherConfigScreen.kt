@@ -97,6 +97,25 @@ fun OtherConfigScreen(
                     checked = state.defaultToRead,
                     onCheckedChange = { onIntent(OtherConfigIntent.DefaultToReadChanged(it)) }
                 )
+
+                SwitchSettingItem(
+                    title = stringResource(R.string.calligraphy_splash_enabled_title),
+                    description = stringResource(R.string.calligraphy_splash_enabled_summary),
+                    checked = state.calligraphySplashEnabled,
+                    onCheckedChange = {
+                        onIntent(OtherConfigIntent.CalligraphySplashEnabledChanged(it))
+                    },
+                )
+
+                SwitchSettingItem(
+                    title = stringResource(R.string.calligraphy_splash_once_per_day_title),
+                    description = stringResource(R.string.calligraphy_splash_once_per_day_summary),
+                    checked = state.calligraphySplashOncePerDay,
+                    enabled = state.calligraphySplashEnabled,
+                    onCheckedChange = {
+                        onIntent(OtherConfigIntent.CalligraphySplashOncePerDayChanged(it))
+                    },
+                )
             }
 
             SplicedColumnGroup(title = stringResource(R.string.read)) {

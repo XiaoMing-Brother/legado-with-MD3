@@ -5,8 +5,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.zIndex
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,31 +36,38 @@ fun CalligraphySplashOverlay(
     }
 
     LaunchedEffect(Unit) {
-        delay(2_400)
+        delay(1_500)
         dismiss()
     }
 
     LaunchedEffect(visible) {
         if (!visible) {
-            delay(450)
+            delay(320)
             onFinished()
         }
     }
 
-    AnimatedVisibility(
-        visible = visible,
-        exit = fadeOut(animationSpec = tween(420)),
+    Box(
+        Modifier
+            .fillMaxSize()
+            .zIndex(10_000f),
     ) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = ::dismiss,
-                ),
+        AnimatedVisibility(
+            visible = visible,
+            exit = fadeOut(animationSpec = tween(280)),
         ) {
-            CalligraphySplashScreen()
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF2EDE4))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = ::dismiss,
+                    ),
+            ) {
+                CalligraphySplashScreen()
+            }
         }
     }
 }

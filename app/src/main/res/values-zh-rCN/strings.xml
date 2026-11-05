@@ -103,8 +103,8 @@
     <string name="theme_refactor_tip">仍有部分界面未用 Compose 重构，这些界面会与大部分界面有较大差异。</string>
     <string name="theme_setting_s">主题 • 深色模式 • 界面设置</string>
     <string name="dash_gap">虚线间隔</string>
-    <string name="other_setting">高级</string>
-    <string name="other_setting_s">语言 • 其他设置</string>
+    <string name="other_setting">其他设置</string>
+    <string name="other_setting_s">语言 • 主界面 • 书法欢迎屏</string>
     <string name="about">关于</string>
     <string name="donate">捐赠</string>
     <string name="exit">退出</string>
@@ -1831,9 +1831,10 @@
     <string name="welcome_book_folder_tip">设置本地书籍保存目录，后续也可在设置中修改。</string>
     <string name="welcome_book_folder_not_selected">未选择文件夹</string>
     <string name="onboarding_title_welcome">欢迎</string>
-    <string name="calligraphy_splash_line1">欲买桂花同载酒</string>
-    <string name="calligraphy_splash_line2">终不似少年游</string>
-    <string name="calligraphy_splash_seal">游</string>
+    <string name="calligraphy_splash_enabled_title">启动书法欢迎屏</string>
+    <string name="calligraphy_splash_enabled_summary">冷启动进入主界面时显示纸纹书法开屏</string>
+    <string name="calligraphy_splash_once_per_day_title">每日仅显示一次</string>
+    <string name="calligraphy_splash_once_per_day_summary">当天已显示过后，再次冷启动不再显示，次日恢复</string>
     <string name="onboarding_title_backup">备份与恢复</string>
     <string name="onboarding_title_book_folder">书籍文件夹</string>
     <string name="onboarding_title_theme">主题样式</string>
@@ -3588,9 +3589,9 @@
     <string name="reader_paragraph_image_action_unsupported">此图片使用段落规则动作，当前版本尚不支持。</string>
     <!--内置阅读主题（清墨 LightInk 主题商店快照）-->
     <string name="read_theme">内置主题</string>
-    <string name="read_theme_summary">点按主题即应用它的配色、边距与背景图。</string>
+    <string name="read_theme_summary">点按主题只应用它的背景色与背景图，字体颜色、字号和边距保持当前设置。</string>
     <string name="read_theme_download_count">%1$d 次下载</string>
-    <string name="read_theme_image_failed">配色已应用，背景图下载失败。</string>
+    <string name="read_theme_image_failed">背景色已应用，背景图下载失败。</string>
     <!--从当前阅读背景图提取一套配色-->
     <string name="read_bg_palette">从背景图取色</string>
     <string name="read_bg_palette_summary">按当前背景图提一套正文与强调色，直接套用。</string>
