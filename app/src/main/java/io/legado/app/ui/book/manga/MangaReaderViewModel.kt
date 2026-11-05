@@ -782,7 +782,6 @@ class MangaReaderViewModel(
 
     override fun onCleared() {
         readerSession.close()
-        super.onCleared()
     }
 
     private fun executeSession(command: MangaSessionCommand) {

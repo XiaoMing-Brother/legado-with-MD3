@@ -58,14 +58,11 @@ sealed interface ReadConfigSheet {
     data object PageKeys : ReadConfigSheet
     data object ClickActions : ReadConfigSheet
     data object EyeProtection : ReadConfigSheet
-    data object ReadThemePicker : ReadConfigSheet
 }
 
 sealed interface ReadConfigIntent {
     data object OpenPageKeys : ReadConfigIntent
     data object OpenClickActions : ReadConfigIntent
-    data object OpenReadThemePicker : ReadConfigIntent
-    data class ApplyReadTheme(val themeId: Int) : ReadConfigIntent
     data object DismissSheet : ReadConfigIntent
     data class ScreenOrientationChanged(val value: String) : ReadConfigIntent
     data class KeepLightChanged(val value: String) : ReadConfigIntent
@@ -118,7 +115,4 @@ sealed interface ReadConfigIntent {
 
 sealed interface ReadConfigEffect {
     data class SettingsUpdateFailed(val message: String) : ReadConfigEffect
-
-    /** 内置主题配色已应用，但自带背景图下载失败。 */
-    data object ReadThemeBackgroundFailed : ReadConfigEffect
 }

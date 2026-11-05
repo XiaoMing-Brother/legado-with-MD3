@@ -2,10 +2,10 @@ package io.legado.app.ui.config.themeConfig
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -16,7 +16,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.legado.app.R
@@ -92,6 +91,7 @@ fun MainNavigationSettingsSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             CompactDropdownSettingItem(
                 title = stringResource(R.string.default_home_page),
@@ -122,7 +122,6 @@ fun MainNavigationSettingsSheet(
                 },
                 onClick = { showNavigationIcons = true },
             )
-            Spacer(modifier = Modifier.padding(bottom = 4.dp))
             LazyColumn(
                 state = navigationListState,
                 modifier = Modifier

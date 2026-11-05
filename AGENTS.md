@@ -93,6 +93,8 @@ platform implementations (Android/JVM/iOS/...)
   3 图组装。
 - 使用项目的 `AppScaffold`、主题、top bar、dialog/sheet、列表和设置组件。正确处理 edge-to-edge 与
   predictive back。
+- 所有交互控件必须具有稳定、可本地化的无障碍名称和可执行语义；动画文字隐藏时仍须保留名称，菜单关闭区域须说明用途，
+  排序须暴露当前位置。修复无障碍问题时验证语义树与动作，并记录尚未完成的屏幕阅读器实测。
 - Activity 仅在遗留 `Intent`/result 兼容确有需要时作为薄宿主保留。
 
 具体文件形态和审查清单由 Compose migration/review skill 维护，本文件不复制完整模板。
@@ -147,20 +149,18 @@ platform implementations (Android/JVM/iOS/...)
 开发与 CI 使用 JDK 21。按风险选择最小充分验证：
 
 ```powershell
-# Kotlin/Compose 快速编译（core = 轻量主包，full = 含本地推理）
-.\gradlew.bat :app:compileAppCoreDebugKotlin
-.\gradlew.bat :app:compileAppFullDebugKotlin
+# Kotlin/Compose 快速编译（单包，无产品变体）
+.\gradlew.bat :app:compileDebugKotlin
 
 # 当前主验证集
-.\gradlew.bat testAppCoreDebugUnitTest testAppFullDebugUnitTest lintAppCoreDebug lintAppFullDebug verifyConfigArchitecture assembleAppCoreDebug assembleAppFullDebug --continue --no-configuration-cache
+.\gradlew.bat testDebugUnitTest lintDebug verifyConfigArchitecture assembleDebug --continue --no-configuration-cache
 
 # 资源、Manifest、生成绑定或打包变化
-.\gradlew.bat :app:assembleAppCoreDebug
+.\gradlew.bat :app:assembleDebug
 
 # Release/R8 相关
-.\gradlew.bat assembleAppCoreRelease
-.\gradlew.bat assembleAppCoreNoR8
-.\gradlew.bat assembleAppFullRelease
+.\gradlew.bat assembleRelease
+.\gradlew.bat assembleNoR8
 
 # Web 前端
 pnpm --dir modules/web build
@@ -186,8 +186,9 @@ KMP 任务名在模块实际创建后才存在；不要假装运行尚未定义�
   capability 边界。
 - `modules/web` 必须连接应用内 Ktor WebService；开发环境通过 `VITE_API` 指向设备服务地址。
 - 发布形态为**单包**（2026-11-04 起）：一个 Release、一份签名、APK 附件名不带产品标记
-  （`legado-<版本>-<abi>.apk`），R8 mapping 只上传一份 `mapping.txt`。旧的 `core`/`full` 双包
-  已删除，full 内置的本地推理栈与模型无代码消费，属于死重；不要再引入按功能分包或扩展包。
+  （`legado-<版本>-<abi>.apk`），R8 mapping 只上传一份 `mapping.txt`。旧的 `core`/`full`（3.26.23 起
+  上游改称 `comic`）双包已删除，其内置的本地推理栈与模型无代码消费，属于死重；不要再引入按功能分包
+  或扩展包。
 - **打包/发布前先确认签名**（清单见 `~/.android/legado-signing/README.md`）：本机只有
   `legado-md3`（`~/.android/legado-md3-signing/`，CN=legado-md3，D9:25:55…），只能签 coexist/自测包；
   线上 Release 由 CI 的 `secrets.SIGNING_KEY` 签名（CN=kudomaga，DD:C9:EB…），本机无私钥 → 要覆盖已装
@@ -199,9 +200,9 @@ KMP 任务名在模块实际创建后才存在；不要假装运行尚未定义�
   - **debug**：`debug.keystore`，日常开发、`installDebug`、模拟器/USB 调试安装。
   - **legado-md3**：本机 Release/coexist 自测（`gradle.properties` 的 `RELEASE_STORE_FILE`）；无法覆盖
     kudomaga 签的已装正式版。
-  - **kudomaga**：GitHub Actions 正式发版（`core` + `full`）；本机无私钥，需走 CI。
+  - **kudomaga**：GitHub Actions 正式发版（单包）；本机无私钥，需走 CI。
   - **lyc486 公开 key**：仅兼容 `io.legado.app` 等老包排查，**禁止用于发布**。
-  同时确认 **`core` / `full` / `coexist`** 与 **debug / release** 变体；完整指纹与决策表见
+  同时确认 **单包 / `coexist`** 与 **debug / release** 变体；完整指纹与决策表见
   `~/.android/legado-signing/README.md`。
 
 ## 交付说明

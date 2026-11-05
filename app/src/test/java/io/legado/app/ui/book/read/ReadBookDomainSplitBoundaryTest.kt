@@ -107,7 +107,12 @@ class ReadBookDomainSplitBoundaryTest {
      * 行数只作粗棘轮：散落在 VM 的域内状态比总行数更能说明边界是否干净，各域另受
      * `域状态不回流进 ReadBookViewModel` 守卫约束。
      *
-     * 当前上限 2824：合并上游 3.26.19 后由 2763 放宽 61 行，逐项记账如下。
+     * 当前上限 2714：合并上游 3.26.23 后由 2824 收紧 110 行。上游把离线缓存域摘成
+     * `ReadBookCacheDelegate`（章节筛选、范围预览与派发都在其中），朗读队列回调也收敛到
+     * `finishCue` / `liveCueOf`，VM 侧的仓线随之变短；本地分支的既有债（阅读器出站事件入口、
+     * `ComposeTurnPage`、朗读开关意图与内置主题转发等 +40 行）仍在，只是被上游的瘦身抵消。
+     * 本次没有新增域，因此只下调数字，不摘 delegate。
+     * 回溯（上一档 2824）：合并上游 3.26.19 后由 2763 放宽 61 行，逐项记账如下。
      * 先说结论：本地这一侧的 +40 行是既有债（合并前快照就已是 2803 行、超过当时上限
      * 2748），不是本次合并新长出来的域。
      * - 阅读器出站事件统一入口（Track D）：`onReaderEvent` 转发 4 行
@@ -178,14 +183,14 @@ class ReadBookDomainSplitBoundaryTest {
      * （TocViewModel 自持 flow）。
      */
     @Test
-    fun `ReadBookViewModel 不超过 2824 行`() {
+    fun `ReadBookViewModel 不超过 2714 行`() {
         val lineCount = mainSourceFile("io/legado/app/ui/book/read/ReadBookViewModel.kt")
             .readLines().size
         assertTrue(
-            "ReadBookViewModel 涨到了 $lineCount 行，超过上限 2824。\n" +
+            "ReadBookViewModel 涨到了 $lineCount 行，超过上限 2714。\n" +
                 "新功能请摘成 io/legado/app/ui/book/read/ 下的 XxxDelegate，" +
                 "并在本测试的 DOMAINS 里加一条边界。",
-            lineCount <= 2824,
+            lineCount <= 2714,
         )
     }
 

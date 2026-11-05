@@ -423,7 +423,9 @@ fun ThemeConfigScreen(
                     )
 
                     AnimatedVisibility(visible = theme.isEyeProtectionConfigured) {
-                        Column {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
                             SliderSettingItem(
                                 title = stringResource(R.string.color_temperature),
                                 description = stringResource(
@@ -448,7 +450,9 @@ fun ThemeConfigScreen(
                             )
 
                             AnimatedVisibility(visible = theme.eyeProtectionSchedule) {
-                                Column {
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
                                     ClickableSettingItem(
                                         title = stringResource(R.string.eye_protection_start_time),
                                         option = theme.eyeProtectionStartTime,
@@ -607,7 +611,9 @@ fun ThemeConfigScreen(
                         }
                     )
                     AnimatedVisibility(visible = theme.overrideBaseCardBorder) {
-                        Column {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
                             SliderSettingItem(
                                 title = stringResource(R.string.border_width),
                                 description = "${theme.baseCardBorderWidth}dp",

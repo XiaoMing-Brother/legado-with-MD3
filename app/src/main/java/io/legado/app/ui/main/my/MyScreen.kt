@@ -54,6 +54,7 @@ import io.legado.app.R
 import io.legado.app.ui.main.MainDrawerNavigationIcon
 import io.legado.app.ui.file.FileManageActivity
 import io.legado.app.ui.theme.adaptiveContentPadding
+import io.legado.app.ui.theme.LocalBottomOverlayPadding
 import io.legado.app.ui.widget.components.AppScaffold
 import io.legado.app.ui.widget.components.SplicedColumnGroup
 import io.legado.app.ui.widget.components.button.series.SmallPlainButton
@@ -134,7 +135,7 @@ fun MyScreen(
                 .padding(
                     adaptiveContentPadding(
                         top = padding.calculateTopPadding(),
-                        bottom = 120.dp
+                        bottom = 120.dp.coerceAtLeast(LocalBottomOverlayPadding.current)
                     )
                 )
         ) {

@@ -77,6 +77,9 @@ data object MainRouteSettingsOther : MainRoute
 data object MainRouteSettingsRead : MainRoute
 
 @Serializable
+data object MainRouteSettingsReadTheme : MainRoute
+
+@Serializable
 data object MainRouteSettingsManga : MainRoute
 
 @Serializable
@@ -317,6 +320,9 @@ data object MainRouteRegexCastRule : MainRoute
 
 @Serializable
 data object MainRouteAbout : MainRoute
+
+@Serializable
+data object MainRouteThirdPartyLicenses : MainRoute
 
 /** 朗读设置卡片里的子页跳转：把 [ReadAloudSubPage] 映射到对应整屏路由。 */
 fun ReadAloudSubPage.toMainRoute(): MainRoute = when (this) {

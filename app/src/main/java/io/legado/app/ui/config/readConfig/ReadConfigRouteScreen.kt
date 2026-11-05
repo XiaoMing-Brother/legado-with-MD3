@@ -5,13 +5,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.legado.app.R
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun ReadConfigRouteScreen(
     onBackClick: () -> Unit,
+    onNavigateToReadThemePicker: () -> Unit,
     viewModel: ReadConfigViewModel = koinViewModel(),
 ) {
     val context = LocalContext.current
@@ -23,14 +23,6 @@ fun ReadConfigRouteScreen(
                 is ReadConfigEffect.SettingsUpdateFailed -> {
                     Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
                 }
-
-                ReadConfigEffect.ReadThemeBackgroundFailed -> {
-                    Toast.makeText(
-                        context,
-                        R.string.read_theme_image_failed,
-                        Toast.LENGTH_SHORT,
-                    ).show()
-                }
             }
         }
     }
@@ -39,5 +31,6 @@ fun ReadConfigRouteScreen(
         state = state,
         onIntent = viewModel::onIntent,
         onBackClick = onBackClick,
+        onNavigateToReadThemePicker = onNavigateToReadThemePicker,
     )
 }

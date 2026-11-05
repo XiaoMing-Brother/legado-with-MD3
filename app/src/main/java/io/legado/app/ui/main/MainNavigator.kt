@@ -131,6 +131,7 @@ object MainNavigator {
 
             MainRouteSettingsOther,
             MainRouteSettingsRead,
+            MainRouteSettingsReadTheme,
             is MainRouteSettingsManga,
             MainRouteSettingsCover,
             MainRouteSettingsTheme,
@@ -353,6 +354,8 @@ object MainNavigator {
             MainRouteRegexCastRule,
             MainRouteMultiRoleRecognition,
             MainRouteSettingsBubble -> backStack.add(route)
+
+            MainRouteThirdPartyLicenses -> backStack.add(route)
 
             MainRouteAbout -> {
                 if (currentRoute == MainRouteHome) {

@@ -58,6 +58,7 @@ import kotlinx.coroutines.delay
 fun AboutScreen(
     state: AboutUiState,
     onIntent: (AboutIntent) -> Unit,
+    onOpenLicenses: () -> Unit,
     onBack: () -> Unit = {},
     versionName: String = appInfo.versionName,
 ) {
@@ -65,6 +66,7 @@ fun AboutScreen(
         MiuixAboutScreen(
             state = state,
             onIntent = onIntent,
+            onOpenLicenses = onOpenLicenses,
             onBack = onBack,
             versionName = versionName,
         )
@@ -72,6 +74,7 @@ fun AboutScreen(
         MaterialAboutScreen(
             state = state,
             onIntent = onIntent,
+            onOpenLicenses = onOpenLicenses,
             onBack = onBack,
             versionName = versionName,
         )
@@ -88,6 +91,7 @@ fun AboutScreen(
 private fun MaterialAboutScreen(
     state: AboutUiState,
     onIntent: (AboutIntent) -> Unit,
+    onOpenLicenses: () -> Unit,
     onBack: () -> Unit,
     versionName: String,
 ) {
@@ -199,6 +203,12 @@ private fun MaterialAboutScreen(
                     SettingItem(
                         title = stringResource(R.string.license),
                         onClick = { onIntent(AboutIntent.ShowMdFile(licenseTitle, "LICENSE.md")) }
+                    )
+                }
+                SettingItemWithDivider {
+                    SettingItem(
+                        title = stringResource(R.string.about_third_party_licenses),
+                        onClick = onOpenLicenses,
                     )
                 }
                 SettingItemWithDivider {

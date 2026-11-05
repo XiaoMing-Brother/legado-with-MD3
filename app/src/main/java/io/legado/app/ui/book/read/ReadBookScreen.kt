@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -27,7 +28,6 @@ import io.legado.app.ui.book.read.sheet.ContentEditSheet
 import io.legado.app.ui.book.read.sheet.DownloadSheet
 import io.legado.app.ui.book.read.sheet.BubbleStyleSheet
 import io.legado.app.ui.book.read.sheet.EyeProtectionConfigSheet
-import io.legado.app.ui.book.read.sheet.ParagraphReviewSheet
 import io.legado.app.ui.book.read.sheet.FloatingBarIconConfigSheet
 import io.legado.app.ui.book.read.sheet.HighlightRuleConfigSheet
 import io.legado.app.ui.book.read.sheet.MarkingSheet
@@ -313,7 +313,7 @@ fun ReadBookScreen(
     // Keep each layer keyed and mounted until its own sheet exit animation has finished.
     // Native modal windows must be created in stack order, including after recreation.
     val layers = remember { androidx.compose.runtime.mutableStateListOf<ReaderSheetLayer>() }
-    var nextLayerId by rememberSaveable { mutableStateOf(0L) }
+    var nextLayerId by rememberSaveable { mutableLongStateOf(0L) }
     var activeLayerIds by rememberSaveable { mutableStateOf<Map<String, Long>>(emptyMap()) }
     LaunchedEffect(state.sheetStack) {
         val previous = layers.filter { it.present }
@@ -550,14 +550,6 @@ private fun ReadBookSheetContent(
                 onIntent(ReadBookIntent.HideMenu)
                 onOpenBubbleManage()
             },
-        )
-    }
-    if (state.activeSheet is ReadBookSheet.ParagraphReview) {
-        ParagraphReviewSheet(
-            show = visibleState.findSheet<ReadBookSheet.ParagraphReview>() != null,
-            request = visibleState.findSheet<ReadBookSheet.ParagraphReview>(),
-            onDismissRequest =
-                dismissSheet(visibleState.findSheet<ReadBookSheet.ParagraphReview>()),
         )
     }
     if (state.activeSheet is ReadBookSheet.EyeProtection) {
@@ -825,6 +817,10 @@ private fun ReadBookSheetContent(
 
                 is ReadBookSheet.Download -> {
                     DownloadSheet(
+                        preview = state.cacheRangePreview,
+                        onScanRange = { start, end ->
+                            onIntent(ReadBookIntent.ScanCacheRange(start, end))
+                        },
                         onDismissRequest = dismissSheet,
                         onDownload = { start, end ->
                             onIntent(ReadBookIntent.DismissSheet)

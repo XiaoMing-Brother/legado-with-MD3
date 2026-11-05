@@ -50,6 +50,7 @@ import io.legado.app.model.AudioPlay
 import io.legado.app.model.Download
 import io.legado.app.model.ReadAloudSessionStore
 import io.legado.app.model.ReadBook
+import io.legado.app.feature.about.ThirdPartyLicensesScreen
 import io.legado.app.model.SourceCallBack
 import io.legado.app.service.AudioPlayService
 import io.legado.app.ui.about.AboutEffect
@@ -149,6 +150,7 @@ import io.legado.app.ui.config.labConfig.LabConfigRouteScreen
 import io.legado.app.ui.config.otherConfig.OtherConfigRouteScreen
 import io.legado.app.ui.config.privateConfig.PrivateConfigRouteScreen
 import io.legado.app.ui.config.readConfig.ReadConfigRouteScreen
+import io.legado.app.ui.config.readConfig.ReadThemePickerRouteScreen
 import io.legado.app.ui.config.themeConfig.ThemeConfigRouteScreen
 import io.legado.app.ui.config.themeManage.ThemeManageRouteScreen
 import io.legado.app.ui.config.translation.TranslationConfigRouteScreen
@@ -666,7 +668,14 @@ fun MainActivity.mainEntryProvider(
     }
 
     entry<MainRouteSettingsRead> {
-        ReadConfigRouteScreen(onBackClick = { onNavigateBack() })
+        ReadConfigRouteScreen(
+            onBackClick = { onNavigateBack() },
+            onNavigateToReadThemePicker = { pushRoute(MainRouteSettingsReadTheme) },
+        )
+    }
+
+    entry<MainRouteSettingsReadTheme> {
+        ReadThemePickerRouteScreen(onBackClick = { onNavigateBack() })
     }
 
     entry<MainRouteSettingsManga> { route ->
@@ -1847,8 +1856,13 @@ fun MainActivity.mainEntryProvider(
         AboutScreen(
             state = viewModel.uiState.collectAsStateWithLifecycle().value,
             onIntent = viewModel::onIntent,
+            onOpenLicenses = { onNavigateToRoute(MainRouteThirdPartyLicenses) },
             onBack = { onNavigateBack() },
         )
+    }
+
+    entry<MainRouteThirdPartyLicenses> {
+        ThirdPartyLicensesScreen(onBack = { onNavigateBack() })
     }
 }
 

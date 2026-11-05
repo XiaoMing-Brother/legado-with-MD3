@@ -5,6 +5,7 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.android.application)
+    alias(libs.plugins.aboutlibraries.android)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.room)
@@ -14,6 +15,12 @@ plugins {
 }
 
 apply(from = "download.gradle")
+
+aboutLibraries {
+    collect {
+        configPath = file("aboutlibraries")
+    }
+}
 
 
 val versionPropsFile = file("version.properties")
@@ -290,6 +297,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.aboutlibraries.core)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.coil.compose)
     implementation(libs.coil.gif)

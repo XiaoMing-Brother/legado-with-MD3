@@ -77,6 +77,7 @@ import io.legado.app.data.repository.RssArticleRepository
 import io.legado.app.data.repository.RssFavoriteRepository
 import io.legado.app.data.repository.RssReadRecordRepository
 import io.legado.app.data.repository.RssRepository
+import io.legado.app.data.repository.RssSourceImporter
 import io.legado.app.data.repository.RssSourceEditRepository
 import io.legado.app.data.repository.RuleSubscriptionRepository
 import io.legado.app.data.repository.SearchContentRepository
@@ -209,7 +210,7 @@ import io.legado.app.ui.about.AboutViewModel
 import io.legado.app.ui.association.ImportDictRuleViewModel
 import io.legado.app.ui.association.ImportHttpTtsViewModel
 import io.legado.app.ui.association.ImportReplaceRuleViewModel
-import io.legado.app.ui.association.ImportRssSourceViewModel
+import io.legado.app.feature.rss.source.RssSourceImportViewModel
 import io.legado.app.ui.association.ImportTxtTocRuleViewModel
 import io.legado.app.ui.book.audio.AudioPlayCoordinator
 import io.legado.app.ui.book.audio.AudioPlayViewModel
@@ -267,6 +268,7 @@ import io.legado.app.ui.config.otherConfig.OtherConfigViewModel
 import io.legado.app.ui.config.privateConfig.PrivateConfigViewModel
 import io.legado.app.ui.config.readConfig.ApplyReadSettingUseCase
 import io.legado.app.ui.config.readConfig.ReadConfigViewModel
+import io.legado.app.ui.config.readConfig.ReadThemePickerViewModel
 import io.legado.app.ui.config.themeConfig.ThemeConfigViewModel
 import io.legado.app.ui.config.themeManage.ThemeManageViewModel
 import io.legado.app.ui.config.translation.TranslationConfigViewModel
@@ -476,6 +478,7 @@ val appModule = module {
     }
 
     singleOf(::RssRepository)
+    singleOf(::RssSourceImporter)
     singleOf(::RssFavoriteRepository)
     singleOf(::RssArticleRepository)
     singleOf(::RssReadRecordRepository)
@@ -519,7 +522,7 @@ val appModule = module {
     viewModelOf(::ImportDictRuleViewModel)
     viewModelOf(::ImportHttpTtsViewModel)
     viewModelOf(::ImportReplaceRuleViewModel)
-    viewModelOf(::ImportRssSourceViewModel)
+    viewModelOf(::RssSourceImportViewModel)
     viewModelOf(::ImportTxtTocRuleViewModel)
     viewModelOf(::HighlightTagRuleViewModel)
     viewModelOf(::MultiRoleRuleViewModel)
@@ -576,6 +579,7 @@ val appModule = module {
     viewModelOf(::CustomThemeViewModel)
     viewModelOf(::BubbleConfigViewModel)
     viewModelOf(::ReadConfigViewModel)
+    viewModelOf(::ReadThemePickerViewModel)
     viewModelOf(::CoverConfigViewModel)
     viewModelOf(::CoverAlbumManageViewModel)
     viewModelOf(::DownloadCacheConfigViewModel)

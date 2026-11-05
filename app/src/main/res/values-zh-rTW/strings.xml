@@ -1394,6 +1394,11 @@
     <string name="update_to_variant_summary">检查更新时查找其他签名版本</string>
     <string name="auto_check_update_on_start_title">啟動時自動檢查更新</string>
     <string name="auto_check_update_on_start_summary">僅在應用程式程序完全重新啟動時檢查，從背景返回不會觸發</string>
+    <string name="update_endpoint_title">更新來源</string>
+    <string name="update_endpoint_summary">自動先直連 GitHub，失敗後改用鏡像；亦可固定只走其中一條</string>
+    <string name="update_endpoint_auto">自動（GitHub 優先，失敗改用鏡像）</string>
+    <string name="update_endpoint_github">僅 GitHub</string>
+    <string name="update_endpoint_mirror">僅鏡像</string>
     <string name="default_version">当前</string>
     <string name="official_version">正式版</string>
     <string name="beta_release_version">测试版</string>
@@ -1789,6 +1794,7 @@
     <string name="web_service_local_network_permission_denied">Web 服務需要區域網路權限，否則其他裝置無法存取</string>
     <string name="about_privacy_policy_title">隱私政策</string>
     <string name="about_license_title">開源許可</string>
+    <string name="about_third_party_licenses">第三方開源授權</string>
     <string name="about_disclaimer_title">免責聲明</string>
     <string name="about_installed_version_title">已安裝版本</string>
     <string name="about_current_version">已安裝版本</string>
@@ -2289,6 +2295,10 @@
     <string name="folder_list_style">資料夾列表樣式</string>
     <string name="horizontal_cover_count">水平封面數量</string>
     <string name="grid_cover_width">網格封面寬度</string>
+    <string name="bookshelf_grid_fixed_columns">固定列數</string>
+    <string name="bookshelf_grid_fixed_columns_summary">關閉後按封面寬度自動計算列數</string>
+    <string name="bookshelf_grid_fixed_cover_width">固定封面寬度</string>
+    <string name="bookshelf_grid_fixed_cover_width_summary">關閉後封面鋪滿列寬，隨列數自動縮放</string>
     <string name="day_card_bg_color">日間卡片背景色</string>
     <string name="night_card_bg_color">夜間卡片背景色</string>
     <string name="compact_details">精簡詳情</string>
@@ -2859,4 +2869,8 @@
     <string name="page_anim_parallax">視差</string>
     <string name="bookmark_target_content_mismatch">正文已變動或無法驗證原位置，仍要跳轉嗎？</string>
     <string name="search_content_changed">正文或處理設定已變更，請重新搜尋。</string>
+    <string name="a11y_close_read_menu">關閉閱讀選單</string>
+    <string name="a11y_open_playback">開啟播放介面</string>
+    <string name="a11y_open_playback_named">開啟《%1$s》的播放介面</string>
+    <string name="a11y_reorder_position">第 %1$d 項，共 %2$d 項</string>
 </resources>

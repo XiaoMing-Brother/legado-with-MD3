@@ -60,14 +60,48 @@ fun ReadThemePresetSheet(
     onDismissRequest: () -> Unit,
     onSelectTheme: (Int) -> Unit,
 ) {
-    var query by remember { mutableStateOf("") }
-    // 只记「这次打开选过哪个」，用于列表内的选中反馈；持久状态在排版配置里，不在这。
-    var appliedThemeId by remember(show) { mutableStateOf<Int?>(null) }
     // 本 composable 一直挂在阅读屏上（show 控制显隐），所以这里按 show 取值：
     // DefaultData.readThemes 是 300KB 资源的首次解析，不该算进开书那条热路径。
     val themes = remember(show) {
         if (show) DefaultData.readThemes else emptyList()
     }
+    // 只记「这次打开选过哪个」，用于列表内的选中反馈；持久状态在排版配置里，不在这。
+    var appliedThemeId by remember(show) { mutableStateOf<Int?>(null) }
+
+    AppModalBottomSheet(
+        show = show,
+        onDismissRequest = onDismissRequest,
+        title = stringResource(R.string.read_theme),
+    ) {
+        ReadThemePickerContent(
+            themes = themes,
+            appliedThemeId = appliedThemeId,
+            onSelectTheme = { themeId ->
+                appliedThemeId = themeId
+                onSelectTheme(themeId)
+            },
+            gridModifier = Modifier.height(360.dp),
+        )
+    }
+}
+
+/**
+ * 内置主题选择内容：搜索 + 卡片网格。
+ *
+ * 阅读页弹层与设置里的整页共用这一块；[themes] 由调用方决定何时解析（弹层按 `show` 惰性取，
+ * 整页直接取），避免把 300KB 资源的解析算进阅读屏热路径。
+ */
+@Composable
+fun ReadThemePickerContent(
+    themes: List<ReadThemePreset>,
+    appliedThemeId: Int?,
+    onSelectTheme: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    gridModifier: Modifier = Modifier,
+    gridContentPadding: PaddingValues = PaddingValues(vertical = 8.dp),
+    columns: GridCells = GridCells.Fixed(3),
+) {
+    var query by remember { mutableStateOf("") }
     val filtered = remember(query, themes) {
         val keyword = query.trim()
         if (keyword.isEmpty()) {
@@ -82,57 +116,46 @@ fun ReadThemePresetSheet(
         }
     }
 
-    AppModalBottomSheet(
-        show = show,
-        onDismissRequest = onDismissRequest,
-        title = stringResource(R.string.read_theme),
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            AppText(
-                text = stringResource(R.string.read_theme_summary),
-                style = LegadoTheme.typography.labelSmall,
-                color = LegadoTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 4.dp),
-            )
-            SearchBar(
-                query = query,
-                onQueryChange = { query = it },
-                placeholder = stringResource(R.string.search_placeholder),
-                autoFocus = false,
-            )
-            if (filtered.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    AppText(
-                        text = stringResource(R.string.empty),
-                        style = LegadoTheme.typography.bodyMedium,
-                        color = LegadoTheme.colorScheme.onSurfaceVariant,
+    Column(modifier = modifier.fillMaxWidth()) {
+        AppText(
+            text = stringResource(R.string.read_theme_summary),
+            style = LegadoTheme.typography.labelSmall,
+            color = LegadoTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 4.dp),
+        )
+        SearchBar(
+            query = query,
+            onQueryChange = { query = it },
+            placeholder = stringResource(R.string.search_placeholder),
+            autoFocus = false,
+        )
+        if (filtered.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                AppText(
+                    text = stringResource(R.string.empty),
+                    style = LegadoTheme.typography.bodyMedium,
+                    color = LegadoTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = columns,
+                contentPadding = gridContentPadding,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = gridModifier.fillMaxWidth(),
+            ) {
+                items(filtered, key = { it.id }) { theme ->
+                    ReadThemeCard(
+                        theme = theme,
+                        isApplied = theme.id == appliedThemeId,
+                        onClick = { onSelectTheme(theme.id) },
                     )
-                }
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
-                    contentPadding = PaddingValues(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(360.dp),
-                ) {
-                    items(filtered, key = { it.id }) { theme ->
-                        ReadThemeCard(
-                            theme = theme,
-                            isApplied = theme.id == appliedThemeId,
-                            onClick = {
-                                appliedThemeId = theme.id
-                                onSelectTheme(theme.id)
-                            },
-                        )
-                    }
                 }
             }
         }
