@@ -36,6 +36,68 @@ class LegacyReaderImageOptionsResolverTest {
         )
     }
 
+    /**
+     * 奇思妙想把段评入口画成 800×800 的 data-URI SVG，书源只写 `style=TEXT`。
+     * 旧 `TextChapterLayout` 对段评图标的槽宽是 `袮` 的 1.5556 倍；按 `꧁` 自身 advance
+     * 排版会让气泡缩成一个小点。
+     */
+    @Test
+    fun paragraphCommentSvgUsesWiderInlineSlot() {
+        val source = "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=," +
+            """{"style":"TEXT","type":"qd","click":"showQdCmt('1','2','3','4')"}"""
+
+        val options = LegacyReaderImageOptionsResolver.resolve(source, htmlParagraph = false)!!
+
+        assertEquals(ReaderImageLayoutMode.INLINE, options.layoutMode)
+        assertEquals(ReaderInlineImagePlaceholder.SRC_REPLACE, options.inlinePlaceholder)
+        assertEquals(1.5556f, options.inlineWidthScale, 0f)
+        assertTrue(options.paragraphCommentIcon)
+        assertEquals("showQdCmt('1','2','3','4')", options.action)
+    }
+
+    @Test
+    fun ordinaryInlineTextImageKeepsLegacyOneCharacterSlot() {
+        val options = LegacyReaderImageOptionsResolver.resolve(
+            "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=,{\"style\":\"TEXT\"}",
+            htmlParagraph = false,
+        )!!
+
+        assertEquals(ReaderImageLayoutMode.INLINE, options.layoutMode)
+        assertEquals(1f, options.inlineWidthScale, 0f)
+        assertFalse(options.paragraphCommentIcon)
+    }
+
+    /**
+     * 软件气泡的源会被改写成 `bubble://...`，旧版此时按无 style 的小图处理，占位字是 `袮`
+     * 而不是 `꧁`。用 `꧁` 会让气泡在缺字字体上只剩半个字宽，看起来像一个小圆点。
+     */
+    @Test
+    fun softwareBubbleUsesCjkPlaceholderAndExpandedTouchTarget() {
+        val options = LegacyReaderImageOptionsResolver.resolve(
+            "dp:5",
+            htmlParagraph = false,
+        )!!
+
+        assertEquals(ReaderImageLayoutMode.INLINE, options.layoutMode)
+        assertEquals(ReaderInlineImagePlaceholder.SRC_REPLACE, options.inlinePlaceholder)
+        assertEquals(1.5556f, options.inlineWidthScale, 0f)
+        assertTrue(options.paragraphCommentIcon)
+    }
+
+    /** 奇思妙想 HTML 段落里的番茄段评图标：type 是 `fq`，只能靠 click 里的函数名识别。 */
+    @Test
+    fun fanqieCommentSvgInHtmlParagraphUsesCommentIconLayout() {
+        val source = "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=," +
+            """{"style":"TEXT","type":"fq","click":"showFqCmt('1','2','3','4','5')"}"""
+
+        val options = LegacyReaderImageOptionsResolver.resolve(source, htmlParagraph = true)!!
+
+        assertEquals(ReaderImageLayoutMode.INLINE, options.layoutMode)
+        assertEquals(ReaderInlineImagePlaceholder.SRC_REPLACE, options.inlinePlaceholder)
+        assertEquals(1.5556f, options.inlineWidthScale, 0f)
+        assertTrue(options.paragraphCommentIcon)
+    }
+
     @Test
     fun parsesTypedImageUrlOptions() {
         val options = LegacyReaderImageOptionsResolver.resolve(

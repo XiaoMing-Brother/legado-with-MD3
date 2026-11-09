@@ -16,6 +16,7 @@ import io.legado.app.domain.gateway.ReadStyleMutation
 import io.legado.app.domain.gateway.ReadStyleStringKey
 import io.legado.app.domain.gateway.ThemeSettingsGateway
 import io.legado.app.domain.model.settings.ThemeSettings
+import io.legado.app.domain.model.settings.ReadThemeTarget
 import io.legado.app.domain.model.settings.isEyeProtectionConfigured
 import io.legado.app.help.DefaultData
 import io.legado.app.help.config.ReadBookConfig
@@ -253,13 +254,13 @@ class ReadStyleDelegate(
     /**
      * 应用内置主题。
      *
-     * 只写背景（含夜间派生底色）与状态栏图标并落盘，随即通知渲染；字体颜色、字号与边距保持
-     * 用户当前设置。主题自带背景图时**不阻塞**这一步——图片下载完成后才补 `bgType=2`
-     * 与本地路径。下载失败只提示一次，背景色保留。
+     * 只写 [target] 那一份背景（日间含墨水屏，夜间只改夜间）与状态栏图标并落盘，随即通知渲染；
+     * 另一模式的背景、字体颜色、字号与边距保持用户当前设置。主题自带背景图时**不阻塞**这一步——
+     * 图片下载完成后才补 `bgType=2` 与本地路径。下载失败只提示一次，背景色保留。
      */
-    fun applyReadTheme(themeId: Int) {
+    fun applyReadTheme(themeId: Int, target: ReadThemeTarget) {
         val theme = DefaultData.readThemes.firstOrNull { it.id == themeId } ?: return
-        if (!readStyleGateway.applyReadTheme(themeId)) return
+        if (!readStyleGateway.applyReadTheme(themeId, target)) return
         emitConfigUpdate(
             ConfigUpdateAction.UpdateBackground,
             ConfigUpdateAction.UpdateStyle,
@@ -275,7 +276,7 @@ class ReadStyleDelegate(
                 )
                 return@launch
             }
-            readStyleGateway.setReadThemeBackgroundImage(path, useForNight = theme.isNightBase)
+            readStyleGateway.setReadThemeBackgroundImage(path, target)
             emitConfigUpdate(ConfigUpdateAction.UpdateBackground)
         }
     }

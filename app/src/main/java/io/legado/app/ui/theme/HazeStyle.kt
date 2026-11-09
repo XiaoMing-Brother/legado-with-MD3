@@ -4,6 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import dev.chrisbanes.haze.HazeInput
+import dev.chrisbanes.haze.HazePerformanceMode
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.blur.hazeBlur
@@ -46,6 +47,9 @@ fun Modifier.responsiveHazeEffect(
 
     return this.hazeBlur(
         input = HazeInput.Sources(state),
+        // 顶栏玻璃每帧都要把内容录进离屏层再采样（实测 120Hz 屏上约 4ms GPU），
+        // 用最低一档采样质量换帧率：模糊更软，但不影响可读性。
+        performanceMode = HazePerformanceMode.Performance,
         style = style.then {
             progressive(
                 if (enableProgressiveBlur) {

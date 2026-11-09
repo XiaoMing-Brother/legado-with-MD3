@@ -278,6 +278,7 @@ object LegacyReaderChapterPaginator {
             ).toFloat() + footerExtentPx,
             lineHeightPx = paginationStyle.bodyTextHeightPx,
             baselineOffsetPx = paginationStyle.bodyBaselineOffsetPx,
+            density = appCtx.resources.displayMetrics.density,
             lineSpacingMultiplier = paginationStyle.lineSpacingExtra,
             continuousScroll = paginationStyle.isScroll,
             singleImageStyle = singleImage,

@@ -39,7 +39,6 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
@@ -307,6 +306,11 @@ fun CoilBookCover(
     showBadgeDot: Boolean = false,
     leftBottomText: String? = null,
     onImageAspectRatio: ((Float) -> Unit)? = null,
+    /**
+     * 书架卡片专用：回到列表时把共享元素裁到列表可见区域（顶栏以下）。
+     * 其他入口（详情页、搜索、发现）保持库默认行为。
+     */
+    clipInOverlayToShelfViewport: Boolean = false,
 ) {
     val coverSettings = LocalAppUiConfiguration.current.cover
     val isNight = LegadoTheme.isDark
@@ -352,9 +356,6 @@ fun CoilBookCover(
     Box(
         modifier = modifier
             .aspectRatio(5f / 7f)
-            .graphicsLayer {
-                alpha = if (BookCoverMorphAnchors.isOriginCoverHidden(sharedCoverKey)) 0f else 1f
-            }
             .onGloballyPositioned { coordinates ->
                 if (sharedCoverKey != null) {
                     BookCoverMorphAnchors.report(
@@ -374,11 +375,21 @@ fun CoilBookCover(
             }
             .then(
                 with(sharedTransitionScope) {
-                    if (this != null && animatedVisibilityScope != null && sharedCoverKey != null) {
+                    val coverScope = animatedVisibilityScope
+                    if (this != null && coverScope != null && sharedCoverKey != null) {
+                        // 书架卡片收回列表时把 overlay 裁到顶栏以下；打开书籍（本节点是起点）
+                        // 时不裁剪，否则从格子里长出去的封面会被顶栏切掉。
+                        val overlayClip = if (clipInOverlayToShelfViewport) {
+                            ShelfViewportOverlayClip(shape) {
+                                coverScope.transition.targetState == EnterExitState.Visible
+                            }
+                        } else {
+                            OverlayClip(shape)
+                        }
                         Modifier.sharedBounds(
                             sharedContentState = rememberSharedContentState(sharedCoverKey),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            clipInOverlayDuringTransition = OverlayClip(shape)
+                            animatedVisibilityScope = coverScope,
+                            clipInOverlayDuringTransition = overlayClip
                         )
                     } else Modifier
                 }

@@ -78,7 +78,9 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -93,10 +95,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -123,6 +128,7 @@ import io.legado.app.ui.theme.ThemeResolver
 import io.legado.app.ui.theme.adaptiveContentPaddingBookshelf
 import io.legado.app.ui.theme.adaptiveHorizontalPadding
 import io.legado.app.ui.theme.adaptiveHorizontalPaddingTab
+import io.legado.app.ui.theme.mainPageBottomInset
 import io.legado.app.ui.widget.components.AppPullToRefresh
 import io.legado.app.ui.widget.components.AppScaffold
 import io.legado.app.ui.widget.components.AppTextField
@@ -139,6 +145,7 @@ import io.legado.app.ui.widget.components.divider.PillHeaderDivider
 import io.legado.app.ui.widget.components.filePicker.FilePickerSheet
 import io.legado.app.ui.widget.components.icon.AppIcon
 import io.legado.app.ui.widget.components.icon.AppIcons
+import io.legado.app.ui.widget.components.image.cover.ShelfCoverViewport
 import io.legado.app.ui.widget.components.image.cover.bookshelfSharedCoverSourceId
 import io.legado.app.ui.widget.components.importComponents.SourceInputDialog
 import io.legado.app.ui.widget.components.lazylist.FastScrollLazyVerticalGrid
@@ -155,6 +162,7 @@ import io.legado.app.ui.widget.components.text.AppText
 import io.legado.app.ui.widget.components.topbar.GlassMediumFlexibleTopAppBar
 import io.legado.app.ui.widget.components.topbar.GlassTopAppBarDefaults
 import io.legado.app.ui.widget.components.topbar.GlassTopAppBarScrollBehavior
+import io.legado.app.ui.widget.components.topbar.M3GlassScrollBehavior
 import io.legado.app.ui.widget.components.topbar.TopBarActionButton
 import io.legado.app.ui.widget.components.topbar.TopBarNavigationButton
 import kotlinx.collections.immutable.ImmutableList
@@ -560,6 +568,16 @@ fun BookshelfScreen(
     }
 
     val scrollBehavior = GlassTopAppBarDefaults.defaultScrollBehavior()
+    // 共享元素 overlay 画在整棵 SharedTransitionLayout 之上，返回书架时封面/正文要收回格子，
+    // 不能画到顶栏上面去（见 ShelfViewportOverlayClip）。顶栏收起时会整体上移，实际遮挡的
+    // 下边界得跟着抬升；这里只把偏移写成绘制期调用的 lambda，不让它的每帧变化触发重组。
+    val appBarState = (scrollBehavior as? M3GlassScrollBehavior)?.m3Behavior?.state
+    SideEffect {
+        ShelfCoverViewport.heightOffsetPx = { appBarState?.heightOffset ?: 0f }
+    }
+    DisposableEffect(appBarState) {
+        onDispose { ShelfCoverViewport.heightOffsetPx = { 0f } }
+    }
     var showTopBarMenu by remember { mutableStateOf(false) }
     val toggleShelfFilter = {
         toggleBookshelfFilter(
@@ -978,7 +996,8 @@ fun BookshelfScreen(
                                 .fillMaxSize()
                                 .padding(
                                     top = paddingValues.calculateTopPadding(),
-                                    bottom = 120.dp.coerceAtLeast(LocalBottomOverlayPadding.current)
+                                    bottom = 120.dp.coerceAtLeast(LocalBottomOverlayPadding.current) +
+                                            mainPageBottomInset()
                                 ),
                             messageResId = R.string.bookshelf_empty
                         )
@@ -1006,7 +1025,8 @@ fun BookshelfScreen(
                         contentPadding = adaptiveContentPaddingBookshelf(
                             top = paddingValues.calculateTopPadding(),
                             bottom = (if (uiState.useRaisedBottomInset) 120.dp else 8.dp)
-                                .coerceAtLeast(LocalBottomOverlayPadding.current),
+                                .coerceAtLeast(LocalBottomOverlayPadding.current) +
+                                    mainPageBottomInset(),
                             horizontal = 4.dp
                         ),
                         verticalArrangement = Arrangement.spacedBy(if (isGridMode) 8.dp else 0.dp),
@@ -1693,7 +1713,8 @@ fun BookshelfPage(
                     .fillMaxSize()
                     .padding(
                         top = paddingValues.calculateTopPadding(),
-                        bottom = 120.dp.coerceAtLeast(LocalBottomOverlayPadding.current)
+                        bottom = 120.dp.coerceAtLeast(LocalBottomOverlayPadding.current) +
+                                mainPageBottomInset()
                     ),
                 message = stringResource(R.string.bookshelf_empty_global_search),
                 buttonText = stringResource(R.string.global_search),
@@ -1705,7 +1726,8 @@ fun BookshelfPage(
                     .fillMaxSize()
                     .padding(
                         top = paddingValues.calculateTopPadding(),
-                        bottom = 120.dp.coerceAtLeast(LocalBottomOverlayPadding.current)
+                        bottom = 120.dp.coerceAtLeast(LocalBottomOverlayPadding.current) +
+                                mainPageBottomInset()
                     ),
                 messageResId = R.string.bookshelf_empty
             )
@@ -1751,6 +1773,11 @@ fun BookshelfPage(
     val gridContentHorizontalPadding = totalHorizontalPadding / 2
     val gridInnerHorizontalPadding = totalHorizontalPadding / 2
     val hapticFeedback = LocalHapticFeedback.current
+    // 顶栏底边（px）：共享元素 overlay 画在整棵 SharedTransitionLayout 之上，返回书架时
+    // 封面/正文要收回格子，不能画到顶栏上面去。见 ShelfViewportOverlayClip。
+    val coverViewportTopPx = with(LocalDensity.current) {
+        paddingValues.calculateTopPadding().toPx()
+    }
     val displayBooks = draggingBooks ?: pendingSavedBooks ?: books
     val reorderableState = rememberReorderableLazyGridState(gridState) { from, to ->
         if (canReorderBooks) {
@@ -1787,11 +1814,16 @@ fun BookshelfPage(
                     with(sharedTransitionScope) {
                         if (this != null) Modifier.skipToLookaheadSize() else Modifier
                     }
-                ),
+                )
+                .onGloballyPositioned { coordinates ->
+                    ShelfCoverViewport.layoutBottomPx =
+                        coordinates.positionInRoot().y + coverViewportTopPx
+                },
             contentPadding = adaptiveContentPaddingBookshelf(
                 top = paddingValues.calculateTopPadding(),
                 bottom = (if (uiState.useRaisedBottomInset) 120.dp else 8.dp)
-                    .coerceAtLeast(LocalBottomOverlayPadding.current),
+                    .coerceAtLeast(LocalBottomOverlayPadding.current) +
+                        mainPageBottomInset(),
                 horizontal = 8.dp
             ),
             // 列表模式同样支持每行多本：卡片宽度被切分后，相邻卡片的边框会贴成一条线，

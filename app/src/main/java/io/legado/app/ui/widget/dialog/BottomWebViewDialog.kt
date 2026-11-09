@@ -30,6 +30,9 @@ import android.widget.FrameLayout
 import androidx.annotation.Keep
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.size
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
@@ -163,10 +166,26 @@ class BottomWebViewDialog() : BottomSheetDialogFragment(R.layout.dialog_web_view
         initWebViewBaseConfig()
     }
 
+    override fun getTheme(): Int = R.style.ThemeOverlay_App_BottomSheetDialog
 
     override fun onStart() {
         super.onStart()
         setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        // 段评页与阅读器一样按整页展示：系统栏常驻会在底部留下一段不可用的空白。
+        dialog?.window?.let { window ->
+            // 部分 ROM 会在弹窗获得焦点后重新显示状态栏，窗口级 flag 作为兜底。
+            window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+            WindowCompat.getInsetsController(window, window.decorView).apply {
+                systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                hide(WindowInsetsCompat.Type.systemBars())
+            }
+            window.decorView.post {
+                WindowCompat.getInsetsController(window, window.decorView)
+                    .hide(WindowInsetsCompat.Type.systemBars())
+            }
+        }
     }
 
     override fun show(manager: FragmentManager, tag: String?) {

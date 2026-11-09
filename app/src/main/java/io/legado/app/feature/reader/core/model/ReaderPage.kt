@@ -388,10 +388,17 @@ data class ReaderPage(
     val contentLeftPx: Float = 0f,
     val contentRightPx: Float = widthPx.toFloat(),
 ) {
-    fun elementAt(x: Float, y: Float): ReaderElement? =
+    fun elementAt(x: Float, y: Float): ReaderElement? {
+        // 段评图为了满足 48dp 触摸区会向外扩，扩出来的部分可能与相邻文字重叠。
+        // 先让「有动作的图片」按触摸区命中，否则左侧文字会抢先吃掉点击，气泡只剩中心可点。
         elements.firstOrNull {
+            it is ReaderElement.Image && !it.action.isNullOrBlank() &&
+                it.touchBounds.contains(x, y)
+        }?.let { return it }
+        return elements.firstOrNull {
             (if (it is ReaderElement.Image) it.touchBounds else it.bounds).contains(x, y)
         }
+    }
 
     fun hasSameGeometryAs(other: ReaderPage): Boolean =
         id == other.id &&

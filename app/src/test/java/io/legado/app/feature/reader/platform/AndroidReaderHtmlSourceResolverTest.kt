@@ -150,6 +150,22 @@ class AndroidReaderHtmlSourceResolverTest {
         assertEquals(3, image.chapterPosition)
     }
 
+    @Test fun unescapedDoubleQuotedImageOptionsKeepSourceAndAction() {
+        val source = """dp:7,{"click":"showCmt(1,2)"}"""
+        val html = """<p>甲<img src="$source">乙</p>"""
+        val image = AndroidReaderHtmlSourceResolver(20f, 2f)
+            .resolve(html, 5).flatMap { it.items }
+            .filterIsInstance<ReaderChapterInlineSource.Image>().single()
+
+        assertEquals(source, image.source)
+        assertEquals(
+            "showCmt(1,2)",
+            LegacyReaderImageOptionsResolver.resolve(image.source, htmlParagraph = true)?.action,
+        )
+        val semantic = AndroidReaderHtmlSemanticTextResolver.resolve(html)
+        assertEquals(5 + semantic.indexOf('\uFFFC'), image.chapterPosition)
+    }
+
     @Test fun consecutiveBreaksPreserveANewlineOnlyVisualParagraphWithoutATrailingPhantomLine() {
         val html = "甲<br><br>乙<br>"
         val semantic = AndroidReaderHtmlSemanticTextResolver.resolve(html)

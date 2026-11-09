@@ -66,6 +66,65 @@ class ReaderPaginatorTest {
     private fun paragraph(text: String, position: Int = 0) =
         inline(text.map(Char::toString), FloatArray(text.length) { 20f }, position)
 
+    @Test
+    fun actionInlineImageGetsAccessibleTouchTargetWithoutChangingItsBounds() {
+        val page = ReaderPaginator.paginateBlocks(
+            listOf(
+                ReaderMeasuredBlock.InlineParagraph(
+                    items = listOf(
+                        ReaderMeasuredInlineItem.Text("甲", 10f, style, 0),
+                        ReaderMeasuredInlineItem.Image(
+                            source = "data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=," +
+                                """{"style":"TEXT","type":"qd","click":"showQdCmt()"}""",
+                            widthPx = 20f,
+                            heightPx = 20f,
+                            chapterPosition = 1,
+                            action = "showQdCmt()",
+                            paragraphCommentIcon = true,
+                        ),
+                    ),
+                    indentCharacters = 0,
+                    alignment = ReaderTextAlignment.START,
+                    lineHeightPx = 20f,
+                    baselineOffsetPx = 15f,
+                    baseTextSizePx = 10f,
+                ),
+            ),
+            config.copy(viewportWidthPx = 200, viewportHeightPx = 200, density = 1f),
+        ).single()
+
+        val image = page.elements.filterIsInstance<ReaderElement.Image>().single()
+        assertEquals(10f, image.bounds.left, 0f)
+        assertEquals(30f, image.bounds.right, 0f)
+        assertEquals(48f, image.touchBounds.width, 0f)
+        assertEquals(48f, image.touchBounds.height, 0f)
+        assertTrue(page.elementAt(5f, 25f) === image)
+    }
+
+    @Test
+    fun nonActionInlineImageKeepsTightTouchBounds() {
+        val page = ReaderPaginator.paginateBlocks(
+            listOf(
+                ReaderMeasuredBlock.InlineParagraph(
+                    items = listOf(
+                        ReaderMeasuredInlineItem.Text("甲", 10f, style, 0),
+                        ReaderMeasuredInlineItem.Image("plain.png", 20f, 20f, 1),
+                    ),
+                    indentCharacters = 0,
+                    alignment = ReaderTextAlignment.START,
+                    lineHeightPx = 20f,
+                    baselineOffsetPx = 15f,
+                    baseTextSizePx = 10f,
+                ),
+            ),
+            config.copy(viewportWidthPx = 200, viewportHeightPx = 200, density = 1f),
+        ).single()
+
+        val image = page.elements.filterIsInstance<ReaderElement.Image>().single()
+        assertEquals(20f, image.touchBounds.width, 0f)
+        assertEquals(20f, image.touchBounds.height, 0f)
+    }
+
     @Test fun emphasisUnderlineStyleIsCarriedByEveryPublishedPage() {
         val emphasis = ReaderEmphasisUnderline(0xff123456.toInt(), 2f, 1f)
         val pages = ReaderPaginator.paginateBlocks(

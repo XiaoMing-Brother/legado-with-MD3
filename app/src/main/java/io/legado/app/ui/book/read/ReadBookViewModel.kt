@@ -1436,7 +1436,8 @@ class ReadBookViewModel(
             is ReadBookIntent.MoveReadStylesToEdge -> styleDelegate.moveStylesToEdge(intent.indices, intent.toTop)
             is ReadBookIntent.OpenBgTextConfig -> styleDelegate.openBgTextConfig(intent.index)
             is ReadBookIntent.OpenReadThemePicker -> styleDelegate.openReadThemePicker()
-            is ReadBookIntent.ApplyReadTheme -> styleDelegate.applyReadTheme(intent.themeId)
+            is ReadBookIntent.ApplyReadTheme ->
+                styleDelegate.applyReadTheme(intent.themeId, intent.target)
             is ReadBookIntent.ApplyBackgroundPalette -> styleDelegate.applyBackgroundPalette()
 
             is ReadBookIntent.ToggleDayNight -> styleDelegate.toggleDayNight()

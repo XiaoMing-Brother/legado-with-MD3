@@ -37,12 +37,13 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.legado.app.R
 import io.legado.app.domain.model.settings.ReadThemePreset
+import io.legado.app.domain.model.settings.ReadThemeTarget
 import io.legado.app.domain.model.settings.parseArgbColor
 import io.legado.app.domain.model.settings.thumbnailUrl
 import io.legado.app.help.DefaultData
 import io.legado.app.ui.theme.LegadoTheme
-import io.legado.app.ui.widget.components.SearchBar
 import io.legado.app.ui.widget.components.modalBottomSheet.AppModalBottomSheet
+import io.legado.app.ui.widget.components.tabRow.AppTabRow
 import io.legado.app.ui.widget.components.text.AppText
 
 /**
@@ -58,15 +59,16 @@ import io.legado.app.ui.widget.components.text.AppText
 fun ReadThemePresetSheet(
     show: Boolean,
     onDismissRequest: () -> Unit,
-    onSelectTheme: (Int) -> Unit,
+    onSelectTheme: (Int, ReadThemeTarget) -> Unit,
 ) {
     // 本 composable 一直挂在阅读屏上（show 控制显隐），所以这里按 show 取值：
     // DefaultData.readThemes 是 300KB 资源的首次解析，不该算进开书那条热路径。
     val themes = remember(show) {
         if (show) DefaultData.readThemes else emptyList()
     }
-    // 只记「这次打开选过哪个」，用于列表内的选中反馈；持久状态在排版配置里，不在这。
-    var appliedThemeId by remember(show) { mutableStateOf<Int?>(null) }
+    // 日间与夜间各记「这次打开选过哪个」，用于列表内的选中反馈；持久状态在排版配置里，不在这。
+    var appliedDayThemeId by remember(show) { mutableStateOf<Int?>(null) }
+    var appliedNightThemeId by remember(show) { mutableStateOf<Int?>(null) }
 
     AppModalBottomSheet(
         show = show,
@@ -75,10 +77,14 @@ fun ReadThemePresetSheet(
     ) {
         ReadThemePickerContent(
             themes = themes,
-            appliedThemeId = appliedThemeId,
-            onSelectTheme = { themeId ->
-                appliedThemeId = themeId
-                onSelectTheme(themeId)
+            appliedDayThemeId = appliedDayThemeId,
+            appliedNightThemeId = appliedNightThemeId,
+            onSelectTheme = { themeId, target ->
+                when (target) {
+                    ReadThemeTarget.Day -> appliedDayThemeId = themeId
+                    ReadThemeTarget.Night -> appliedNightThemeId = themeId
+                }
+                onSelectTheme(themeId, target)
             },
             gridModifier = Modifier.height(360.dp),
         )
@@ -86,34 +92,44 @@ fun ReadThemePresetSheet(
 }
 
 /**
- * 内置主题选择内容：搜索 + 卡片网格。
+ * 内置主题选择内容：日间/夜间切换 + 卡片网格。
  *
  * 阅读页弹层与设置里的整页共用这一块；[themes] 由调用方决定何时解析（弹层按 `show` 惰性取，
  * 整页直接取），避免把 300KB 资源的解析算进阅读屏热路径。
+ *
+ * 日间列表只放浅色主题，夜间列表只放 [ReadThemePreset.isNightTheme] 的深底浅字主题；默认停留的
+ * 列表跟随当前阅读模式（夜间打开就落在夜间主题）。两个列表各自记自己的已选主题。
  */
 @Composable
 fun ReadThemePickerContent(
     themes: List<ReadThemePreset>,
-    appliedThemeId: Int?,
-    onSelectTheme: (Int) -> Unit,
+    onSelectTheme: (Int, ReadThemeTarget) -> Unit,
     modifier: Modifier = Modifier,
+    appliedDayThemeId: Int? = null,
+    appliedNightThemeId: Int? = null,
     gridModifier: Modifier = Modifier,
     gridContentPadding: PaddingValues = PaddingValues(vertical = 8.dp),
     columns: GridCells = GridCells.Fixed(3),
 ) {
-    var query by remember { mutableStateOf("") }
-    val filtered = remember(query, themes) {
-        val keyword = query.trim()
-        if (keyword.isEmpty()) {
-            themes
-        } else {
-            // Gson 反射写字段、不走构造体，缺字段的引用类型字段会留 null 而不是声明默认值
-            // （见 ReadThemePresetTest「缺 mipmap 的主题只有配色」），所以这里统一 orEmpty()。
-            themes.filter { theme ->
-                theme.name.orEmpty().contains(keyword, ignoreCase = true) ||
-                    theme.author.orEmpty().contains(keyword, ignoreCase = true)
+    val targets = remember { listOf(ReadThemeTarget.Day, ReadThemeTarget.Night) }
+    val isDarkTheme = LegadoTheme.isDark
+    var target by remember {
+        mutableStateOf(
+            if (isDarkTheme) ReadThemeTarget.Night else ReadThemeTarget.Day
+        )
+    }
+    // 只在切换列表时过滤一次：1027 条里夜间主题不到 5%，其余都归日间。
+    val visibleThemes = remember(themes, target) {
+        themes.filter { theme ->
+            when (target) {
+                ReadThemeTarget.Day -> !theme.isNightTheme
+                ReadThemeTarget.Night -> theme.isNightTheme
             }
         }
+    }
+    val appliedThemeId = when (target) {
+        ReadThemeTarget.Day -> appliedDayThemeId
+        ReadThemeTarget.Night -> appliedNightThemeId
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -123,13 +139,16 @@ fun ReadThemePickerContent(
             color = LegadoTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 4.dp),
         )
-        SearchBar(
-            query = query,
-            onQueryChange = { query = it },
-            placeholder = stringResource(R.string.search_placeholder),
-            autoFocus = false,
+        AppTabRow(
+            tabTitles = listOf(
+                stringResource(R.string.read_theme_day),
+                stringResource(R.string.read_theme_night),
+            ),
+            selectedTabIndex = targets.indexOf(target),
+            onTabSelected = { target = targets[it] },
+            isScrollable = false,
         )
-        if (filtered.isEmpty()) {
+        if (visibleThemes.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -150,11 +169,11 @@ fun ReadThemePickerContent(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = gridModifier.fillMaxWidth(),
             ) {
-                items(filtered, key = { it.id }) { theme ->
+                items(visibleThemes, key = { it.id }) { theme ->
                     ReadThemeCard(
                         theme = theme,
                         isApplied = theme.id == appliedThemeId,
-                        onClick = { onSelectTheme(theme.id) },
+                        onClick = { onSelectTheme(theme.id, target) },
                     )
                 }
             }

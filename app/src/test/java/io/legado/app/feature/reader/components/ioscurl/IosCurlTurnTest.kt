@@ -7,6 +7,7 @@ import io.legado.app.feature.reader.core.transition.ioscurl.control.CurlControl
 import io.legado.app.feature.reader.core.transition.ioscurl.gesture.CurlTouchKind
 import io.legado.app.feature.reader.core.transition.ReaderTransitionMode
 import io.legado.app.feature.reader.core.transition.ReaderPageTurnSpeed
+import io.legado.app.feature.reader.core.transition.ReaderProgrammaticTurnPolicy
 import io.legado.app.feature.reader.core.transition.ReaderTurnDirection
 import io.legado.app.help.config.ReadBookConfig
 import kotlinx.coroutines.delay
@@ -38,6 +39,33 @@ class IosCurlTurnTest {
                 turn.reset()
             }
         }
+    }
+
+    @Test fun automaticTurnHonorsTheProgrammaticKeyDurationOverride() = runTest {
+        val turn = IosCurlTurn()
+        val clock = TestFrameClock()
+        turn.begin(
+            ReaderTurnDirection.NEXT,
+            320,
+            480,
+            1f,
+            this,
+            automatic = true,
+            speed = ReaderPageTurnSpeed.ELEGANT,
+        )
+        turn.rendererReady()
+        withContext(clock) {
+            turn.settle(
+                commit = true,
+                velocity = 0.0,
+                baseDurationMillis = ReaderProgrammaticTurnPolicy.TURN_DURATION_MILLIS,
+            )
+        }
+        val expected = ReaderProgrammaticTurnPolicy.TURN_DURATION_MILLIS
+        assertTrue(
+            "key override: ${clock.elapsedMillis}ms",
+            clock.elapsedMillis in (expected + 16L)..(expected + 32L),
+        )
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

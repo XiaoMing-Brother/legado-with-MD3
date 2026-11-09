@@ -535,7 +535,11 @@ fun ReaderCanvasSurface(
             applyTransition(ReaderPageTransition())
         }
     }
-    fun settlePageTurn(decision: ReaderTransitionDecision, iosVelocity: Double = 0.0) {
+    fun settlePageTurn(
+        decision: ReaderTransitionDecision,
+        iosVelocity: Double = 0.0,
+        durationOverrideMillis: Int? = null,
+    ) {
         pageMotionJob?.cancel()
         curlRevealJob?.cancel()
         if (transitionMode == ReaderTransitionMode.SIMULATION) {
@@ -553,7 +557,12 @@ fun ReaderCanvasSurface(
         pendingTurnOrigin = currentPageWindow().current?.id
         if (transitionMode == ReaderTransitionMode.IOS_CURL) {
             pageMotionJob = animationScope.launch {
-                iosCurl.settle(decision.commit, iosVelocity, latestPageTurnSpeed)
+                iosCurl.settle(
+                    decision.commit,
+                    iosVelocity,
+                    baseDurationMillis = durationOverrideMillis
+                        ?: latestPageTurnSpeed.baseDurationMillis,
+                )
                 displayOffset = decision.targetOffsetPx
                 finishPageTurn()
             }
@@ -569,7 +578,7 @@ fun ReaderCanvasSurface(
             ReaderCurlTouchPolicy.settledX(it, decision.commit, transition.pageExtentPx)
         } ?: curlTouchX
         // 速度挡位只换折算基准：提交判定、目标位移与折页几何都不变。
-        val baseDurationMillis = latestPageTurnSpeed.baseDurationMillis
+        val baseDurationMillis = durationOverrideMillis ?: latestPageTurnSpeed.baseDurationMillis
         val durationMillis = if (transitionMode == ReaderTransitionMode.SIMULATION) {
             ReaderCurlTouchPolicy.settleDurationMillis(
                 curlTouchX,
@@ -630,7 +639,7 @@ fun ReaderCanvasSurface(
             finishPageTurn()
         }
     }
-    fun tapPageTurn(direction: ReaderTurnDirection) {
+    fun tapPageTurn(direction: ReaderTurnDirection, durationOverrideMillis: Int? = null) {
         val window = currentPageWindow()
         // 放行以"书中是否还有邻章"为准（对照旧 View TextPageFactory.hasNext/hasPrev）：
         // 邻章排版滞后于阅读进度时窗口里还没有邻页，但仍必须把翻页交给宿主，
@@ -657,7 +666,10 @@ fun ReaderCanvasSurface(
         val target = if (direction == ReaderTurnDirection.PREVIOUS) width else -width
         applyTransition(ReaderPageTransition(direction, 0f, width, dragging = true))
         displayOffset = 0f
-        settlePageTurn(ReaderTransitionDecision(target, commit = true))
+        settlePageTurn(
+            ReaderTransitionDecision(target, commit = true),
+            durationOverrideMillis = durationOverrideMillis,
+        )
     }
 
     fun startCurlRevealSnap() {
@@ -712,7 +724,7 @@ fun ReaderCanvasSurface(
         if (transitionMode != ReaderTransitionMode.SCROLL) latestPageBoundaryReached(direction)
     }
 
-    fun tapScrollPage(direction: ReaderTurnDirection) {
+    fun tapScrollPage(direction: ReaderTurnDirection, durationOverrideMillis: Int? = null) {
         val window = currentPageWindow()
         val page = window.current ?: return
         // “保留一行”步距基于连续相邻页合成内容：短页叠加时，下下页的行也可能已露出。
@@ -749,7 +761,8 @@ fun ReaderCanvasSurface(
                 val durationMillis = ReaderScrollPolicy.stepDurationMillis(
                     distance,
                     page.scrollViewportExtentPx(),
-                    animationSpeedMillis = latestPageTurnSpeed.baseDurationMillis,
+                    animationSpeedMillis = durationOverrideMillis
+                        ?: latestPageTurnSpeed.baseDurationMillis,
                 )
                 var lastValue = 0f
                 Animatable(0f).animateTo(
@@ -781,15 +794,15 @@ fun ReaderCanvasSurface(
             }
         }
     }
-    fun dispatchTapAction(action: ReaderTapAction) {
+    fun dispatchTapAction(action: ReaderTapAction, durationOverrideMillis: Int? = null) {
         when (action) {
             ReaderTapAction.MENU -> onToggleMenu()
             ReaderTapAction.NEXT_PAGE -> if (transitionMode == ReaderTransitionMode.SCROLL) {
-                tapScrollPage(ReaderTurnDirection.NEXT)
-            } else tapPageTurn(ReaderTurnDirection.NEXT)
+                tapScrollPage(ReaderTurnDirection.NEXT, durationOverrideMillis)
+            } else tapPageTurn(ReaderTurnDirection.NEXT, durationOverrideMillis)
             ReaderTapAction.PREVIOUS_PAGE -> if (transitionMode == ReaderTransitionMode.SCROLL) {
-                tapScrollPage(ReaderTurnDirection.PREVIOUS)
-            } else tapPageTurn(ReaderTurnDirection.PREVIOUS)
+                tapScrollPage(ReaderTurnDirection.PREVIOUS, durationOverrideMillis)
+            } else tapPageTurn(ReaderTurnDirection.PREVIOUS, durationOverrideMillis)
             else -> latestTapAction(action)
         }
     }
@@ -820,7 +833,8 @@ fun ReaderCanvasSurface(
                     ReaderTapAction.PREVIOUS_PAGE
                 } else {
                     ReaderTapAction.NEXT_PAGE
-                }
+                },
+                durationOverrideMillis = ReaderProgrammaticTurnPolicy.TURN_DURATION_MILLIS,
             )
         }
     }

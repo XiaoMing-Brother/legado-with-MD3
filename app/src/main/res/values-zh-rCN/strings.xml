@@ -3612,7 +3612,9 @@
     <string name="reader_paragraph_image_action_unsupported">此图片使用段落规则动作，当前版本尚不支持。</string>
     <!--内置阅读主题（清墨 LightInk 主题商店快照）-->
     <string name="read_theme">内置主题</string>
-    <string name="read_theme_summary">点按主题只应用它的背景色与背景图，字体颜色、字号和边距保持当前设置。</string>
+    <string name="read_theme_summary">日间与夜间分开选择：点按主题只应用到当前列表对应的模式，另一模式的背景保持不变。</string>
+    <string name="read_theme_day">日间主题</string>
+    <string name="read_theme_night">夜间主题</string>
     <string name="read_theme_download_count">%1$d 次下载</string>
     <string name="read_theme_image_failed">背景色已应用，背景图下载失败。</string>
     <!--从当前阅读背景图提取一套配色-->

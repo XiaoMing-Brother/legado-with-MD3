@@ -1,6 +1,5 @@
 package io.legado.app.ui.widget.components.topbar
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -18,7 +17,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -68,19 +69,19 @@ fun GlassMediumFlexibleTopAppBar(
         GlassDefaults.secondaryColorOr { GlassTopAppBarDefaults.getMiuixAppBarColor() }
     }
 
-    val animatedColor = if (!isMiuix) {
-        val fraction = scrollBehavior?.collapsedFraction ?: 0f
-        lerp(containerColor, scrolledColor, fraction)
-    } else {
-        containerColor
+    // collapsedFraction 是滚动状态：在组合期读取会让整个顶栏（含 bottomContent 里的
+    // 分组 TabRow、搜索栏、菜单）每滚动一帧重组一次。放到绘制期读，只有这块背景重画。
+    val drawBarColor: DrawScope.() -> Unit = {
+        val fraction = if (isMiuix) 0f else scrollBehavior?.collapsedFraction ?: 0f
+        drawRect(lerp(containerColor, scrolledColor, fraction))
     }
 
     val finalModifier = if (hazeState != null) {
         modifier
-            .background(color = animatedColor)
+            .drawBehind(drawBarColor)
             .responsiveHazeEffect(state = hazeState)
     } else {
-        modifier.background(color = animatedColor)
+        modifier.drawBehind(drawBarColor)
     }
 
     val transparentColors = TopAppBarDefaults.topAppBarColors(

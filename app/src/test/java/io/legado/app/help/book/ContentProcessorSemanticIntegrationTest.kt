@@ -117,6 +117,46 @@ class ContentProcessorSemanticIntegrationTest {
     private fun textItems(source: ReaderChapterSource) = source.blocks.filterIsInstance<ReaderChapterSourceBlock.Paragraph>()
         .flatMap { it.items }.filterIsInstance<ReaderChapterInlineSource.Text>()
 
+    @Test fun contentReplaceRulesKeepImageOptionJson() = runBlocking {
+        val image = "<img src=\"data:image/svg+xml;base64,AAAA," +
+            "{\"style\":\"TEXT\",\"type\":\"qd\",\"click\":\"showQdCmt('1','2','3','4')\"}\">"
+        val raw = "前文{括号}$image 后文"
+        book.setUseReplaceRule(true)
+        book.setReSegment(true)
+        read.update { it.copy(adaptSpecialStyle = false, chineseConverterType = 0) }
+        fixture.database.replaceRuleDao.insert(
+            ReplaceRule(id = 301, name = "左括号", pattern = "\\{", replacement = "【", order = 0)
+        )
+        fixture.database.replaceRuleDao.insert(
+            ReplaceRule(id = 302, name = "右括号", pattern = "\\}", replacement = "】", order = 1)
+        )
+        // 「净化标点」类规则常把私用区字符一起清掉；图片占位不能落在 U+E000..U+F8FF。
+        fixture.database.replaceRuleDao.insert(
+            ReplaceRule(
+                id = 303,
+                name = "净化私用区",
+                pattern = "[\\uE000-\\uF8FF]",
+                replacement = "",
+                order = 2,
+            )
+        )
+
+        val processed = ContentProcessor.get(book).getContent(
+            book, chapter, raw, includeTitle = false, paragraphIndent = "",
+        )
+        val text = processed.textList.joinToString("\n")
+
+        assertTrue(text.contains("前文【括号】"))
+        assertTrue(text.contains(image))
+        val parsedImage = source(processed).blocks
+            .filterIsInstance<ReaderChapterSourceBlock.Paragraph>()
+            .flatMap { it.items }
+            .filterIsInstance<ReaderChapterInlineSource.Image>()
+            .single()
+        assertTrue(parsedImage.source.contains(",{\"style\":\"TEXT\""))
+        assertTrue(parsedImage.source.contains("showQdCmt"))
+    }
+
     @Test fun oldBgmRecordsKeepTheirTargetAcrossStyleSwitchesAndAllConsumers() = runBlocking {
         val sample = io.legado.app.support.ReaderSemanticFixtures
         val raw = io.legado.app.model.localBook.LocalBookSemanticHtml.plainText(Jsoup.parse(sample.html).body().outerHtml())

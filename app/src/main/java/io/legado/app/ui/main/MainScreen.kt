@@ -10,6 +10,7 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -225,8 +226,10 @@ fun MainScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .windowInsetsPadding(mainAdaptiveInsets.only(WindowInsetsSides.Horizontal)),
-                // 子页面各自拥有顶栏，外壳只负责底部系统栏。
-                contentWindowInsets = mainAdaptiveInsets.only(WindowInsetsSides.Bottom),
+                // 子页面各自拥有顶栏，外壳只负责横向系统栏。底部不再整体让出导航栏：
+                // 五页的内容要画到小横条下面，由各页把 navigationBars 的 bottom 作为
+                // 滚动内容的末尾留白（见 mainPageBottomInset），否则底部会出现一条空白带。
+                contentWindowInsets = WindowInsets(0),
             ) { padding ->
                 Box(
                     modifier = Modifier

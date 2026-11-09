@@ -57,6 +57,12 @@ object ReaderParallaxPolicy {
 }
 
 object ReaderProgrammaticTurnPolicy {
+    /**
+     * 实体按键与鼠标滚轮沿用旧 `PageDelegate.keyTurnPage` 的固定 100ms 收尾。
+     * 点击/手势仍按用户选择的翻页速度收尾，二者只共享同一套动画实现。
+     */
+    const val TURN_DURATION_MILLIS = 100
+
     /** Legacy PageDelegate.keyTurnPage ignores keys while a page animation is running. */
     fun shouldAccept(animationRunning: Boolean): Boolean = !animationRunning
 }
@@ -142,9 +148,9 @@ object ReaderPageTransitionPolicy {
     /**
      * 翻页收尾动画的基准时长，取全动画共用的 [ReaderPageTurnSpeed.BASE_DURATION_MILLIS]。
      *
-     * 点击与外部按键（音量键 / 媒体键 / 空格 / D-pad）在画布层已合并到同一条收尾路径
-     * （`externalPageTurns -> dispatchTapAction -> tapPageTurn`），因此两者共用这一个基准；
-     * 旧 View 中按键固定 100ms 的独立档位随之消失。
+     * 这是点击/手势的默认基准；外部按键（音量键 / 媒体键 / 空格 / D-pad）与滚轮
+     * 走同一条收尾路径但传入 [ReaderProgrammaticTurnPolicy.TURN_DURATION_MILLIS]，
+     * 保持旧 View 按键翻页的即时手感。
      */
     private const val BASE_DURATION_MILLIS = ReaderPageTurnSpeed.BASE_DURATION_MILLIS
 

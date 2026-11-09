@@ -746,10 +746,17 @@ class ReadBookController(
                 viewModel.onIntent(ReadBookIntent.ShowSheet(ReadBookSheet.Photo(image.source)))
                 true
             }
-            "2" -> if (!debounce && ReadBook.book?.isOnLineTxt == true) {
-                image.action?.takeIf(String::isNotBlank)?.let { clickImg(it, image.source); true }
-                    ?: oldClickImg(image.source)
-            } else false
+            "2" -> {
+                val action = image.action?.takeIf(String::isNotBlank)
+                if (action != null) {
+                    clickImg(action, image.source)
+                    true
+                } else if (!debounce && ReadBook.book?.isOnLineTxt == true) {
+                    oldClickImg(image.source)
+                } else {
+                    false
+                }
+            }
             "3" -> false
             "4" -> if (composeImageDoubleClick) {
                 image.action?.takeIf(String::isNotBlank)?.let { clickImg(it, image.source); true } ?: false
@@ -2822,7 +2829,7 @@ class ReadBookController(
         if (menuLayoutIsVisible || !readSettingsGateway.currentSettings.mouseWheelPage) {
             return
         }
-        keyPageDebounce(direction, mouseWheel = true, longPress = false)
+        mouseWheelPageDebounce(direction)
     }
 
     private fun volumeKeyPage(direction: PageDirection, longPress: Boolean): Boolean {
@@ -2837,10 +2844,11 @@ class ReadBookController(
     }
 
     override fun handleKeyPage(direction: PageDirection, longPress: Boolean) {
-        if (readSettingsGateway.currentSettings.keyPageOnLongPress || direction == PageDirection.NONE) {
+        // 实体按键每个独立的按下事件都应立即翻页。旧的 600ms 前沿节流会在每次被
+        // 吞掉的按键上刷新 lastCallTime，连续按键反而一直等不到下一次触发。
+        // 长按产生的重复事件只在开启“按键长按翻页”时放行。
+        if (readSettingsGateway.currentSettings.keyPageOnLongPress || !longPress) {
             keyPage(direction)
-        } else {
-            keyPageDebounce(direction, longPress = longPress)
         }
     }
 
@@ -3187,23 +3195,20 @@ class ReadBookController(
         },
     )
 
-    private fun keyPageDebounce(
-        direction: PageDirection,
-        mouseWheel: Boolean = false,
-        longPress: Boolean
-    ) {
-        if (longPress) {
-            return
-        }
+    /**
+     * 鼠标滚轮会连续产生滚动事件，用 200ms 尾沿节流合并；实体按键不走这里，
+     * 由画布层在翻页动画期间拒绝重叠请求。
+     */
+    private fun mouseWheelPageDebounce(direction: PageDirection) {
         nextPageDebounce.apply {
-            wait = if (mouseWheel) 200L else 600L
-            leading = !mouseWheel
-            trailing = mouseWheel
+            wait = 200L
+            leading = false
+            trailing = true
         }
         prevPageDebounce.apply {
-            wait = if (mouseWheel) 200L else 600L
-            leading = !mouseWheel
-            trailing = mouseWheel
+            wait = 200L
+            leading = false
+            trailing = true
         }
         when (direction) {
             PageDirection.NEXT -> nextPageDebounce.invoke()

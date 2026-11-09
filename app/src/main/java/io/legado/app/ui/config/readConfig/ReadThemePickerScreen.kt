@@ -17,6 +17,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.legado.app.R
+import io.legado.app.domain.model.settings.ReadThemeTarget
 import io.legado.app.help.DefaultData
 import io.legado.app.ui.book.read.sheet.ReadThemePickerContent
 import io.legado.app.ui.theme.adaptiveContentPadding
@@ -34,12 +35,14 @@ import io.legado.app.ui.widget.components.topbar.TopBarNavigationButton
 @Composable
 fun ReadThemePickerScreen(
     onBackClick: () -> Unit,
-    onSelectTheme: (Int) -> Unit,
+    onSelectTheme: (Int, ReadThemeTarget) -> Unit,
 ) {
     val scrollBehavior = GlassTopAppBarDefaults.defaultScrollBehavior()
     // 整页打开即解析一次（1027 条、约 300KB），与阅读屏热路径无关。
     val themes = remember { DefaultData.readThemes }
-    var appliedThemeId by rememberSaveable { mutableStateOf<Int?>(null) }
+    // 日间/夜间各自记这次打开选过哪个，仅用于列表勾选反馈。
+    var appliedDayThemeId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var appliedNightThemeId by rememberSaveable { mutableStateOf<Int?>(null) }
 
     AppScaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -65,10 +68,14 @@ fun ReadThemePickerScreen(
         ) {
             ReadThemePickerContent(
                 themes = themes,
-                appliedThemeId = appliedThemeId,
-                onSelectTheme = { themeId ->
-                    appliedThemeId = themeId
-                    onSelectTheme(themeId)
+                appliedDayThemeId = appliedDayThemeId,
+                appliedNightThemeId = appliedNightThemeId,
+                onSelectTheme = { themeId, target ->
+                    when (target) {
+                        ReadThemeTarget.Day -> appliedDayThemeId = themeId
+                        ReadThemeTarget.Night -> appliedNightThemeId = themeId
+                    }
+                    onSelectTheme(themeId, target)
                 },
                 modifier = Modifier.fillMaxSize(),
                 gridModifier = Modifier.weight(1f),

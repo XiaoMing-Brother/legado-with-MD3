@@ -62,6 +62,22 @@ data class ReadThemePreset(
         get() = parseArgbColor(background)
             ?.let { relativeLuminance(it or 0xFF000000.toInt()) < NIGHT_BASE_MAX_LUMINANCE }
             ?: false
+
+    /**
+     * 主题是否归入「夜间主题」列表：底色偏深，且正文色比底色亮。
+     *
+     * 数据里的 `dark` 字段全是 false，只能自己判。只看底色会漏掉 `#ff4a4a4d`（暗）这类
+     * 亮度 0.07、没到 [isNightBase] 却明显是深色配白字的主题；只看正文色又会把浅纸上
+     * 误配白字的脏数据算进来，所以两者都要满足。解析失败按日间处理。
+     */
+    val isNightTheme: Boolean
+        get() {
+            if (!isDark) return false
+            val backgroundArgb = parseArgbColor(background) ?: return false
+            val contentArgb = parseArgbColor(content) ?: return isNightBase
+            return relativeLuminance(contentArgb or 0xFF000000.toInt()) >
+                relativeLuminance(backgroundArgb or 0xFF000000.toInt())
+        }
 }
 
 /**
@@ -80,10 +96,19 @@ data class ReadThemeStyle(
 )
 
 /**
+ * 内置主题的应用目标。
+ *
+ * 日间与夜间是两份独立背景（`bgStr` / `bgStrNight`）：选日间主题只改日间与墨水屏，
+ * 选夜间主题只改夜间，互不覆盖——与清墨的「日间主题 / 夜间主题」两个列表一致。
+ */
+enum class ReadThemeTarget { Day, Night }
+
+/**
  * 解析成可直接写入样式的背景目标值。
  *
  * 白天原样使用主题底色；夜间走 [deriveNightBackground]：底色够深的主题复用原色，浅色主题
- * 派生出深色底，保证切换日夜时阅读页真的变黑。状态栏图标按各自底色反色。
+ * 派生出深色底。夜间列表只列 [ReadThemePreset.isNightTheme] 的主题，派生只是兜底；
+ * 状态栏图标按各自底色反色。
  */
 fun ReadThemePreset.toStyle(): ReadThemeStyle {
     val nightBackgroundArgb = deriveNightBackground(

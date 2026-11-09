@@ -5,7 +5,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Rect
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 记录图书封面在全局坐标中的锚点信息，用于无缝 Morph 展开到阅读器、漫画或有声书界面。
@@ -26,7 +25,21 @@ data class BookCoverMorphAnchor(
 )
 
 object BookCoverMorphAnchors {
-    private val anchors = ConcurrentHashMap<String, BookCoverMorphAnchor>()
+
+    /** 锚点缓存上限：超出后按访问顺序淘汰最久未用的一条。 */
+    private const val MaxAnchors = 80
+
+    /**
+     * 书架在滚动时每个可见封面每一帧都会 [report] 一次，这里必须是 O(1) 写入：
+     * 旧实现每写一条就做一次全表 minBy 找最旧项（表满 80 条后每帧 × 可见封面数次），
+     * 是滚动掉帧的一处固定开销。LinkedHashMap(accessOrder) 天然按访问顺序淘汰。
+     */
+    private val anchors = object :
+        LinkedHashMap<String, BookCoverMorphAnchor>(MaxAnchors, 0.75f, true) {
+        override fun removeEldestEntry(
+            eldest: MutableMap.MutableEntry<String, BookCoverMorphAnchor>
+        ): Boolean = size > MaxAnchors
+    }
 
     var activeMorphKey by mutableStateOf<String?>(null)
     var activeMorphState by mutableStateOf<BookMorphState?>(null)
@@ -98,38 +111,52 @@ object BookCoverMorphAnchors {
         leftBottomText: String? = null,
     ) {
         if (key.isNullOrBlank() || bounds.isEmpty) return
-        anchors[key] = BookCoverMorphAnchor(
-            bounds = bounds,
-            cornerRadiusPx = cornerRadiusPx,
-            bookName = bookName,
-            author = author,
-            coverPath = coverPath,
-            sourceOrigin = sourceOrigin,
-            bookUrl = bookUrl,
-            badgeText = badgeText,
-            showBadgeDot = showBadgeDot,
-            leftBottomText = leftBottomText,
-        )
-        // 限制最大缓存容量，保留最近活跃的封面锚点
-        if (anchors.size > 80) {
-            val oldest = anchors.entries.minByOrNull { it.value.timestamp }?.key
-            if (oldest != null) anchors.remove(oldest)
+        synchronized(anchors) {
+            // 位置与内容都没变就别重写：静止时每次布局回调都会走到这里
+            val previous = anchors[key]
+            if (previous != null &&
+                previous.bounds == bounds &&
+                previous.cornerRadiusPx == cornerRadiusPx &&
+                previous.bookName == bookName &&
+                previous.author == author &&
+                previous.coverPath == coverPath &&
+                previous.sourceOrigin == sourceOrigin &&
+                previous.bookUrl == bookUrl &&
+                previous.badgeText == badgeText &&
+                previous.showBadgeDot == showBadgeDot &&
+                previous.leftBottomText == leftBottomText
+            ) {
+                return
+            }
+            anchors[key] = BookCoverMorphAnchor(
+                bounds = bounds,
+                cornerRadiusPx = cornerRadiusPx,
+                bookName = bookName,
+                author = author,
+                coverPath = coverPath,
+                sourceOrigin = sourceOrigin,
+                bookUrl = bookUrl,
+                badgeText = badgeText,
+                showBadgeDot = showBadgeDot,
+                leftBottomText = leftBottomText,
+            )
         }
     }
 
     fun get(key: String?): BookCoverMorphAnchor? {
         if (key.isNullOrBlank()) return null
-        val direct = anchors[key]
-        if (direct != null) return direct
-        val isDetail = isDetailKey(key)
-        // 兜底策略：只在同一命名空间内允许部分匹配
-        return anchors.entries.firstOrNull {
-            isDetailKey(it.key) == isDetail &&
-                    (it.key.contains(key) || key.contains(it.key))
-        }?.value
+        synchronized(anchors) {
+            anchors[key]?.let { return it }
+            val isDetail = isDetailKey(key)
+            // 兜底策略：只在同一命名空间内允许部分匹配
+            return anchors.entries.firstOrNull {
+                isDetailKey(it.key) == isDetail &&
+                        (it.key.contains(key) || key.contains(it.key))
+            }?.value
+        }
     }
 
     fun remove(key: String?) {
-        if (key != null) anchors.remove(key)
+        if (key != null) synchronized(anchors) { anchors.remove(key) }
     }
 }

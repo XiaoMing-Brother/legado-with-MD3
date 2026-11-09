@@ -63,6 +63,7 @@ import io.legado.app.ui.main.homepage.modules.RankingModule
 import io.legado.app.ui.main.homepage.modules.WaterfallItem
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.adaptiveContentPadding
+import io.legado.app.ui.theme.mainPageBottomInset
 import io.legado.app.ui.widget.components.LoadMoreFooter
 import io.legado.app.ui.widget.components.book.SearchBookGridItem
 import io.legado.app.ui.widget.components.button.series.SmallTonalButton
@@ -121,11 +122,11 @@ fun HomepageModuleFeed(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = adaptiveContentPadding(
                 top = paddingValues.calculateTopPadding(),
-                bottom = if (LocalAppUiConfiguration.current.theme.enableBlur) {
+                bottom = (if (LocalAppUiConfiguration.current.theme.enableBlur) {
                     120.dp
                 } else {
                     8.dp
-                },
+                }) + mainPageBottomInset(),
             ),
         ) {
             processedModules.forEach { moduleUi ->

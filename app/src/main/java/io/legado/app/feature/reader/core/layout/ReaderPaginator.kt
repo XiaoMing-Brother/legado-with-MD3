@@ -39,6 +39,8 @@ data class ReaderPaginationConfig(
     val paddingBottomPx: Float,
     val lineHeightPx: Float,
     val baselineOffsetPx: Float,
+    /** dp → px；用于行内动作图标的触控区下限。 */
+    val density: Float = 1f,
     val paragraphSpacingPx: Float = 0f,
     val letterSpacingPx: Float = 0f,
     val revision: Long = 0L,
@@ -201,6 +203,7 @@ sealed interface ReaderMeasuredInlineItem {
         val heightPx: Float,
         override val chapterPosition: Int,
         val action: String? = null,
+        val paragraphCommentIcon: Boolean = false,
     ) : ReaderMeasuredInlineItem
 
     /**
@@ -856,6 +859,19 @@ internal class ReaderPaginationSession(
 
                     is ReaderMeasuredInlineItem.Image -> {
                         val imageTop = y + (actualLineHeight - item.heightPx) / 2f
+                        // 书源段评图标通常只有一两格正文宽；触摸区仍按 48dp 无障碍下限补齐。
+                        // 只放宽带动作的行内图，避免普通正文小图抢走相邻文字的点击。
+                        val expandsTouchTarget = item.paragraphCommentIcon
+                        val minTouchWidthPx = if (expandsTouchTarget) 48f * config.density else 0f
+                        val minTouchHeightPx = if (expandsTouchTarget) 48f * config.density else 0f
+                        val touchWidthPx = maxOf(item.widthPx, minTouchWidthPx)
+                        val touchHeightPx = maxOf(actualLineHeight, minTouchHeightPx)
+                        val touchLeftPx = if (expandsTouchTarget) {
+                            x - (touchWidthPx - item.widthPx) / 2f
+                        } else {
+                            x
+                        }
+                        val touchTopPx = y - (touchHeightPx - actualLineHeight) / 2f
                         elements += ReaderElement.Image(
                             bounds = ReaderRect(
                                 x,
@@ -868,7 +884,12 @@ internal class ReaderPaginationSession(
                             chapterPosition = item.chapterPosition,
                             // 行内图必须带标记：绘制期按位图长宽比重新算几何（旧 ImageColumn）。
                             inline = true,
-                            touchBounds = ReaderRect(x, y, x + item.widthPx, y + actualLineHeight),
+                            touchBounds = ReaderRect(
+                                touchLeftPx,
+                                touchTopPx,
+                                touchLeftPx + touchWidthPx,
+                                touchTopPx + touchHeightPx,
+                            ),
                         )
                     }
 

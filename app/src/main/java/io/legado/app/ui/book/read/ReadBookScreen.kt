@@ -700,7 +700,9 @@ private fun ReadBookSheetContent(
         ReadThemePresetSheet(
             show = visibleState.findSheet<ReadBookSheet.ReadThemePicker>() != null,
             onDismissRequest = dismissSheet(visibleState.findSheet<ReadBookSheet.ReadThemePicker>()),
-            onSelectTheme = { themeId -> onIntent(ReadBookIntent.ApplyReadTheme(themeId)) },
+            onSelectTheme = { themeId, target ->
+                onIntent(ReadBookIntent.ApplyReadTheme(themeId, target))
+            },
         )
     }
     if (state.activeSheet is ReadBookSheet.BgTextConfig) {

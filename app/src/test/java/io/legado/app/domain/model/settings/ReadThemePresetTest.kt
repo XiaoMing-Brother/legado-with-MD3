@@ -94,6 +94,20 @@ class ReadThemePresetTest {
     }
 
     @Test
+    fun `夜间主题按深底浅字判定`() {
+        assertTrue(theme(background = "#ff000000", content = "#ffffffff").isNightTheme)
+        assertTrue(
+            "亮度 0.07 的深色配白字也算夜间主题，不能被 isNightBase 的 0.05 阈值漏掉",
+            theme(background = "#ff4a4a4d", content = "#b0ffffff").isNightTheme,
+        )
+        assertFalse(theme(background = "#fff1f3f4", content = "#ff000000").isNightTheme)
+        assertFalse(
+            "浅纸配白字是脏数据，不能因为正文比底色亮就归进夜间",
+            theme(background = "#fff1f3f4", content = "#ffffffff").isNightTheme,
+        )
+    }
+
+    @Test
     fun `解析不出颜色时按浅色处理而不是崩掉`() {
         assertFalse(isDarkBackgroundColor(""))
         assertFalse(isDarkBackgroundColor("不是颜色"))

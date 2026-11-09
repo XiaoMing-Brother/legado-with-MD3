@@ -19,6 +19,7 @@ import io.legado.app.domain.model.readaloud.SpeechRoleType
 import io.legado.app.domain.model.settings.ReadAloudContentSplitMode
 import io.legado.app.domain.model.settings.ReadAloudTimerMode
 import io.legado.app.domain.model.settings.ReadStyleItem
+import io.legado.app.domain.model.settings.ReadThemeTarget
 import io.legado.app.domain.usecase.BookmarkTargetVerdict
 import io.legado.app.model.translation.TranslationChapterStatus
 import io.legado.app.ui.book.read.sheet.ReaderBookSheetTab
@@ -823,8 +824,11 @@ sealed interface ReadBookIntent {
     /** 打开内置阅读主题选择（清墨 LightInk 主题商店快照）。 */
     data object OpenReadThemePicker : ReadBookIntent
 
-    /** 应用内置主题：配色立即生效，自带背景图随后异步下载。 */
-    data class ApplyReadTheme(val themeId: Int) : ReadBookIntent
+    /** 应用内置主题：只改当前所选模式（日间/夜间）的背景，自带背景图随后异步下载。 */
+    data class ApplyReadTheme(
+        val themeId: Int,
+        val target: ReadThemeTarget,
+    ) : ReadBookIntent
 
     /** 从当前背景图取一套配色并套用到正文/强调色（清墨同款「图片取色」）。 */
     data object ApplyBackgroundPalette : ReadBookIntent

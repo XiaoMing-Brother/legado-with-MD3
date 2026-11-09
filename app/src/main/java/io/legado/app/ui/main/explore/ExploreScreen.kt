@@ -194,7 +194,8 @@ fun ExploreScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = adaptiveContentPadding(
                     top = paddingValues.calculateTopPadding(),
-                    bottom = 120.dp.coerceAtLeast(LocalBottomOverlayPadding.current)
+                    bottom = 120.dp.coerceAtLeast(LocalBottomOverlayPadding.current) +
+                            paddingValues.calculateBottomPadding()
                 )
             ) {
                 items(

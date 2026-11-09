@@ -110,7 +110,11 @@ fun BookshelfGridItem(
                     else Modifier.fillMaxWidth()
                 )
         ) {
-            BookshelfItemCover(coverShadow = coverShadow, cover = cover) {
+            BookshelfItemCover(
+                coverShadow = coverShadow,
+                cover = cover,
+                clipOverlay = gridStyle == 1,
+            ) {
                 if (gridStyle == 1) {
                     AppText(
                         text = title,
@@ -277,6 +281,8 @@ fun BookshelfListItem(
 private fun BookshelfItemCover(
     coverShadow: Boolean,
     cover: @Composable (Modifier) -> Unit,
+    /** 只有网格样式要在封面上叠渐变标题时才需要再裁一层 */
+    clipOverlay: Boolean = true,
     overlay: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {},
 ) {
     Box(
@@ -284,11 +290,29 @@ private fun BookshelfItemCover(
             .padding(4.dp)
             .fillMaxWidth()
             .aspectRatio(5f / 7f)
-            .then(if (coverShadow) Modifier.shadow(4.dp, RoundedCornerShape(4.dp)) else Modifier)
-            .clip(RoundedCornerShape(4.dp))
+            // 封面自己（CoilBookCover）已经按同一套圆角裁过，这里不再叠一层 clip：
+            // 每个 clip 都是一个独立 RenderNode，书架列表每一项都要付一次（实测每层约 0.2ms）。
+            // 阴影仍按形状画，但不再顺带裁剪内容。
+            .then(
+                if (coverShadow) {
+                    Modifier.shadow(4.dp, RoundedCornerShape(4.dp), clip = false)
+                } else {
+                    Modifier
+                }
+            )
     ) {
         cover(Modifier.fillMaxSize())
-        overlay()
+        if (clipOverlay) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(RoundedCornerShape(4.dp))
+            ) {
+                overlay()
+            }
+        } else {
+            overlay()
+        }
     }
 }
 
@@ -455,7 +479,8 @@ fun BookGroupCover(
                     .padding(2.dp),
                 cornerRadius = 4.dp,
                 horizontalPadding = 4.dp,
-                verticalPadding = 0.dp
+                verticalPadding = 0.dp,
+                animateText = false
             )
         }
     }
@@ -822,6 +847,7 @@ fun BookItem(
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 sharedCoverKey = sharedCoverKey,
+                clipInOverlayToShelfViewport = true,
             )
         }
     }
@@ -872,7 +898,8 @@ fun BookItem(
                     iconSize = 12.dp,
                     cornerRadius = 4.dp,
                     horizontalPadding = 4.dp,
-                    verticalPadding = 0.dp
+                    verticalPadding = 0.dp,
+                    animateText = false
                 )
             }
         } else null,
@@ -925,7 +952,8 @@ fun BookItem(
                                 cornerRadius = 4.dp,
                                 horizontalPadding = 6.dp,
                                 verticalPadding = 2.dp,
-                                textStyle = LegadoTheme.typography.labelSmallEmphasized
+                                textStyle = LegadoTheme.typography.labelSmallEmphasized,
+                                animateText = false
                             )
                         }
                     }
@@ -1021,6 +1049,7 @@ private fun PrivateLockedBookItem(
             sharedCoverKey = sharedCoverKey,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
+            clipInOverlayToShelfViewport = true,
         )
     }
     if (layoutMode != 0) {

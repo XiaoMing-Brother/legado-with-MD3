@@ -279,47 +279,60 @@ class ContentProcessor private constructor(
                 val replaceBook = book.toSearchBook()
                 //替换
                 effectiveReplaceRules = arrayListOf()
-                fun trimLines(text: String) = text.lines().joinToString("\n") { it.trim() }
-                val beforeTrim = mContent
-                mContent = if (settings.adaptSpecialStyle) MixedContentSegments.transform(mContent,
-                    plain = ::trimLines, rich = { it }) else trimLines(mContent)
-                projection?.let { check(it.bindWhitespace(beforeTrim, mContent)) }
-                getContentReplaceRules().forEach { item ->
-                    if (item.pattern.isEmpty()) {
-                        return@forEach
-                    }
-                    try {
-                        val started = System.nanoTime()
-                        val timeout = item.getValidTimeoutMillisecond()
-                        fun replaceText(text: String): String = if (item.isRegex) {
-                            val remaining = timeout - (System.nanoTime() - started) / 1_000_000
-                            if (remaining <= 0) throw RegexTimeoutException("替换规则超时: ${item.name}")
-                            val edits = mutableListOf<TextProjection.Edit>()
-                            val result = text.replace(item.regex, item.replacement, remaining, chapter, replaceBook,
-                                onReplace = if (projection == null) null else { start, end, count ->
-                                    edits += TextProjection.Edit(start, end, count)
-                                })
-                            projection?.replace(edits)
-                            result
-                        } else text.replaceMapped(item.pattern, item.replacement, projection)
-                        val tmp = if (settings.adaptSpecialStyle) MixedContentSegments.transform(mContent,
-                            plain = ::replaceText,
-                            rich = { it }) else replaceText(mContent)
-                        if (mContent != tmp) {
-                            effectiveReplaceRules.add(item)
-                            mContent = tmp
+                // 段评图的 src 尾部直接拼接未转义 JSON；全角标点类规则会改写其中的
+                // {}、() 等字符，导致图片动作在后续解析中丢失。净化期间整段图片标签视为原子。
+                val protectedImages = ContentHelp.protectImageTags(mContent, projection)
+                mContent = protectedImages.content
+                try {
+                    fun trimLines(text: String) = text.lines().joinToString("\n") { it.trim() }
+                    val beforeTrim = mContent
+                    mContent = if (settings.adaptSpecialStyle) MixedContentSegments.transform(mContent,
+                        plain = ::trimLines, rich = { it }) else trimLines(mContent)
+                    projection?.let { check(it.bindWhitespace(beforeTrim, mContent)) }
+                    getContentReplaceRules().forEach { item ->
+                        if (item.pattern.isEmpty()) {
+                            return@forEach
                         }
-                    } catch (e: RegexTimeoutException) {
-                        item.isEnabled = false
-                        appDb.replaceRuleDao.update(item)
-                        mContent = item.name + e.stackTraceStr
-                        projection = null
-                        presentation = null
-                    } catch (_: CancellationException) {
-                    } catch (e: Exception) {
-                        AppLog.put("替换净化: 规则 ${item.name}替换出错.\n${mContent}", e)
-                        appCtx.toastOnUi("替换净化: 规则 ${item.name}替换出错")
+                        try {
+                            val started = System.nanoTime()
+                            val timeout = item.getValidTimeoutMillisecond()
+                            fun replaceText(text: String): String = if (item.isRegex) {
+                                val remaining = timeout - (System.nanoTime() - started) / 1_000_000
+                                if (remaining <= 0) throw RegexTimeoutException("替换规则超时: ${item.name}")
+                                val edits = mutableListOf<TextProjection.Edit>()
+                                val result = text.replace(item.regex, item.replacement, remaining, chapter, replaceBook,
+                                    onReplace = if (projection == null) null else { start, end, count ->
+                                        edits += TextProjection.Edit(start, end, count)
+                                    })
+                                projection?.replace(edits)
+                                result
+                            } else text.replaceMapped(item.pattern, item.replacement, projection)
+                            val tmp = if (settings.adaptSpecialStyle) MixedContentSegments.transform(mContent,
+                                plain = ::replaceText,
+                                rich = { it }) else replaceText(mContent)
+                            if (mContent != tmp) {
+                                effectiveReplaceRules.add(item)
+                                mContent = tmp
+                            }
+                        } catch (e: RegexTimeoutException) {
+                            item.isEnabled = false
+                            appDb.replaceRuleDao.update(item)
+                            mContent = item.name + e.stackTraceStr
+                            projection = null
+                            presentation = null
+                        } catch (_: CancellationException) {
+                        } catch (e: Exception) {
+                            AppLog.put("替换净化: 规则 ${item.name}替换出错.\n${mContent}", e)
+                            appCtx.toastOnUi("替换净化: 规则 ${item.name}替换出错")
+                        }
                     }
+                } finally {
+                    mContent = ContentHelp.restoreImageTags(
+                        mContent,
+                        protectedImages.tags,
+                        protectedImages.placeholderStart,
+                        projection,
+                    )
                 }
             }
             val contentProcesses = appDb.bookContentProcessDao.getForChapterSync(

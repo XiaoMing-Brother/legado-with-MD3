@@ -82,7 +82,7 @@ bubblePackages/<dirName>/
 4. 模板 `<text>` 的字体默认取正文字体（`ReadBookConfig.textFont/textBold/textItalic/systemTypefaces`），
    包内 `asset://` 字体优先
 
-尺寸口径对齐旧 `TextChapterLayout` 的 `inlineWidth`：**槽宽 = 占位字 advance × sizeScale**，
+尺寸口径对齐旧 `TextChapterLayout` 的段评图标槽宽：**槽宽 = `袮` 的 advance × 1.5556 × sizeScale**，
 位图按槽宽栅格化，因此渲染分辨率与排版宽度始终同口径（`sizeScale` 才会真正撑开行高）。
 
 ## 备份与恢复

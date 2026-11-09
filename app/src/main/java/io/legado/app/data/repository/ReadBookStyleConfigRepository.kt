@@ -16,6 +16,7 @@ import io.legado.app.domain.model.settings.ReadStyleState
 import io.legado.app.domain.model.settings.ReadBackgroundPalette
 import io.legado.app.domain.model.settings.ReadThemeNightPalette
 import io.legado.app.domain.model.settings.ReadThemePreset
+import io.legado.app.domain.model.settings.ReadThemeTarget
 import io.legado.app.domain.model.settings.deriveNightTextPalette
 import io.legado.app.domain.model.settings.isDarkBackgroundColor
 import io.legado.app.domain.model.settings.parseArgbColor
@@ -113,28 +114,34 @@ class ReadBookStyleConfigRepository(
     /**
      * 应用内置主题。
      *
-     * **只改背景**：白天写主题底色；夜间写 [ReadThemeStyle.nightBackground]——主题底色够深就
-     * 直接复用，浅色主题按色相压成深底，保证「选完主题再切夜间」真的变黑。状态栏图标按各模式
-     * 底色反色，与背景一起走 [mutateCurrentStyle]。
+     * **只改 [target] 那一份背景**：日间写主题底色（并同步墨水屏），夜间写
+     * [ReadThemeStyle.nightBackground]，另一模式保持用户原来的选择。夜间列表只列深色主题，
+     * 派生底色只用于「手动把浅色主题当夜间主题」的兜底。状态栏图标按各自底色反色，与背景
+     * 一起走 [mutateCurrentStyle]。
      *
      * 字体颜色、字号、标题/页眉页脚颜色、边距与样式名都是用户自己的设置，应用主题时保持不变；
      * 也不碰共享排版那份（背景与状态栏图标本来就不属于共享排版）。
      */
-    override fun applyReadTheme(themeId: Int): Boolean {
+    override fun applyReadTheme(themeId: Int, target: ReadThemeTarget): Boolean {
         val theme = DefaultData.readThemes.firstOrNull { it.id == themeId } ?: return false
         val style = theme.toStyle()
         mutateCurrentStyle {
-            it.copy(
-                bgStr = style.background,
-                bgStrNight = style.nightBackground,
-                bgStrEInk = style.background,
-                bgType = READ_THEME_BG_TYPE,
-                bgTypeNight = READ_THEME_BG_TYPE,
-                bgTypeEInk = READ_THEME_BG_TYPE,
-                darkStatusIcon = style.darkStatusIcon,
-                darkStatusIconNight = style.darkStatusIconNight,
-                darkStatusIconEInk = style.darkStatusIcon,
-            )
+            when (target) {
+                ReadThemeTarget.Day -> it.copy(
+                    bgStr = style.background,
+                    bgStrEInk = style.background,
+                    bgType = READ_THEME_BG_TYPE,
+                    bgTypeEInk = READ_THEME_BG_TYPE,
+                    darkStatusIcon = style.darkStatusIcon,
+                    darkStatusIconEInk = style.darkStatusIcon,
+                )
+
+                ReadThemeTarget.Night -> it.copy(
+                    bgStrNight = style.nightBackground,
+                    bgTypeNight = READ_THEME_BG_TYPE,
+                    darkStatusIconNight = style.darkStatusIconNight,
+                )
+            }
         }
         save()
         return true
@@ -365,27 +372,22 @@ class ReadBookStyleConfigRepository(
     /**
      * 主题自带背景图落盘后写入排版配置。
      *
-     * [useForNight] 来自 [ReadThemePreset.isNightBase]：主题底色本身够深时三种模式都用这张图；
-     * 浅色主题只写白天与墨水屏，夜间保留 [applyReadTheme] 写好的派生深色底——否则一张白天的亮图
-     * 会原样出现在夜间，等于没有黑夜模式。与 [setCurrentBackgroundImage] 的区别在写入范围。
+     * [target] 决定写哪份：日间写白天与墨水屏，夜间只写 `bgStrNight`——两个列表各自独立，
+     * 选日间主题的图不会出现在夜间，反之亦然。与 [setCurrentBackgroundImage] 的区别在写入范围。
      */
-    override fun setReadThemeBackgroundImage(path: String, useForNight: Boolean) {
+    override fun setReadThemeBackgroundImage(path: String, target: ReadThemeTarget) {
         mutateCurrentStyle {
-            if (useForNight) {
-                it.copy(
+            when (target) {
+                ReadThemeTarget.Day -> it.copy(
                     bgType = READ_THEME_BG_TYPE_IMAGE,
                     bgStr = path,
-                    bgTypeNight = READ_THEME_BG_TYPE_IMAGE,
-                    bgStrNight = path,
                     bgTypeEInk = READ_THEME_BG_TYPE_IMAGE,
                     bgStrEInk = path,
                 )
-            } else {
-                it.copy(
-                    bgType = READ_THEME_BG_TYPE_IMAGE,
-                    bgStr = path,
-                    bgTypeEInk = READ_THEME_BG_TYPE_IMAGE,
-                    bgStrEInk = path,
+
+                ReadThemeTarget.Night -> it.copy(
+                    bgTypeNight = READ_THEME_BG_TYPE_IMAGE,
+                    bgStrNight = path,
                 )
             }
         }

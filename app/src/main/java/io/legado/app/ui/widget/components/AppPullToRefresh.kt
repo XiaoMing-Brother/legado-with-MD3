@@ -10,9 +10,11 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,23 +85,35 @@ fun AppPullToRefresh(
         }
     } else {
         val state = rememberPullToRefreshState()
-        val actualEnabled = enabled && (
-                isRefreshing ||
-                state.distanceFraction > 0f ||
-                scrollBehavior == null ||
-                if (scrollBehavior is M3GlassScrollBehavior) {
-                    val appbarState = scrollBehavior.m3Behavior.state
-                    (appbarState.heightOffsetLimit == 0f || appbarState.heightOffset >= 0f) && appbarState.contentOffset >= 0f
-                } else {
-                    scrollBehavior.collapsedFraction <= 0f
-                }
-            )
+        // 这段判据读的全是滚动状态：顶栏的 heightOffset / contentOffset 与下拉距离每一帧都在变。
+        // 直接写在组合里，滚动时 AppPullToRefresh 自身（以及它下面的 PullToRefreshBox 与
+        // pullToRefresh 修饰符）每一帧都要重组一次；包进 derivedStateOf 后只有开关真正翻转
+        //（贴顶 ↔ 已滚开）时才重组。
+        val behavior = scrollBehavior
+        val latestEnabled by rememberUpdatedState(enabled)
+        val latestRefreshing by rememberUpdatedState(isRefreshing)
+        val enabledState = remember(state, behavior) {
+            derivedStateOf {
+                latestEnabled && (
+                    latestRefreshing ||
+                        state.distanceFraction > 0f ||
+                        behavior == null ||
+                        if (behavior is M3GlassScrollBehavior) {
+                            val appbarState = behavior.m3Behavior.state
+                            (appbarState.heightOffsetLimit == 0f || appbarState.heightOffset >= 0f) &&
+                                appbarState.contentOffset >= 0f
+                        } else {
+                            behavior.collapsedFraction <= 0f
+                        }
+                    )
+            }
+        }
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = onRefresh,
             modifier = modifier,
             state = state,
-            enabled = actualEnabled,
+            enabled = enabledState.value,
             indicator = {
                 PullToRefreshDefaults.LoadingIndicator(
                     state = state,

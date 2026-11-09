@@ -1,6 +1,7 @@
 package io.legado.app.feature.explore
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,6 +42,7 @@ import io.legado.app.ui.main.MainDrawerNavigationIcon
 import io.legado.app.ui.main.explore.ExploreIntent
 import io.legado.app.ui.main.explore.ExploreRouteScreen
 import io.legado.app.ui.main.explore.ExploreViewModel
+import io.legado.app.ui.theme.mainPageBottomInset
 import io.legado.app.ui.widget.components.AppScaffold
 import io.legado.app.ui.widget.components.EmptyMessage
 import io.legado.app.ui.widget.components.button.series.SmallOutlinedButton
@@ -236,6 +238,11 @@ fun ExploreMainRoute(
                     }
                 },
             ) { padding ->
+                // 主页面宿主不再为导航栏整条让位，把 bottom inset 交给嵌入内容作为滚动末尾留白。
+                val embeddedPadding = PaddingValues(
+                    top = padding.calculateTopPadding(),
+                    bottom = mainPageBottomInset(),
+                )
                 Crossfade(
                     targetState = state.showContent,
                     label = "ExploreMainMode"
@@ -247,7 +254,7 @@ fun ExploreMainRoute(
                             onOpenLogin = onOpenLogin,
                             onOpenEdit = onOpenEdit,
                             onOpenSearch = onOpenSearch,
-                            embeddedPadding = padding,
+                            embeddedPadding = embeddedPadding,
                         )
                     } else if (kinds.isEmpty() || selectedSource == null) {
                         EmptyMessage(
@@ -286,7 +293,7 @@ fun ExploreMainRoute(
                                 onBack = {},
                                 onBookClick = onBookClick,
                                 embeddedInMain = true,
-                                embeddedPadding = padding,
+                                embeddedPadding = embeddedPadding,
                                 embeddedScrollBehavior = scrollBehavior,
                             )
                         }

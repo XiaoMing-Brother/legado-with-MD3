@@ -3616,7 +3616,9 @@
     <string name="reader_paragraph_image_action_unsupported">This image uses a paragraph-rule action that this version does not support.</string>
     <!--Built-in read themes (LightInk store snapshot)-->
     <string name="read_theme">Built-in Themes</string>
-    <string name="read_theme_summary">Tap a theme to apply only its background color and image; text color, size and margins stay unchanged.</string>
+    <string name="read_theme_summary">Day and night are chosen separately: tapping a theme applies it to the selected list only and leaves the other mode\'s background unchanged.</string>
+    <string name="read_theme_day">Day themes</string>
+    <string name="read_theme_night">Night themes</string>
     <string name="read_theme_download_count">%1$d downloads</string>
     <string name="read_theme_image_failed">Background color applied, but the background image failed to download.</string>
     <!--Extract a color scheme from the current reading background image-->
