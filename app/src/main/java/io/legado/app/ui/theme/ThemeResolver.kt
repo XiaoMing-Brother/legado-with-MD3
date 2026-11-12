@@ -95,9 +95,16 @@ object ThemeResolver {
         }
     }
 
-    fun isMiuixEngine(composeEngine: String): Boolean {
-        return composeEngine.equals(COMPOSE_ENGINE_MIUIX, ignoreCase = true)
+    fun resolveComposeEngine(value: String): ComposeEngine {
+        return when {
+            value.equals(COMPOSE_ENGINE_MIUIX, ignoreCase = true) -> ComposeEngine.Miuix
+            value.equals("mochi", ignoreCase = true) -> ComposeEngine.Mochi
+            else -> ComposeEngine.Material
+        }
     }
+
+    fun isMiuixEngine(value: String): Boolean =
+        resolveComposeEngine(value) == ComposeEngine.Miuix
 
     fun resolveColorSpecVersion(colorSpec: ThemeColorSpec): ColorSpec.SpecVersion {
         return when (colorSpec) {

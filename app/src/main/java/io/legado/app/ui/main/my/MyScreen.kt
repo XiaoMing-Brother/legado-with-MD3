@@ -51,7 +51,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.legado.app.R
-import io.legado.app.ui.main.MainDrawerNavigationIcon
 import io.legado.app.ui.file.FileManageActivity
 import io.legado.app.ui.theme.adaptiveContentPadding
 import io.legado.app.ui.theme.mainPageBottomInset
@@ -123,7 +122,6 @@ fun MyScreen(
         topBar = {
             GlassMediumFlexibleTopAppBar(
                 title = stringResource(R.string.my),
-                navigationIcon = { MainDrawerNavigationIcon() },
                 actions = {},
                 scrollBehavior = scrollBehavior
             )

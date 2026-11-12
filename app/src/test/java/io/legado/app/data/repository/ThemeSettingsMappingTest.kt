@@ -27,18 +27,18 @@ class ThemeSettingsMappingTest {
     }
 
     @Test
-    fun `Theme gateway 持久化边界固定为 66 键`() {
+    fun `Theme gateway 持久化边界固定为 73 键`() {
         val actualKeys = ThemeSettings().toGatewayPrefMap().keys
         val expectedKeys = ThemeSettings().expectedGatewayPrefMap().keys
 
-        assertEquals(66, actualKeys.size)
+        assertEquals(73, actualKeys.size)
         assertEquals(expectedKeys, actualKeys)
         assertFalse(PreferKey.customMode in actualKeys)
         assertFalse(PreferKey.bookInfoInputColor in actualKeys)
     }
 
     @Test
-    fun `Theme gateway 66 键写读映射逐字段对应`() {
+    fun `Theme gateway 73 键写读映射逐字段对应`() {
         themeMappingSamples().forEach { expected ->
             assertEquals(expected.expectedGatewayPrefMap(), expected.toGatewayPrefMap())
             assertEquals(
@@ -177,13 +177,20 @@ private fun themeMappingSamples(): List<ThemeSettings> {
         baseCardBorderColorNight = 117,
         disableSplicedColumnGroupCornerRadius = false,
         topBarOpacity = 118,
+        bottomBarOpacity = 119,
         enableBlur = false,
         enableProgressiveBlur = false,
         topBarBlurRadius = 120,
+        bottomBarBlurRadius = 121,
         topBarBlurAlpha = 122,
+        bottomBarBlurAlpha = 123,
+        bottomBarLensRadius = 24.5f,
         useFlexibleTopAppBar = false,
         topBarButtonStyle = "glass",
         mergeTopBarActions = true,
+        mochiTopBarLiquidGlass = false,
+        mochiScrollEdgeBlurEnabled = false,
+        miuixTopBarLiquidGlass = true,
         bookInfoFollowCoverColor = false,
         bookInfoNetworkCoverBackground = "network-background",
         bookInfoDefaultCoverBackground = "default-background",
@@ -267,13 +274,20 @@ private fun ThemeSettings.expectedGatewayPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.baseCardBorderColorNight to baseCardBorderColorNight,
     PreferKey.disableSplicedColumnGroupCornerRadius to disableSplicedColumnGroupCornerRadius,
     PreferKey.topBarOpacity to topBarOpacity,
+    PreferKey.bottomBarOpacity to bottomBarOpacity,
     PreferKey.enableBlur to enableBlur,
     PreferKey.enableProgressiveBlur to enableProgressiveBlur,
     PreferKey.topBarBlurRadius to topBarBlurRadius,
+    PreferKey.bottomBarBlurRadius to bottomBarBlurRadius,
     PreferKey.topBarBlurAlpha to topBarBlurAlpha,
+    PreferKey.bottomBarBlurAlpha to bottomBarBlurAlpha,
+    PreferKey.bottomBarLensRadius to bottomBarLensRadius,
     PreferKey.useFlexibleTopAppBar to useFlexibleTopAppBar,
     PreferKey.topBarButtonStyle to topBarButtonStyle,
     PreferKey.mergeTopBarActions to mergeTopBarActions,
+    PreferKey.mochiTopBarLiquidGlass to mochiTopBarLiquidGlass,
+    PreferKey.mochiScrollEdgeBlurEnabled to mochiScrollEdgeBlurEnabled,
+    PreferKey.miuixTopBarLiquidGlass to miuixTopBarLiquidGlass,
     PreferKey.bookInfoFollowCoverColor to bookInfoFollowCoverColor,
     PreferKey.bookInfoNetworkCoverBackground to bookInfoNetworkCoverBackground,
     PreferKey.bookInfoDefaultCoverBackground to bookInfoDefaultCoverBackground,

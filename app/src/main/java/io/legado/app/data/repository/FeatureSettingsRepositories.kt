@@ -17,6 +17,8 @@ import io.legado.app.domain.model.settings.BackupSettings
 import io.legado.app.domain.model.settings.CoverSettings
 import io.legado.app.domain.model.settings.DownloadCacheSettings
 import io.legado.app.domain.model.settings.LabSettings
+import io.legado.app.domain.model.settings.NavigationAnimationStyle
+import io.legado.app.domain.model.settings.TextAnimationLevel
 import io.legado.app.domain.model.settings.OtherSettings
 import io.legado.app.domain.model.settings.ThemeSettings
 import io.legado.app.domain.model.settings.TranslationSettings
@@ -290,11 +292,22 @@ internal fun Preferences.toAppShellSettings(): AppShellSettings = AppShellSettin
     showStatusBar = compatDsBoolean(PreferKey.showStatusBar) ?: true,
     swipeAnimation = compatDsBoolean(PreferKey.swipeAnimation) ?: true,
     predictiveBackEnabled = compatDsBoolean(PreferKey.isPredictiveBackEnabled) ?: true,
+    navigationAnimationStyle = NavigationAnimationStyle.fromStoredValue(
+        compatDsString(PreferKey.navigationAnimationStyle)
+    ),
+    textAnimationLevel = TextAnimationLevel.fromStoredValue(compatDsString(PreferKey.textAnimationLevel)),
     readerSharedElementEnabled = compatDsBoolean(PreferKey.readerSharedElementEnabled) ?: true,
+    showBottomView = compatDsBoolean(PreferKey.showBottomView) ?: true,
+    useFloatingBottomBar = compatDsBoolean(PreferKey.useFloatingBottomBar) ?: true,
+    useFloatingBottomBarLiquidGlass =
+        compatDsBoolean(PreferKey.useFloatingBottomBarLiquidGlass) ?: false,
+    tabletInterface = compatDsString(PreferKey.tabletInterface) ?: "auto",
     multiPaneMode = compatDsString(PreferKey.multiPaneMode) ?: "auto",
+    labelVisibilityMode = compatDsString(PreferKey.labelVisibilityMode) ?: "auto",
     defaultHomePage = compatDsString(PreferKey.defaultHomePage) ?: "bookshelf",
     mainNavigationOrder = compatDsString(PreferKey.mainNavigationOrder)
         ?: "home,bookshelf,explore,rss,my",
+    navExtended = compatDsBoolean(PreferKey.navExtended) ?: false,
     navIconHome = compatDsString(PreferKey.navIconHome) ?: "",
     navIconBookshelf = compatDsString(PreferKey.navIconBookshelf) ?: "",
     navIconExplore = compatDsString(PreferKey.navIconExplore) ?: "",
@@ -318,10 +331,18 @@ internal fun AppShellSettings.toPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.showStatusBar to showStatusBar,
     PreferKey.swipeAnimation to swipeAnimation,
     PreferKey.isPredictiveBackEnabled to predictiveBackEnabled,
+    PreferKey.navigationAnimationStyle to navigationAnimationStyle.storedValue,
+    PreferKey.textAnimationLevel to textAnimationLevel.storedValue,
     PreferKey.readerSharedElementEnabled to readerSharedElementEnabled,
+    PreferKey.showBottomView to showBottomView,
+    PreferKey.useFloatingBottomBar to useFloatingBottomBar,
+    PreferKey.useFloatingBottomBarLiquidGlass to useFloatingBottomBarLiquidGlass,
+    PreferKey.tabletInterface to tabletInterface,
     PreferKey.multiPaneMode to multiPaneMode,
+    PreferKey.labelVisibilityMode to labelVisibilityMode,
     PreferKey.defaultHomePage to defaultHomePage,
     PreferKey.mainNavigationOrder to mainNavigationOrder,
+    PreferKey.navExtended to navExtended,
     PreferKey.navIconHome to navIconHome,
     PreferKey.navIconBookshelf to navIconBookshelf,
     PreferKey.navIconExplore to navIconExplore,
@@ -370,13 +391,20 @@ internal fun Preferences.toThemeSettings(): ThemeSettings = ThemeSettings(
     disableSplicedColumnGroupCornerRadius =
         compatDsBoolean(PreferKey.disableSplicedColumnGroupCornerRadius) ?: false,
     topBarOpacity = compatDsInt(PreferKey.topBarOpacity) ?: 100,
+    bottomBarOpacity = compatDsInt(PreferKey.bottomBarOpacity) ?: 100,
     enableBlur = compatDsBoolean(PreferKey.enableBlur) ?: false,
     enableProgressiveBlur = compatDsBoolean(PreferKey.enableProgressiveBlur) ?: false,
     topBarBlurRadius = compatDsInt(PreferKey.topBarBlurRadius) ?: 24,
+    bottomBarBlurRadius = compatDsInt(PreferKey.bottomBarBlurRadius) ?: 8,
     topBarBlurAlpha = compatDsInt(PreferKey.topBarBlurAlpha) ?: 73,
+    bottomBarBlurAlpha = compatDsInt(PreferKey.bottomBarBlurAlpha) ?: 40,
+    bottomBarLensRadius = compatDsFloat(PreferKey.bottomBarLensRadius) ?: 24f,
     useFlexibleTopAppBar = compatDsBoolean(PreferKey.useFlexibleTopAppBar) ?: true,
     topBarButtonStyle = compatDsString(PreferKey.topBarButtonStyle) ?: "tonal",
     mergeTopBarActions = compatDsBoolean(PreferKey.mergeTopBarActions) ?: false,
+    mochiTopBarLiquidGlass = compatDsBoolean(PreferKey.mochiTopBarLiquidGlass) ?: true,
+    mochiScrollEdgeBlurEnabled = compatDsBoolean(PreferKey.mochiScrollEdgeBlurEnabled) ?: true,
+    miuixTopBarLiquidGlass = compatDsBoolean(PreferKey.miuixTopBarLiquidGlass) ?: false,
     bookInfoFollowCoverColor = compatDsBoolean(PreferKey.bookInfoFollowCoverColor) ?: true,
     bookInfoNetworkCoverBackground =
         compatDsString(PreferKey.bookInfoNetworkCoverBackground) ?: "on",
@@ -449,13 +477,20 @@ internal fun ThemeSettings.toGatewayPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.baseCardBorderColorNight to baseCardBorderColorNight,
     PreferKey.disableSplicedColumnGroupCornerRadius to disableSplicedColumnGroupCornerRadius,
     PreferKey.topBarOpacity to topBarOpacity,
+    PreferKey.bottomBarOpacity to bottomBarOpacity,
     PreferKey.enableBlur to enableBlur,
     PreferKey.enableProgressiveBlur to enableProgressiveBlur,
     PreferKey.topBarBlurRadius to topBarBlurRadius,
+    PreferKey.bottomBarBlurRadius to bottomBarBlurRadius,
     PreferKey.topBarBlurAlpha to topBarBlurAlpha,
+    PreferKey.bottomBarBlurAlpha to bottomBarBlurAlpha,
+    PreferKey.bottomBarLensRadius to bottomBarLensRadius,
     PreferKey.useFlexibleTopAppBar to useFlexibleTopAppBar,
     PreferKey.topBarButtonStyle to topBarButtonStyle,
     PreferKey.mergeTopBarActions to mergeTopBarActions,
+    PreferKey.mochiTopBarLiquidGlass to mochiTopBarLiquidGlass,
+    PreferKey.mochiScrollEdgeBlurEnabled to mochiScrollEdgeBlurEnabled,
+    PreferKey.miuixTopBarLiquidGlass to miuixTopBarLiquidGlass,
     PreferKey.bookInfoFollowCoverColor to bookInfoFollowCoverColor,
     PreferKey.bookInfoNetworkCoverBackground to bookInfoNetworkCoverBackground,
     PreferKey.bookInfoDefaultCoverBackground to bookInfoDefaultCoverBackground,

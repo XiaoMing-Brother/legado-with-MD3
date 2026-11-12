@@ -577,6 +577,9 @@ object ReadBookConfig {
         val bgType: Int = 0,//白天背景类型 0:颜色, 1:assets图片, 2其它图片
         val bgTypeNight: Int = 0,//夜间背景类型
         val bgTypeEInk: Int = 0,//EInk背景类型
+        // 当前日间/夜间背景来自哪个内置主题；手动改背景时清空，用于设置页回显「使用中」。
+        val readThemeIdDay: Int? = null,
+        val readThemeIdNight: Int? = null,
         private val darkStatusIcon: Boolean = true,//白天是否暗色状态栏
         private val darkStatusIconNight: Boolean = false,//晚上是否暗色状态栏
         private val darkStatusIconEInk: Boolean = true,
@@ -1013,6 +1016,8 @@ object ReadBookConfig {
                 bgStrNight = defaults.bgStrNight,
                 bgTypeEInk = defaults.bgTypeEInk,
                 bgStrEInk = defaults.bgStrEInk,
+                readThemeIdDay = null,
+                readThemeIdNight = null,
                 bgAlpha = defaults.bgAlpha,
                 darkStatusIcon = defaults.darkStatusIcon,
                 darkStatusIconNight = defaults.darkStatusIconNight,

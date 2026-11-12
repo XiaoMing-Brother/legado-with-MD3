@@ -2,6 +2,8 @@ package io.legado.app.ui.config.themeConfig
 
 import androidx.compose.runtime.Stable
 import io.legado.app.domain.model.settings.AppShellSettings
+import io.legado.app.domain.model.settings.NavigationAnimationStyle
+import io.legado.app.domain.model.settings.TextAnimationLevel
 import io.legado.app.domain.model.settings.ThemeSettings
 import io.legado.app.utils.FileDoc
 
@@ -52,16 +54,22 @@ sealed interface ThemeConfigIntent {
     data class ShowDialog(val dialog: ThemeConfigDialog) : ThemeConfigIntent
     data object DismissDialog : ThemeConfigIntent
     data object ResetDefaults : ThemeConfigIntent
-
     data class SelectTheme(val value: String) : ThemeConfigIntent
     data class SetThemeMode(val value: String) : ThemeConfigIntent
     data class SetComposeEngine(val value: String) : ThemeConfigIntent
+    data class SetNavigationAnimationStyle(val style: NavigationAnimationStyle) : ThemeConfigIntent
+    data class SetTextAnimationLevel(val level: TextAnimationLevel) : ThemeConfigIntent
     data class SetPredictiveBackEnabled(val enabled: Boolean) : ThemeConfigIntent
     data class SetReaderSharedElementEnabled(val enabled: Boolean) : ThemeConfigIntent
     data class SetFontScale(val value: Int) : ThemeConfigIntent
     data class SetShowStatusBar(val visible: Boolean) : ThemeConfigIntent
     data class SetSwipeAnimation(val enabled: Boolean) : ThemeConfigIntent
+    data class SetShowBottomView(val visible: Boolean) : ThemeConfigIntent
+    data class SetUseFloatingBottomBar(val enabled: Boolean) : ThemeConfigIntent
+    data class SetUseFloatingBottomBarLiquidGlass(val enabled: Boolean) : ThemeConfigIntent
+    data class SetTabletInterface(val value: String) : ThemeConfigIntent
     data class SetMultiPaneMode(val value: String) : ThemeConfigIntent
+    data class SetLabelVisibilityMode(val value: String) : ThemeConfigIntent
     data class SetMiuixMonet(val enabled: Boolean) : ThemeConfigIntent
     data class SetDynamicColors(val enabled: Boolean) : ThemeConfigIntent
     data class SetBlurEnabled(val enabled: Boolean) : ThemeConfigIntent

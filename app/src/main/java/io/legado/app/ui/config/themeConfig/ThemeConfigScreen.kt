@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -75,6 +76,7 @@ import io.legado.app.ui.widget.components.button.series.MediumTonalButton
 import io.legado.app.ui.widget.components.card.InfoCard
 import io.legado.app.ui.widget.components.dialog.ColorPickerSheet
 import io.legado.app.ui.widget.components.dialog.TimePickerDialog
+import io.legado.app.ui.widget.components.menuItem.LocalUseWindowPopupForMochiMenu
 import io.legado.app.ui.widget.components.settingItem.ClickableSettingItem
 import io.legado.app.ui.widget.components.settingItem.DropdownListSettingItem
 import io.legado.app.ui.widget.components.settingItem.SliderSettingItem
@@ -252,17 +254,20 @@ fun ThemeConfigScreen(
                             onClick = onNavigateToCustomTheme
                         )
                     }
-                    DropdownListSettingItem(
-                        title = stringResource(R.string.compose_engine),
-                        selectedValue = appShell.composeEngine,
-                        displayEntries = stringArrayResource(R.array.composeEngine),
-                        entryValues = stringArrayResource(R.array.composeEngine_value),
-                        onValueChange = {
-                            onIntent(
-                                ThemeConfigIntent.SetComposeEngine(it)
-                            )
-                        }
-                    )
+                    // 切换根主题会销毁菜单；放进独立窗口，避免测量期间从 DecorView 移除子 View。
+                    CompositionLocalProvider(LocalUseWindowPopupForMochiMenu provides true) {
+                        DropdownListSettingItem(
+                            title = stringResource(R.string.compose_engine),
+                            selectedValue = appShell.composeEngine,
+                            displayEntries = stringArrayResource(R.array.composeEngine),
+                            entryValues = stringArrayResource(R.array.composeEngine_value),
+                            onValueChange = {
+                                onIntent(
+                                    ThemeConfigIntent.SetComposeEngine(it)
+                                )
+                            }
+                        )
+                    }
                     ClickableSettingItem(
                         title = stringResource(R.string.change_icon),
                         description = stringResource(R.string.change_icon_summary),
@@ -873,6 +878,7 @@ fun ThemeConfigScreen(
 
     TopBottomBarSettingsSheet(
         show = state.activeSheet == ThemeConfigSheet.TopBottomBar,
+        appShell = appShell,
         theme = theme,
         isMiuixEngine = ThemeResolver.isMiuixEngine(appShell.composeEngine),
         onDismissRequest = { onIntent(ThemeConfigIntent.DismissSheet) },
@@ -882,7 +888,7 @@ fun ThemeConfigScreen(
 
     LauncherIconPickerSheet(
         show = state.activeSheet == ThemeConfigSheet.LauncherIcon,
-        selectedValue = appShell.launcherIcon,
+        selectedValue = LauncherIcons.canonicalValue(appShell.launcherIcon).orEmpty(),
         onDismissRequest = { onIntent(ThemeConfigIntent.DismissSheet) },
         onValueChange = { onIntent(ThemeConfigIntent.SelectLauncherIcon(it)) }
     )

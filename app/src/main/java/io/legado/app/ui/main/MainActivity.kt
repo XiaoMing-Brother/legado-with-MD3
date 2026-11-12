@@ -818,13 +818,11 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
                     MainNavigator.onBackStackChanged()
                 }
         }
-        val mainDrawerHost = remember { MainDrawerHostState() }
         SharedTransitionLayout {
             // 启动验证做成单独的 screen：门槛未过时完全不组合应用界面，
             // 因此验证页背后看不到书架/阅读界面，也没有可交互的入口
             PrivateAppStartGate {
                 Box(modifier = Modifier.fillMaxSize()) {
-                  CompositionLocalProvider(LocalMainDrawerHost provides mainDrawerHost) {
                     Box(
                         Modifier
                             .fillMaxSize()
@@ -941,12 +939,7 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
                                 ) + fadeOut(animationSpec = tween()))
                             },
                             onBack = {
-                                // 抽屉展开时返回只关抽屉，不能把主页从栈里弹掉。
-                                if (mainDrawerHost.isOpen) {
-                                    mainDrawerHost.requestClose()
-                                } else {
-                                    MainNavigator.navigateBack(this@MainActivity, backStack)
-                                }
+                                MainNavigator.navigateBack(this@MainActivity, backStack)
                             },
                             entryProvider = mainEntryProvider(
                                 backStack = backStack,
@@ -1071,23 +1064,16 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
                             )
                         }
                     }
-                  }
                 }
                 // 关闭预见性返回时由宿主在导航层之前接管返回：手势不跟手预览，
                 // 松手后走普通出栈，popTransitionSpec 的返回动画照常播放。
-                // 抽屉展开时优先关抽屉：宿主的处理器注册晚于 NavDisplay 与抽屉内部，
-                // 不在这里分流的话返回会直接出栈甚至退出应用。
                 BackHandler(
-                    enabled = mainDrawerHost.isOpen || shouldHandleActivityBack(
+                    enabled = shouldHandleActivityBack(
                         predictiveBackEnabled = configuration.appShell.predictiveBackEnabled,
                         playerPresent = playerVisible || morphPresent,
                     )
                 ) {
-                    if (mainDrawerHost.isOpen) {
-                        mainDrawerHost.requestClose()
-                    } else {
-                        MainNavigator.navigateBack(this@MainActivity, backStack)
-                    }
+                    MainNavigator.navigateBack(this@MainActivity, backStack)
                 }
             }
         }

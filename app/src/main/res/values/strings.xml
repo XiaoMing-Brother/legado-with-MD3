@@ -1840,6 +1840,18 @@
     <string name="book_info_background_blur_off_for_default">Hide background cover</string>
     <string name="theme_manage_top_bar_blur_radius">Top Bar Blur Radius</string>
     <string name="theme_manage_top_bar_blur_opacity">Top Bar Blur Opacity</string>
+    <string name="theme_manage_bottom_bar_blur_radius">Bottom Bar Blur Radius</string>
+    <string name="theme_manage_bottom_bar_blur_opacity">Bottom Bar Blur Opacity</string>
+    <string name="theme_config_bottom_bar_lens_radius">Bottom Bar Blur Strength</string>
+    <string name="theme_config_bottom_bar_lens_radius_summary">Controls the liquid glass distortion strength</string>
+    <string name="be_swiped">Pages can still be swiped</string>
+    <string name="show_bottom_nav">Show Navigation Bar</string>
+    <string name="floating_bottom_bar">Floating Bottom Bar</string>
+    <string name="floating_bottom_bar_summary">Use a detached capsule style for the bottom navigation bar</string>
+    <string name="floating_bottom_bar_liquid_glass">Liquid Glass Effect</string>
+    <string name="floating_bottom_bar_liquid_glass_summary">Enable the liquid glass highlight for the floating bar. Requires Android 13+</string>
+    <string name="bottom_bar_opacity">Bottom Bar Opacity</string>
+    <string name="bottom_bar_opacity_summary">%d</string>
     <string name="theme_manage_section_opacity">Opacity</string>
     <string name="theme_manage_section_container">Container</string>
     <string name="theme_config_manage_label_colors">Manage Label Colors</string>
@@ -3617,9 +3629,12 @@
     <!--Built-in read themes (LightInk store snapshot)-->
     <string name="read_theme">Built-in Themes</string>
     <string name="read_theme_summary">Day and night are chosen separately: tapping a theme applies it to the selected list only and leaves the other mode\'s background unchanged.</string>
+    <string name="read_theme_summary_title">About themes</string>
     <string name="read_theme_day">Day themes</string>
     <string name="read_theme_night">Night themes</string>
     <string name="read_theme_download_count">%1$d downloads</string>
+    <string name="read_theme_saved_backgrounds">Saved reading backgrounds</string>
+    <string name="read_theme_in_use">In use</string>
     <string name="read_theme_image_failed">Background color applied, but the background image failed to download.</string>
     <!--Extract a color scheme from the current reading background image-->
     <string name="read_bg_palette">Pick Colors from Image</string>
@@ -3673,4 +3688,21 @@
     <string name="a11y_open_playback">Open player</string>
     <string name="a11y_open_playback_named">Open player for %1$s</string>
     <string name="a11y_reorder_position">Position %1$d of %2$d</string>
+    <string name="navigation_animation">Navigation Animation</string>
+    <string name="navigation_animation_scale">Scale</string>
+    <string name="text_animation_level">Text animation level</string>
+    <string name="text_animation_slide">Slide (default)</string>
+    <string name="text_animation_subtle">Subtle</string>
+    <string name="text_animation_standard">Standard</string>
+    <string name="text_animation_strong">Pronounced</string>
+    <string name="text_animation_preview">Text animation preview</string>
+    <string name="text_animation_preview_summary">Tap to change the sample text</string>
+    <string name="text_animation_example_reading">Reading</string>
+    <string name="text_animation_example_finished">Finished</string>
+    <string name="tabletInterface">Navigation layout</string>
+    <string name="paragraph_comment_height">Paragraph comment popup height</string>
+    <string name="paragraph_comment_height_follow_source">Follow book source</string>
+    <string name="paragraph_comment_height_percent">%1$d%%</string>
+    <string name="top_bar_button_liquid_glass">Liquid Glass Top Bar Buttons</string>
+    <string name="top_bar_button_liquid_glass_summary">Enable backdrop blur and refraction on top bar buttons. Requires Android 13 or later.</string>
 </resources>

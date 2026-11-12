@@ -11,8 +11,9 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun ReadConfigRouteScreen(
     onBackClick: () -> Unit,
-    onNavigateToReadThemePicker: () -> Unit,
+    onNavigateToReadThemePicker: () -> Unit = {},
     viewModel: ReadConfigViewModel = koinViewModel(),
+    focusSettingId: String? = null,
 ) {
     val context = LocalContext.current
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
@@ -31,6 +32,7 @@ fun ReadConfigRouteScreen(
         state = state,
         onIntent = viewModel::onIntent,
         onBackClick = onBackClick,
+        focusSettingId = focusSettingId,
         onNavigateToReadThemePicker = onNavigateToReadThemePicker,
     )
 }

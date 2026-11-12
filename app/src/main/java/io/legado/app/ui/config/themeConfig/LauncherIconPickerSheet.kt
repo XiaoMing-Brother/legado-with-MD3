@@ -30,14 +30,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import io.legado.app.R
-import io.legado.app.ui.main.Launcher0
 import io.legado.app.ui.main.Launcher1
 import io.legado.app.ui.main.Launcher2
 import io.legado.app.ui.main.Launcher3
-import io.legado.app.ui.main.Launcher4
-import io.legado.app.ui.main.Launcher5
-import io.legado.app.ui.main.Launcher6
-import io.legado.app.ui.main.LauncherW
+import io.legado.app.ui.main.MainActivity
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.widget.components.modalBottomSheet.AppModalBottomSheet
 import io.legado.app.ui.widget.components.text.AppText
@@ -141,19 +137,7 @@ object LauncherIcons {
             value = "ic_launcher",
             label = "iconMain",
             resId = R.mipmap.ic_launcher,
-            component = ComponentName(appCtx, LauncherW::class.java)
-        ),
-        LauncherIconItem(
-            value = "launcherw",
-            label = "iconWhite",
-            resId = R.mipmap.launcherw,
-            component = ComponentName(appCtx, LauncherW::class.java)
-        ),
-        LauncherIconItem(
-            value = "launcher0",
-            label = "icon0",
-            resId = R.mipmap.launcher0,
-            component = ComponentName(appCtx, Launcher0::class.java)
+            component = ComponentName(appCtx, MainActivity::class.java)
         ),
         LauncherIconItem(
             value = "launcher1",
@@ -173,27 +157,19 @@ object LauncherIcons {
             resId = R.mipmap.launcher3,
             component = ComponentName(appCtx, Launcher3::class.java)
         ),
-        LauncherIconItem(
-            value = "launcher4",
-            label = "icon4",
-            resId = R.mipmap.launcher4,
-            component = ComponentName(appCtx, Launcher4::class.java)
-        ),
-        LauncherIconItem(
-            value = "launcher5",
-            label = "icon5",
-            resId = R.mipmap.launcher5,
-            component = ComponentName(appCtx, Launcher5::class.java)
-        ),
-        LauncherIconItem(
-            value = "launcher6",
-            label = "icon6",
-            resId = R.mipmap.launcher6,
-            component = ComponentName(appCtx, Launcher6::class.java)
-        ),
     )
 
+    private val legacyAliases = mapOf(
+        "launcherw" to "launcher3",
+        "launcher0" to "ic_launcher",
+        "launcher4" to "ic_launcher",
+        "launcher5" to "launcher1",
+        "launcher6" to "launcher2",
+    )
+
+    fun canonicalValue(value: String?): String? = legacyAliases[value] ?: value
+
     fun find(value: String?): LauncherIconItem? {
-        return list.find { it.value == value }
+        return list.find { it.value == canonicalValue(value) }
     }
 }

@@ -621,6 +621,7 @@ private fun ReadBookSheetContent(
         MoreConfigSheet(
             show = visibleState.findSheet<ReadBookSheet.MoreConfig>() != null,
             onDismissRequest = dismissSheet(visibleState.findSheet<ReadBookSheet.MoreConfig>()),
+            preferences = preferences,
             onIntent = onIntent,
             onOpenClickRegionalConfig = {
                 onIntent(ReadBookIntent.ShowSheet(ReadBookSheet.ClickActionConfig))
@@ -697,9 +698,13 @@ private fun ReadBookSheetContent(
     }
     if (state.activeSheet is ReadBookSheet.ReadThemePicker) {
         // 入口在全局页，关掉即回到全局页。
+        val currentStyle = state.styleConfig.styleItems
+            .getOrNull(state.styleConfig.styleSelect)
         ReadThemePresetSheet(
             show = visibleState.findSheet<ReadBookSheet.ReadThemePicker>() != null,
             onDismissRequest = dismissSheet(visibleState.findSheet<ReadBookSheet.ReadThemePicker>()),
+            initialDayThemeId = currentStyle?.readThemeIdDay,
+            initialNightThemeId = currentStyle?.readThemeIdNight,
             onSelectTheme = { themeId, target ->
                 onIntent(ReadBookIntent.ApplyReadTheme(themeId, target))
             },

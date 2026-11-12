@@ -48,6 +48,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
@@ -489,7 +492,10 @@ fun StyleCard(
         .width(44.dp)
         .height(56.dp),
     imageContentScale: ContentScale = ContentScale.Crop,
-    onClick: () -> Unit,
+    // 设置页顶部空间有限，只留背景预览，名称交给无障碍描述
+    showName: Boolean = true,
+    // 传 null 时仅作预览；设置页顶部的已保存背景会传 onClick 供切换
+    onClick: (() -> Unit)? = null,
     // 传 null 才不装内层长按监听（管理模式的长按要留给外层拖动）
     onLongClick: (() -> Unit)? = null,
 ) {
@@ -521,10 +527,20 @@ fun StyleCard(
         }
     )
     val name = config.name.ifBlank { stringResource(R.string.text_bg_style) }
-    val bgPath = ReadStyleResolver.backgroundPath(bgType, bgValue)
+    val bgPath = when (bgType) {
+        1 -> "file:///android_asset/${ReadStyleResolver.ASSET_BG_DIR}/$bgValue"
+        else -> ReadStyleResolver.backgroundPath(bgType, bgValue)
+    }
 
     NormalCard(
-        modifier = modifier,
+        modifier = if (onClick != null) {
+            modifier.semantics {
+                selected = isSelected
+                if (!showName) contentDescription = name
+            }
+        } else {
+            modifier
+        },
         cornerRadius = 8.dp,
         containerColor = bgColor,
         onClick = onClick,
@@ -539,16 +555,18 @@ fun StyleCard(
                     modifier = Modifier.fillMaxSize(),
                 )
             }
-            AppText(
-                text = name,
-                style = LegadoTheme.typography.labelSmall,
-                color = textColor,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(horizontal = 8.dp),
-            )
+            if (showName) {
+                AppText(
+                    text = name,
+                    style = LegadoTheme.typography.labelSmall,
+                    color = textColor,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 8.dp),
+                )
+            }
             if (isSelected) {
                 Box(
                     modifier = Modifier

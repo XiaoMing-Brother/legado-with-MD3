@@ -119,12 +119,11 @@ import io.legado.app.domain.model.PrivateUnlockTarget
 import io.legado.app.help.security.BiometricUnlockLauncher
 import io.legado.app.ui.book.group.GroupEditSheet
 import io.legado.app.ui.book.info.GroupSelectSheet
-import io.legado.app.ui.main.LocalMainDrawerOpen
 import io.legado.app.ui.main.bookCoverSharedElementKey
+import io.legado.app.ui.theme.ComposeEngine
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.LocalBottomOverlayPadding
 import io.legado.app.ui.theme.ProvideAppDensity
-import io.legado.app.ui.theme.ThemeResolver
 import io.legado.app.ui.theme.adaptiveContentPaddingBookshelf
 import io.legado.app.ui.theme.adaptiveHorizontalPadding
 import io.legado.app.ui.theme.adaptiveHorizontalPaddingTab
@@ -1375,19 +1374,11 @@ private fun BookshelfTopBar(
     GlassMediumFlexibleTopAppBar(
         modifier = Modifier.fillMaxWidth(),
         navigationIcon = {
-            val openDrawer = LocalMainDrawerOpen.current
             if (uiState.isEditMode) {
                 TopBarNavigationButton(
                     onClick = onExitEditMode,
                     imageVector = AppIcons.Close,
                     contentDescription = exitEditModeDescription
-                )
-            } else if (openDrawer != null) {
-                // 抽屉导航下没有底栏，这里必须给出入口；底栏/侧栏模式该 CompositionLocal 为 null
-                TopBarNavigationButton(
-                    onClick = openDrawer,
-                    imageVector = Icons.Default.Menu,
-                    contentDescription = stringResource(R.string.menu)
                 )
             }
         },
@@ -1769,7 +1760,7 @@ fun BookshelfPage(
     val showFastScroll = uiState.settings.showBookshelfFastScroller
     val listContentDescription = stringResource(R.string.bookshelf)
     val totalHorizontalPadding =
-        if (ThemeResolver.isMiuixEngine(LegadoTheme.composeEngine)) 12.dp else 16.dp
+        if (LegadoTheme.composeEngine == ComposeEngine.Miuix) 12.dp else 16.dp
     val gridContentHorizontalPadding = totalHorizontalPadding / 2
     val gridInnerHorizontalPadding = totalHorizontalPadding / 2
     val hapticFeedback = LocalHapticFeedback.current

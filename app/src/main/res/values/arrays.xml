@@ -262,6 +262,7 @@
 	<string-array name="composeEngine">
         <item>Material Design</item>
         <item>Miuix</item>
+        <item>Mochi</item>
     </string-array>
 
     <string-array name="customMode">
@@ -372,4 +373,11 @@
 	</string-array>
 
 	<string name="all_version">All Version</string>
+<string-array name="tabletInterface">
+		<item>Auto</item>
+        <item>Sidebar when space permits</item>
+        <item>Sidebar in landscape windows</item>
+        <item>Bottom navigation</item>
+	</string-array>
+
 </resources>

@@ -103,6 +103,12 @@ class ThemeConfigViewModel(
             is ThemeConfigIntent.SetComposeEngine -> updateAppShell {
                 it.copy(composeEngine = intent.value)
             }
+            is ThemeConfigIntent.SetNavigationAnimationStyle -> updateAppShell {
+                it.copy(navigationAnimationStyle = intent.style)
+            }
+            is ThemeConfigIntent.SetTextAnimationLevel -> updateAppShell {
+                it.copy(textAnimationLevel = intent.level)
+            }
             is ThemeConfigIntent.SetPredictiveBackEnabled -> updateAppShell {
                 it.copy(predictiveBackEnabled = intent.enabled)
             }
@@ -119,8 +125,23 @@ class ThemeConfigViewModel(
             is ThemeConfigIntent.SetSwipeAnimation -> updateAppShell {
                 it.copy(swipeAnimation = intent.enabled)
             }
+            is ThemeConfigIntent.SetShowBottomView -> updateAppShell {
+                it.copy(showBottomView = intent.visible)
+            }
+            is ThemeConfigIntent.SetUseFloatingBottomBar -> updateAppShell {
+                it.copy(useFloatingBottomBar = intent.enabled)
+            }
+            is ThemeConfigIntent.SetUseFloatingBottomBarLiquidGlass -> updateAppShell {
+                it.copy(useFloatingBottomBarLiquidGlass = intent.enabled)
+            }
+            is ThemeConfigIntent.SetTabletInterface -> updateAppShell {
+                it.copy(tabletInterface = intent.value)
+            }
             is ThemeConfigIntent.SetMultiPaneMode -> updateAppShell {
                 it.copy(multiPaneMode = intent.value)
+            }
+            is ThemeConfigIntent.SetLabelVisibilityMode -> updateAppShell {
+                it.copy(labelVisibilityMode = intent.value)
             }
             is ThemeConfigIntent.SetMiuixMonet -> setMiuixMonet(intent.enabled)
             is ThemeConfigIntent.SetDynamicColors -> setDynamicColors(intent.enabled)

@@ -8,6 +8,10 @@ import kotlinx.collections.immutable.ImmutableList
 data class MainUiState(
     val destinations: ImmutableList<MainDestination> = MainDestination.mainDestinations,
     val defaultHomePage: String = "bookshelf",
+    val showBottomView: Boolean = true,
+    val useFloatingBottomBar: Boolean = true,
+    val useFloatingBottomBarLiquidGlass: Boolean = false,
+    val labelVisibilityMode: String = "auto",
     val navIconHome: String = "",
     val navIconBookshelf: String = "",
     val navIconExplore: String = "",

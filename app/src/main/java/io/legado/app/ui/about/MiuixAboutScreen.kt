@@ -390,15 +390,11 @@ private fun AboutContent(
                         ),
                     ) {
                         ArrowPreference(
-                            title = stringResource(R.string.check_update),
-                            onClick = { onIntent(AboutIntent.CheckUpdate) },
-                        )
-                        ArrowPreference(
                             title = stringResource(R.string.contributors),
                             endActions = {
                                 ValueText("GitHub")
                             },
-                            onClick = { onIntent(AboutIntent.OpenUrl("https://github.com/HapeLee/legado-with-MD3")) },
+                            onClick = { onIntent(AboutIntent.OpenUrl("https://github.com/XiaoMing-Brother/legado-with-MD3")) },
                         )
                     }
 

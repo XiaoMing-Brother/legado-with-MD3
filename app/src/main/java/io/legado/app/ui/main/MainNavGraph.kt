@@ -139,6 +139,11 @@ import io.legado.app.ui.book.video.VideoPlayerScreen
 import io.legado.app.ui.browser.WebViewModel
 import io.legado.app.ui.browser.WebViewRouteScreen
 import io.legado.app.ui.config.ConfigNavScreen
+import io.legado.app.feature.settings.search.SettingsSearchRouteScreen
+import io.legado.app.feature.settings.search.SettingsSearchCatalog
+import io.legado.app.feature.settings.search.SettingsSearchPage
+import io.legado.app.feature.settings.search.SettingsSearchTargetScope
+import io.legado.app.feature.settings.reading.ReadSetting
 import io.legado.app.feature.settings.manga.MangaConfigRouteScreen
 import io.legado.app.ui.config.backupConfig.BackupConfigRouteScreen
 import io.legado.app.ui.config.coverConfig.CoverAlbumManageRouteScreen
@@ -659,12 +664,44 @@ fun MainActivity.mainEntryProvider(
             onNavigateToTranslation = { pushRoute(MainRouteSettingsTranslation) },
             onNavigateToLab = { pushRoute(MainRouteSettingsLabConfig) },
             onNavigateToPrivate = { pushRoute(MainRouteSettingsPrivate) },
-            onNavigateToBubble = { pushRoute(MainRouteSettingsBubble) }
+            onNavigateToBubble = { pushRoute(MainRouteSettingsBubble) },
+            onSearchSettings = { pushRoute(MainRouteSettingsSearch) },
+        )
+    }
+
+    entry<MainRouteSettingsSearch> {
+        SettingsSearchRouteScreen(
+            onBackClick = { onNavigateBack() },
+            onOpenSetting = { id ->
+                if (ReadSetting.fromId(id) != null) pushRoute(MainRouteSettingsReadTarget(id))
+                else pushRoute(MainRouteSettingsTarget(id))
+            },
+        )
+    }
+
+    entry<MainRouteSettingsTarget> { route ->
+        val item = SettingsSearchCatalog.find(route.settingId)
+        if (item != null) SettingsSearchTargetScope(item) {
+            SettingsDestinationContent(item.page, onNavigateBack)
+        } else SettingsSearchRouteScreen(
+            onBackClick = onNavigateBack,
+            onOpenSetting = { id ->
+                if (ReadSetting.fromId(id) != null) pushRoute(MainRouteSettingsReadTarget(id))
+                else pushRoute(MainRouteSettingsTarget(id))
+            },
+        )
+    }
+
+    entry<MainRouteSettingsReadTarget> { route ->
+        ReadConfigRouteScreen(
+            onBackClick = { onNavigateBack() },
+            focusSettingId = route.settingId,
+            onNavigateToReadThemePicker = { pushRoute(MainRouteSettingsReadTheme) },
         )
     }
 
     entry<MainRouteSettingsOther> {
-        OtherConfigRouteScreen(onBackClick = { onNavigateBack() })
+        SettingsDestinationContent(SettingsSearchPage.Other, onNavigateBack)
     }
 
     entry<MainRouteSettingsRead> {
@@ -684,12 +721,7 @@ fun MainActivity.mainEntryProvider(
     }
 
     entry<MainRouteSettingsCover> {
-        CoverConfigRouteScreen(
-            onBackClick = { onNavigateBack() },
-            onNavigateToCoverAlbums = {
-                pushRoute(MainRouteSettingsCoverAlbums)
-            },
-        )
+        SettingsDestinationContent(SettingsSearchPage.Cover, onNavigateBack)
     }
 
     entry<MainRouteSettingsCoverAlbums> {
@@ -697,23 +729,15 @@ fun MainActivity.mainEntryProvider(
     }
 
     entry<MainRouteSettingsTheme> {
-        ThemeConfigRouteScreen(
-            onBackClick = { onNavigateBack() },
-            onNavigateToCustomTheme = { pushRoute(MainRouteSettingsCustomTheme) },
-            onNavigateToThemeManage = { pushRoute(MainRouteSettingsThemeManage) }
-        )
+        SettingsDestinationContent(SettingsSearchPage.Theme, onNavigateBack)
     }
 
     entry<MainRouteSettingsBackup> {
-        BackupConfigRouteScreen(onBackClick = { onNavigateBack() })
+        SettingsDestinationContent(SettingsSearchPage.Backup, onNavigateBack)
     }
 
-
     entry<MainRouteSettingsDownloadCache> {
-        DownloadCacheConfigRouteScreen(
-            onBackClick = { onNavigateBack() },
-            onNavigateToMaintenance = { onNavigateToRoute(MainRouteCacheMaintenance) },
-        )
+        SettingsDestinationContent(SettingsSearchPage.Download, onNavigateBack)
     }
 
     entry<MainRouteSettingsTranslation> {
@@ -723,29 +747,23 @@ fun MainActivity.mainEntryProvider(
     }
 
     entry<MainRouteSettingsLabConfig> {
-        LabConfigRouteScreen(onBackClick = { onNavigateBack() })
+        SettingsDestinationContent(SettingsSearchPage.Lab, onNavigateBack)
     }
 
     entry<MainRouteSettingsPrivate> {
-        // 隐私设置页可以关掉三种验证时机，所以进入前要求确认身份（生物或密码）。
-        // 只校验、不授予：进来一次不该顺带解锁私密内容。
-        PrivateVerifyGate(onCancel = { onNavigateBack() }) {
-            PrivateConfigRouteScreen(onBackClick = { onNavigateBack() })
-        }
+        SettingsDestinationContent(SettingsSearchPage.Private, onNavigateBack)
     }
 
     entry<MainRouteSettingsCustomTheme> {
-        CustomThemeRouteScreen(
-            onBackClick = { onNavigateBack() }
-        )
+        SettingsDestinationContent(SettingsSearchPage.CustomTheme, onNavigateBack)
     }
 
     entry<MainRouteSettingsThemeManage> {
-        ThemeManageRouteScreen(onBackClick = { onNavigateBack() })
+        SettingsDestinationContent(SettingsSearchPage.ThemeManage, onNavigateBack)
     }
 
     entry<MainRouteSettingsBubble> {
-        BubbleConfigRouteScreen(onBackClick = { onNavigateBack() })
+        SettingsDestinationContent(SettingsSearchPage.Bubble, onNavigateBack)
     }
 
     entry<MainRouteImportLocal> {
@@ -1789,16 +1807,7 @@ fun MainActivity.mainEntryProvider(
     }
 
     entry<MainRouteMultiRoleRule> {
-        MultiRoleRuleRouteScreen(
-            onBackClick = { onNavigateBack() },
-            onNavigateToVoicePool = { pushRoute(MainRouteVoicePool) },
-            onNavigateToBgmPool = { pushRoute(MainRouteBgmPool) },
-            onNavigateToVoiceEffect = { pushRoute(MainRouteVoiceEffect) },
-            onNavigateToCapsuleStyle = { pushRoute(MainRouteCastCapsuleStyle) },
-            onNavigateToEngines = { pushRoute(MainRouteCloudTtsEngines()) },
-            onNavigateToRecognition = { pushRoute(MainRouteMultiRoleRecognition) },
-            onNavigateToRegexCast = { pushRoute(MainRouteRegexCastRule) },
-        )
+        SettingsDestinationContent(SettingsSearchPage.ReadAloud, onNavigateBack)
     }
 
     entry<MainRouteCastCapsuleStyle> {
@@ -2048,5 +2057,93 @@ internal fun MainActivity.AudioPlayerMorphOverlay(
                 audioPlayViewModel.addToBookshelf(book, toc)
             },
         )
+    }
+}
+
+/** Shared host wiring keeps search visits on the same privacy gates, DI and callbacks as ordinary visits. */
+@Composable
+private fun MainEntryNavigation.SettingsDestinationContent(
+    page: SettingsSearchPage,
+    onNavigateBack: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") startAtMangaTranslation: Boolean = false,
+) {
+    when (page) {
+        SettingsSearchPage.Reading -> {
+            ReadConfigRouteScreen(
+                onBackClick = { onNavigateBack() },
+                onNavigateToReadThemePicker = { pushRoute(MainRouteSettingsReadTheme) },
+            )
+        }
+        SettingsSearchPage.Theme -> {
+            ThemeConfigRouteScreen(
+                onBackClick = { onNavigateBack() },
+                onNavigateToCustomTheme = { pushRoute(MainRouteSettingsCustomTheme) },
+                onNavigateToThemeManage = { pushRoute(MainRouteSettingsThemeManage) }
+            )
+        }
+        SettingsSearchPage.Other -> {
+            OtherConfigRouteScreen(onBackClick = { onNavigateBack() })
+        }
+        SettingsSearchPage.Manga -> {
+            MangaConfigRouteScreen(
+                onBackClick = { onNavigateBack() },
+                onOpenCacheSettings = { pushRoute(MainRouteSettingsDownloadCache) },
+            )
+        }
+        SettingsSearchPage.ReadAloud -> {
+            MultiRoleRuleRouteScreen(
+                onBackClick = { onNavigateBack() },
+                onNavigateToVoicePool = { pushRoute(MainRouteVoicePool) },
+                onNavigateToBgmPool = { pushRoute(MainRouteBgmPool) },
+                onNavigateToVoiceEffect = { pushRoute(MainRouteVoiceEffect) },
+                onNavigateToCapsuleStyle = { pushRoute(MainRouteCastCapsuleStyle) },
+                onNavigateToEngines = { pushRoute(MainRouteCloudTtsEngines()) },
+                onNavigateToRecognition = { pushRoute(MainRouteMultiRoleRecognition) },
+                onNavigateToRegexCast = { pushRoute(MainRouteRegexCastRule) },
+            )
+        }
+        SettingsSearchPage.Cover -> {
+            CoverConfigRouteScreen(
+                onBackClick = { onNavigateBack() },
+                onNavigateToCoverAlbums = {
+                    pushRoute(MainRouteSettingsCoverAlbums)
+                },
+            )
+        }
+        SettingsSearchPage.Bubble -> {
+            BubbleConfigRouteScreen(onBackClick = { onNavigateBack() })
+        }
+        SettingsSearchPage.Download -> {
+            DownloadCacheConfigRouteScreen(
+                onBackClick = { onNavigateBack() },
+                onNavigateToMaintenance = { onNavigateToRoute(MainRouteCacheMaintenance) },
+            )
+        }
+        SettingsSearchPage.Backup -> {
+            BackupConfigRouteScreen(onBackClick = { onNavigateBack() })
+        }
+        SettingsSearchPage.Translation -> {
+            TranslationConfigRouteScreen(
+                onBackClick = { onNavigateBack() },
+            )
+        }
+        SettingsSearchPage.Private -> {
+            // 隐私设置页可以关掉三种验证时机，所以进入前要求确认身份（生物或密码）。
+            // 只校验、不授予：进来一次不该顺带解锁私密内容。
+            PrivateVerifyGate(onCancel = { onNavigateBack() }) {
+                PrivateConfigRouteScreen(onBackClick = { onNavigateBack() })
+            }
+        }
+        SettingsSearchPage.Lab -> {
+            LabConfigRouteScreen(onBackClick = { onNavigateBack() })
+        }
+        SettingsSearchPage.CustomTheme -> {
+            CustomThemeRouteScreen(
+                onBackClick = { onNavigateBack() }
+            )
+        }
+        SettingsSearchPage.ThemeManage -> {
+            ThemeManageRouteScreen(onBackClick = { onNavigateBack() })
+        }
     }
 }

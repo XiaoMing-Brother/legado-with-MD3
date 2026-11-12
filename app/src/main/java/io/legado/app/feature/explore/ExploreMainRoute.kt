@@ -38,7 +38,6 @@ import io.legado.app.ui.book.explore.ExploreShowIntent
 import io.legado.app.ui.book.explore.ExploreShowRouteScreen
 import io.legado.app.ui.book.explore.ExploreShowViewModel
 import io.legado.app.ui.book.search.SearchScope
-import io.legado.app.ui.main.MainDrawerNavigationIcon
 import io.legado.app.ui.main.explore.ExploreIntent
 import io.legado.app.ui.main.explore.ExploreRouteScreen
 import io.legado.app.ui.main.explore.ExploreViewModel
@@ -120,7 +119,6 @@ fun ExploreMainRoute(
                         GlassMediumFlexibleTopAppBar(
                             title = stringResource(R.string.discovery),
                             subtitle = selectedSource?.name,
-                            navigationIcon = { MainDrawerNavigationIcon() },
                             scrollBehavior = scrollBehavior,
                             actions = {
                                 // 等价旧版长按书源的「搜索」：打开搜索界面并只使用当前书源搜索。
@@ -189,7 +187,6 @@ fun ExploreMainRoute(
                             title = stringResource(R.string.discovery),
                             subtitle = sourceState.selectedGroup.ifEmpty { stringResource(R.string.all) },
                             state = sourceState,
-                            navigationContent = { MainDrawerNavigationIcon() },
                             scrollBehavior = scrollBehavior,
                             onSearchToggle = {
                                 sourceViewModel.onIntent(

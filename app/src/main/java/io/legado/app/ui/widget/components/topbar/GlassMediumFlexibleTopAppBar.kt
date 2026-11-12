@@ -1,5 +1,6 @@
 package io.legado.app.ui.widget.components.topbar
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -17,18 +18,19 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.legado.app.ui.theme.ComposeEngine
+import io.legado.app.ui.theme.ThemeResolver
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.LocalAppUiConfiguration
 import io.legado.app.ui.theme.LocalHazeState
-import io.legado.app.ui.theme.ThemeResolver
+import io.legado.app.ui.theme.miuixBarBlur
 import io.legado.app.ui.theme.responsiveHazeEffect
 import io.legado.app.ui.widget.components.GlassDefaults
+import io.legado.app.ui.widget.components.mochi.AppMochiTitleBar
 import io.legado.app.ui.widget.components.text.AdaptiveAnimatedText
 import io.legado.app.ui.widget.components.text.AnimatedTextLine
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -55,33 +57,51 @@ fun GlassMediumFlexibleTopAppBar(
     val hazeState = LocalHazeState.current
     val themeSettings = LocalAppUiConfiguration.current.theme
     val composeEngine = LegadoTheme.composeEngine
-    val isMiuix = ThemeResolver.isMiuixEngine(composeEngine)
+    if (composeEngine == ComposeEngine.Mochi) {
+        Column(modifier) {
+            AppMochiTitleBar(
+                title, subtitle = subtitle, navigationIcon = navigationIcon, actions = actions,
+                scrollBehavior = scrollBehavior, expandable = true,
+            )
+            bottomContent?.invoke(this)
+        }
+        return
+    }
+    val isMiuix = composeEngine == ComposeEngine.Miuix
 
-    val containerColor = if (!isMiuix) {
-        GlassDefaults.secondaryColorOr { GlassTopAppBarDefaults.containerColor() }
-    } else {
-        GlassDefaults.secondaryColorOr { GlassTopAppBarDefaults.getMiuixAppBarColor() }
+    val containerColor = when (LegadoTheme.composeEngine) {
+        ComposeEngine.Material, ComposeEngine.Mochi -> {
+            GlassDefaults.secondaryColorOr { GlassTopAppBarDefaults.containerColor() }
+        }
+        ComposeEngine.Miuix -> {
+            GlassDefaults.secondaryColorOr { GlassTopAppBarDefaults.getMiuixAppBarColor() }
+        }
     }
 
-    val scrolledColor = if (!isMiuix) {
-        GlassDefaults.secondaryColorOr { GlassTopAppBarDefaults.scrolledContainerColor() }
-    } else {
-        GlassDefaults.secondaryColorOr { GlassTopAppBarDefaults.getMiuixAppBarColor() }
+    val scrolledColor = when (LegadoTheme.composeEngine) {
+        ComposeEngine.Material, ComposeEngine.Mochi -> {
+            GlassDefaults.secondaryColorOr { GlassTopAppBarDefaults.scrolledContainerColor() }
+        }
+        ComposeEngine.Miuix -> {
+            GlassDefaults.secondaryColorOr { GlassTopAppBarDefaults.getMiuixAppBarColor() }
+        }
     }
 
-    // collapsedFraction 是滚动状态：在组合期读取会让整个顶栏（含 bottomContent 里的
-    // 分组 TabRow、搜索栏、菜单）每滚动一帧重组一次。放到绘制期读，只有这块背景重画。
-    val drawBarColor: DrawScope.() -> Unit = {
-        val fraction = if (isMiuix) 0f else scrollBehavior?.collapsedFraction ?: 0f
-        drawRect(lerp(containerColor, scrolledColor, fraction))
+    val animatedColor = when (LegadoTheme.composeEngine) {
+        ComposeEngine.Material, ComposeEngine.Mochi -> {
+            val fraction = scrollBehavior?.collapsedFraction ?: 0f
+            lerp(containerColor, scrolledColor, fraction)
+        }
+        ComposeEngine.Miuix -> {
+            containerColor
+        }
     }
 
-    val finalModifier = if (hazeState != null) {
-        modifier
-            .drawBehind(drawBarColor)
-            .responsiveHazeEffect(state = hazeState)
-    } else {
-        modifier.drawBehind(drawBarColor)
+    val background = modifier.background(color = animatedColor)
+    val finalModifier = when {
+        isMiuix -> background.miuixBarBlur()
+        hazeState != null -> background.responsiveHazeEffect(state = hazeState)
+        else -> background
     }
 
     val transparentColors = TopAppBarDefaults.topAppBarColors(
@@ -101,15 +121,9 @@ fun GlassMediumFlexibleTopAppBar(
                     title = title,
                     subtitle = subtitleText.orEmpty(),
                     navigationIcon = navigationIcon,
-                    actions = {
-                        TopBarActionsRow(
-                            modifier = Modifier.padding(end = miuixTopBarActionsEndPadding())
-                        ) { actions() }
-                    },
+                    actions = actions,
                     color = Color.Transparent,
                     defaultWindowInsetsPadding = false,
-                    navigationIconPadding = miuixTopBarSlotPadding(),
-                    actionIconPadding = miuixTopBarSlotPadding(),
                     scrollBehavior = (scrollBehavior as? MiuixGlassScrollBehavior)?.miuixBehavior
                 )
             }
@@ -194,9 +208,9 @@ object GlassTopAppBarDefaults {
     @Composable
     fun defaultScrollBehavior(): GlassTopAppBarScrollBehavior {
         val configuration = LocalAppUiConfiguration.current
-        val composeEngine = configuration.appShell.composeEngine
+        val composeEngine = ThemeResolver.resolveComposeEngine(configuration.appShell.composeEngine)
 
-        return if (ThemeResolver.isMiuixEngine(composeEngine)) {
+        return if (composeEngine == ComposeEngine.Miuix) {
             val miuixBehavior = MiuixScrollBehavior()
             remember(miuixBehavior) { MiuixGlassScrollBehavior(miuixBehavior) }
         } else if (configuration.theme.useFlexibleTopAppBar) {

@@ -99,6 +99,10 @@ private fun buildMainUiState(
     return MainUiState(
         destinations = destinations.toImmutableList(),
         defaultHomePage = appShell.defaultHomePage,
+        showBottomView = appShell.showBottomView,
+        useFloatingBottomBar = appShell.useFloatingBottomBar,
+        useFloatingBottomBarLiquidGlass = appShell.useFloatingBottomBarLiquidGlass,
+        labelVisibilityMode = appShell.labelVisibilityMode,
         navIconHome = appShell.navIconHome,
         navIconBookshelf = appShell.navIconBookshelf,
         navIconExplore = appShell.navIconExplore,

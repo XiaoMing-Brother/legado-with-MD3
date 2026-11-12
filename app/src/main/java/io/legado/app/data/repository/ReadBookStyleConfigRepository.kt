@@ -26,6 +26,7 @@ import io.legado.app.domain.model.settings.toStyle
 import io.legado.app.help.DefaultData
 import io.legado.app.help.config.AppConfigStore
 import io.legado.app.help.config.ReadBookConfig
+import io.legado.app.help.config.ReadStyleResolver
 import io.legado.app.help.http.newCallResponse
 import io.legado.app.help.http.okHttpClient
 import io.legado.app.utils.GSON
@@ -91,8 +92,14 @@ class ReadBookStyleConfigRepository(
             is ReadStyleMutation.BooleanValue -> updateBoolean(mutation.key, mutation.value)
             is ReadStyleMutation.StringValue -> updateString(mutation.key, mutation.value)
             is ReadStyleMutation.ColorValue -> updateColor(mutation.key, mutation.value)
-            is ReadStyleMutation.Background ->
-                mutateCurrentStyle { it.withCurBg(mutation.type, mutation.value) }
+            is ReadStyleMutation.Background -> mutateCurrentStyle {
+                val changed = it.withCurBg(mutation.type, mutation.value)
+                when (ReadStyleResolver.currentMode()) {
+                    ReadStyleResolver.ReadStyleMode.EInk -> changed
+                    ReadStyleResolver.ReadStyleMode.Night -> changed.copy(readThemeIdNight = null)
+                    ReadStyleResolver.ReadStyleMode.Day -> changed.copy(readThemeIdDay = null)
+                }
+            }
         }
         publishState()
     }
@@ -132,6 +139,7 @@ class ReadBookStyleConfigRepository(
                     bgStrEInk = style.background,
                     bgType = READ_THEME_BG_TYPE,
                     bgTypeEInk = READ_THEME_BG_TYPE,
+                    readThemeIdDay = theme.id,
                     darkStatusIcon = style.darkStatusIcon,
                     darkStatusIconEInk = style.darkStatusIcon,
                 )
@@ -139,6 +147,7 @@ class ReadBookStyleConfigRepository(
                 ReadThemeTarget.Night -> it.copy(
                     bgStrNight = style.nightBackground,
                     bgTypeNight = READ_THEME_BG_TYPE,
+                    readThemeIdNight = theme.id,
                     darkStatusIconNight = style.darkStatusIconNight,
                 )
             }
@@ -365,7 +374,15 @@ class ReadBookStyleConfigRepository(
         readStyleRepository.saveBackgroundImage(inputStream, displayName)
 
     override fun setCurrentBackgroundImage(path: String) {
-        mutateCurrentStyle { it.withCurBg(2, path) }
+        mutateCurrentStyle {
+            it.withCurBg(2, path).let { changed ->
+                when (ReadStyleResolver.currentMode()) {
+                    ReadStyleResolver.ReadStyleMode.EInk -> changed
+                    ReadStyleResolver.ReadStyleMode.Night -> changed.copy(readThemeIdNight = null)
+                    ReadStyleResolver.ReadStyleMode.Day -> changed.copy(readThemeIdDay = null)
+                }
+            }
+        }
         save()
     }
 
@@ -458,9 +475,9 @@ class ReadBookStyleConfigRepository(
     override fun setCurrentBackgroundImageForMode(path: String, isNight: Boolean) {
         mutateCurrentStyle {
             if (isNight) {
-                it.copy(bgTypeNight = 2, bgStrNight = path)
+                it.copy(bgTypeNight = 2, bgStrNight = path, readThemeIdNight = null)
             } else {
-                it.copy(bgType = 2, bgStr = path)
+                it.copy(bgType = 2, bgStr = path, readThemeIdDay = null)
             }
         }
         save()
@@ -617,8 +634,12 @@ class ReadBookStyleConfigRepository(
                 mutateEffective { it.copy(customTipFooterMiddle = value) }
             ReadStyleStringKey.CustomTipFooterRight ->
                 mutateEffective { it.copy(customTipFooterRight = value) }
-            ReadStyleStringKey.BgStr -> mutateCurrentStyle { it.copy(bgStr = value) }
-            ReadStyleStringKey.BgStrNight -> mutateCurrentStyle { it.copy(bgStrNight = value) }
+            ReadStyleStringKey.BgStr -> mutateCurrentStyle {
+                it.copy(bgStr = value, readThemeIdDay = null)
+            }
+            ReadStyleStringKey.BgStrNight -> mutateCurrentStyle {
+                it.copy(bgStrNight = value, readThemeIdNight = null)
+            }
             ReadStyleStringKey.BgStrEInk -> mutateCurrentStyle { it.copy(bgStrEInk = value) }
             ReadStyleStringKey.StyleName -> mutateCurrentStyle { it.copy(name = value) }
         }
@@ -654,6 +675,8 @@ class ReadBookStyleConfigRepository(
                 bgValueNight = config.bgStrNight,
                 bgTypeEInk = config.bgTypeEInk,
                 bgValueEInk = config.bgStrEInk,
+                readThemeIdDay = config.readThemeIdDay,
+                readThemeIdNight = config.readThemeIdNight,
                 textColor = config.getTextColor().toColorIntOrDefault(),
                 textColorNight = config.getTextColorNight().toColorIntOrDefault(),
                 textColorEInk = config.getTextColorEInk().toColorIntOrDefault(),

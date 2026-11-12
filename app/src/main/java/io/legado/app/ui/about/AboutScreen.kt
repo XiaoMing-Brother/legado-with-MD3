@@ -36,8 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.legado.app.R
 import io.legado.app.constant.AppConst.appInfo
+import io.legado.app.ui.theme.ComposeEngine
 import io.legado.app.ui.theme.LegadoTheme
-import io.legado.app.ui.theme.ThemeResolver
 import io.legado.app.ui.widget.components.AppScaffold
 import io.legado.app.ui.widget.components.SettingItemWithDivider
 import io.legado.app.ui.widget.components.SplicedColumnGroup
@@ -62,22 +62,25 @@ fun AboutScreen(
     onBack: () -> Unit = {},
     versionName: String = appInfo.versionName,
 ) {
-    if (ThemeResolver.isMiuixEngine(LegadoTheme.composeEngine)) {
-        MiuixAboutScreen(
-            state = state,
-            onIntent = onIntent,
-            onOpenLicenses = onOpenLicenses,
-            onBack = onBack,
-            versionName = versionName,
-        )
-    } else {
-        MaterialAboutScreen(
-            state = state,
-            onIntent = onIntent,
-            onOpenLicenses = onOpenLicenses,
-            onBack = onBack,
-            versionName = versionName,
-        )
+    when (LegadoTheme.composeEngine) {
+        ComposeEngine.Miuix -> {
+            MiuixAboutScreen(
+                state = state,
+                onIntent = onIntent,
+                onOpenLicenses = onOpenLicenses,
+                onBack = onBack,
+                versionName = versionName,
+            )
+        }
+        ComposeEngine.Material, ComposeEngine.Mochi -> {
+            MaterialAboutScreen(
+                state = state,
+                onIntent = onIntent,
+                onOpenLicenses = onOpenLicenses,
+                onBack = onBack,
+                versionName = versionName,
+            )
+        }
     }
 
     AboutOverlays(
@@ -156,22 +159,16 @@ private fun MaterialAboutScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center
             ) {
-                FilledTonalIconButton(onClick = { onIntent(AboutIntent.OpenUrl("https://github.com/HapeLee/legado-with-MD3")) }) {
+                FilledTonalIconButton(onClick = { onIntent(AboutIntent.OpenUrl("https://github.com/XiaoMing-Brother/legado-with-MD3")) }) {
                     Icon(
                         painter = painterResource(R.drawable.ic_web_outline),
                         contentDescription = stringResource(R.string.about_open_project_homepage)
                     )
                 }
-                FilledTonalIconButton(onClick = { onIntent(AboutIntent.OpenUrl("https://github.com/HapeLee/legado-with-MD3")) }) {
+                FilledTonalIconButton(onClick = { onIntent(AboutIntent.OpenUrl("https://github.com/XiaoMing-Brother/legado-with-MD3")) }) {
                     Icon(
                         painter = painterResource(R.drawable.ic_github),
                         contentDescription = stringResource(R.string.about_open_github)
-                    )
-                }
-                FilledTonalIconButton(onClick = { onIntent(AboutIntent.CheckUpdate) }) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_import),
-                        contentDescription = stringResource(R.string.check_update)
                     )
                 }
             }
@@ -183,7 +180,7 @@ private fun MaterialAboutScreen(
                 SettingItemWithDivider {
                     SettingItem(
                         title = stringResource(R.string.contributors),
-                        onClick = { onIntent(AboutIntent.OpenUrl("https://github.com/HapeLee/legado-with-MD3")) }
+                        onClick = { onIntent(AboutIntent.OpenUrl("https://github.com/XiaoMing-Brother/legado-with-MD3")) }
                     )
                 }
                 SettingItemWithDivider {

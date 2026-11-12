@@ -25,6 +25,10 @@ class ThemePackageSettingsMappingTest {
             baseCardBorderColor = 0x11223344,
             baseCardBorderColorNight = 0x55667788,
             disableSplicedColumnGroupCornerRadius = true,
+            bottomBarLensRadius = 31.5f,
+            mochiTopBarLiquidGlass = false,
+            mochiScrollEdgeBlurEnabled = false,
+            miuixTopBarLiquidGlass = true,
             mainNavigationOrder = "bookshelf,home,my",
             showStatusBar = false,
             bgImageLight = "/light.jpg",
@@ -49,6 +53,10 @@ class ThemePackageSettingsMappingTest {
         assertEquals(0x11223344, values[PreferKey.baseCardBorderColor])
         assertEquals(0x55667788, values[PreferKey.baseCardBorderColorNight])
         assertEquals(true, values[PreferKey.disableSplicedColumnGroupCornerRadius])
+        assertEquals(31.5f, values[PreferKey.bottomBarLensRadius])
+        assertEquals(false, values[PreferKey.mochiTopBarLiquidGlass])
+        assertEquals(false, values[PreferKey.mochiScrollEdgeBlurEnabled])
+        assertEquals(true, values[PreferKey.miuixTopBarLiquidGlass])
         assertEquals("bookshelf,home,my", values[PreferKey.mainNavigationOrder])
         assertEquals(true, values[PreferKey.showStatusBar])
         assertEquals("/light.jpg", values[PreferKey.bgImage])

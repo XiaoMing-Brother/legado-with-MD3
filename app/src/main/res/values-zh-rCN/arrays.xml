@@ -190,6 +190,7 @@
     <string-array name="composeEngine">
         <item>Material Design</item>
         <item>Miuix</item>
+        <item>Mochi</item>
     </string-array>
 
     <string-array name="customMode">
@@ -252,4 +253,11 @@
     </string-array>
 
     <string name="all_version">所有版本</string>
+<string-array name="tabletInterface">
+        <item>自动</item>
+        <item>侧栏导航（空间足够时）</item>
+        <item>横向窗口使用侧栏</item>
+        <item>底部导航</item>
+    </string-array>
+
 </resources>

@@ -34,11 +34,11 @@ class ReadSettingsMappingTest {
     }
 
     @Test
-    fun `gateway 持久化映射覆盖 ReadSettings 全部 117 个字段`() {
+    fun `gateway 持久化映射覆盖 ReadSettings 全部 118 个字段`() {
         val actualKeys = ReadSettings().toGatewayPrefMap().keys
         val expectedKeys = ReadSettings().expectedGatewayPrefMap().keys
 
-        assertEquals(117, actualKeys.size)
+        assertEquals(118, actualKeys.size)
         assertEquals(expectedKeys, actualKeys)
     }
 
@@ -152,6 +152,7 @@ private fun readSettingsMappingSamples(): List<ReadSettings> {
         systemTypefaces = 23,
         paragraphBubblePackage = "sample-bubble",
         forceSoftwareParagraphBubble = true,
+        paragraphCommentHeightPercent = 70,
         preDownloadNum = 29,
         preDownloadNumPrev = 7,
         menuAlpha = 1001,
@@ -305,6 +306,7 @@ private fun ReadSettings.expectedGatewayPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.systemTypefaces to systemTypefaces,
     PreferKey.paragraphBubblePackage to paragraphBubblePackage,
     PreferKey.forceSoftwareParagraphBubble to forceSoftwareParagraphBubble,
+    PreferKey.paragraphCommentHeightPercent to paragraphCommentHeightPercent,
     PreferKey.preDownloadNum to preDownloadNum,
     PreferKey.preDownloadNumPrev to preDownloadNumPrev,
     PreferKey.prevKeys to prevKeys,
