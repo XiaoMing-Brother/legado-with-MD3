@@ -178,6 +178,10 @@ class BottomWebViewDialog() : BottomSheetDialogFragment(R.layout.dialog_web_view
         applyPreferredHeight()
         super.onStart()
         setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        // 弹层铺到导航栏下方：Material 的 BottomSheetBehavior 默认把手势 inset 当作
+        // 可停靠边界，会在底部留一条 16dp 左右的缝（评论弹窗看起来像安全区）。
+        // 忽略它之后网页内容直达屏幕底，由系统手势条叠在内容上。
+        behavior?.isGestureInsetBottomIgnored = true
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

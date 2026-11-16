@@ -144,6 +144,18 @@ fun OtherConfigScreen(
                         },
                     )
                 }
+
+                SearchableSetting("other.calligraphy_splash_text_title") {
+                    InputSettingItem(
+                        title = stringResource(R.string.calligraphy_splash_text_title),
+                        value = state.calligraphySplashText,
+                        defaultValue = "",
+                        description = stringResource(R.string.calligraphy_splash_text_summary),
+                        onConfirm = {
+                            onIntent(OtherConfigIntent.CalligraphySplashTextChanged(it))
+                        },
+                    )
+                }
             }
 
             SplicedColumnGroup(title = stringResource(R.string.read)) {

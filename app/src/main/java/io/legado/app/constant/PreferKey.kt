@@ -225,6 +225,7 @@ object PreferKey {
     const val calligraphySplashEnabled = "calligraphySplashEnabled"
     const val calligraphySplashOncePerDay = "calligraphySplashOncePerDay"
     const val calligraphySplashLastShownDay = "calligraphySplashLastShownDay"
+    const val calligraphySplashText = "calligraphySplashText"
     const val streamReadAloudAudio = "streamReadAloudAudio"
     const val pauseReadAloudWhilePhoneCalls = "pauseReadAloudWhilePhoneCalls"
     const val readAloudByMediaButton = "readAloudByMediaButton"

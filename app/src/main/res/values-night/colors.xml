@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- 开屏纸色/墨色：夜间深墨底 + 暖米白字，与 Compose 开屏背景同值 -->
+    <color name="calligraphy_splash_paper">#1E1A15</color>
+    <color name="calligraphy_splash_ink">#E8E2D8</color>
+    <color name="calligraphy_splash_seal">#D22A32</color>
+    <color name="calligraphy_splash_seal_carving">#1E1A15</color>
+
     <color name="gr_theme_primary">#B1D18A</color>
     <color name="gr_theme_onPrimary">#1F3701</color>
     <color name="gr_theme_primaryContainer">#354E16</color>

@@ -98,6 +98,8 @@ class OtherConfigViewModel(
                 updateOtherSetting { it.copy(calligraphySplashEnabled = intent.value) }
             is OtherConfigIntent.CalligraphySplashOncePerDayChanged ->
                 updateOtherSetting { it.copy(calligraphySplashOncePerDay = intent.value) }
+            is OtherConfigIntent.CalligraphySplashTextChanged ->
+                updateOtherSetting { it.copy(calligraphySplashText = intent.value) }
             is OtherConfigIntent.DefaultBookTreeUriChanged ->
                 updateOtherSetting { it.copy(defaultBookTreeUri = intent.value) }
             is OtherConfigIntent.AntiAliasChanged ->
@@ -355,6 +357,7 @@ private fun OtherSettings.toUiState(current: OtherConfigUiState): OtherConfigUiS
         defaultToRead = defaultToRead,
         calligraphySplashEnabled = calligraphySplashEnabled,
         calligraphySplashOncePerDay = calligraphySplashOncePerDay,
+        calligraphySplashText = calligraphySplashText,
 
         defaultBookTreeUri = defaultBookTreeUri,
         antiAlias = antiAlias,

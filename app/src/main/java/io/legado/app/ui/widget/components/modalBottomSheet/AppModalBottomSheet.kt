@@ -101,6 +101,8 @@ fun AppModalBottomSheet(
     contentPaddingEnabled: Boolean = true,
     sheetGesturesEnabled: Boolean = true,
     mochiLayout: MochiSheetLayout = MochiSheetLayout.HalfScreen,
+    /** 弹层最大高度占可用窗口高度的比例；内容高于此值时在弹层内部滚动。 */
+    maxHeightFraction: Float = 0.8f,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val colorScheme = LocalLegadoThemeColors.current.colorScheme
@@ -260,7 +262,7 @@ fun AppModalBottomSheet(
                 val density = LocalDensity.current
                 val maxHeight = with(density) {
                     val containerHeight = LocalWindowInfo.current.containerSize.height.toDp()
-                    containerHeight * 0.8f
+                    containerHeight * maxHeightFraction
                 }
 
                 MaterialExpressiveTheme(
@@ -387,6 +389,7 @@ fun <T> AppModalBottomSheet(
     contentWindowInsets: @Composable () -> WindowInsets = { BottomSheetDefaults.modalWindowInsets },
     sheetGesturesEnabled: Boolean = true,
     mochiLayout: MochiSheetLayout = MochiSheetLayout.HalfScreen,
+    maxHeightFraction: Float = 0.8f,
     content: @Composable ColumnScope.(T) -> Unit
 ) {
     var cachedData by remember { mutableStateOf(data) }
@@ -407,6 +410,7 @@ fun <T> AppModalBottomSheet(
         contentWindowInsets = contentWindowInsets,
         sheetGesturesEnabled = sheetGesturesEnabled,
         mochiLayout = mochiLayout,
+        maxHeightFraction = maxHeightFraction,
         content = {
             if (currentData != null) {
                 content(currentData)

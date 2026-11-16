@@ -189,19 +189,19 @@ KMP 任务名在模块实际创建后才存在；不要假装运行尚未定义�
   （`legado-<版本>-<abi>.apk`），R8 mapping 只上传一份 `mapping.txt`。旧的 `core`/`full`（3.26.23 起
   上游改称 `comic`）双包已删除，其内置的本地推理栈与模型无代码消费，属于死重；不要再引入按功能分包
   或扩展包。
-- **打包/发布前先确认签名**（清单见 `~/.android/legado-signing/README.md`）：本机只有
-  `legado-md3`（`~/.android/legado-md3-signing/`，CN=legado-md3，D9:25:55…），只能签 coexist/自测包；
-  线上 Release 由 CI 的 `secrets.SIGNING_KEY` 签名（CN=kudomaga，DD:C9:EB…），本机无私钥 → 要覆盖已装
-  正式版必须走 CI，不要在本地用 legado-md3 出“正式包”。`.github/workflows/legado.jks` 是 upstream
-  已公开的 `legado` key（93:A2:84…），**禁止用于发布**。
-- **签名与安装/打包（Agent 必问）**：用户要求**模拟器安装**、**USB 安装到真机**、**产出 APK/AAB**
-  （如 `assemble*`、`install*`）或说**「打包」**时，若未明确签名与安装场景，**必须先主动询问**使用哪一种
-  密钥/目标，不得静默默认。简要选项：
+- **本地打包默认用 lyc486 公开 key**（清单见 `~/.android/legado-signing/README.md`）：本地/自测/
+  coexist 打包与兼容 `io.legado.app` 等老包排查，**默认**使用 lyc486 公开 key——`gradle.properties`
+  的 `TEMP-SIGNING` 段把 `RELEASE_STORE_FILE` 指向 `lyc486-legado-public.jks`，本地构建无需每次询问。
+  **正式发布仍必须走 CI 的 `secrets.SIGNING_KEY`（CN=kudomaga，DD:C9:EB…）**；本机无私钥，要覆盖已装
+  正式版只能走 CI。lyc486 私钥已在公网公开（`.github/workflows/legado.jks`，93:A2:84…），
+  **仅限本地/自测，禁止用于正式发版**。
+- **签名与安装/打包**：本地模拟器安装、USB 真机调试、`assemble*`/`install*`/「打包」默认按上一条
+  使用 lyc486，不再逐次确认；**仅当目标是正式发布（覆盖已装线上版）时**必须确认走 CI kudomaga，
+  不得在本地用 lyc486 / legado-md3 出「正式包」。可用密钥：
   - **debug**：`debug.keystore`，日常开发、`installDebug`、模拟器/USB 调试安装。
-  - **legado-md3**：本机 Release/coexist 自测（`gradle.properties` 的 `RELEASE_STORE_FILE`）；无法覆盖
-    kudomaga 签的已装正式版。
+  - **legado-md3**：本机 Release/coexist 自测；无法覆盖 kudomaga 签的已装正式版。
   - **kudomaga**：GitHub Actions 正式发版（单包）；本机无私钥，需走 CI。
-  - **lyc486 公开 key**：仅兼容 `io.legado.app` 等老包排查，**禁止用于发布**。
+  - **lyc486 公开 key**：本地/自测/兼容老包排查的默认签名；**禁止用于正式发版**。
   同时确认 **单包 / `coexist`** 与 **debug / release** 变体；完整指纹与决策表见
   `~/.android/legado-signing/README.md`。
 

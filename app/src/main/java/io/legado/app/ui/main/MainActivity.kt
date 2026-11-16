@@ -1,6 +1,9 @@
 package io.legado.app.ui.main
 
 import android.Manifest
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
@@ -10,6 +13,8 @@ import android.text.format.DateUtils
 import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
+import android.view.View
+import android.view.animation.DecelerateInterpolator
 import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContentTransitionScope
@@ -162,6 +167,9 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
 
         /** 播放页收起后等待的时长：期间若重新展开（听书 ⇄ 朗读切换）就不还原本地系统栏状态。 */
         private const val SYSTEM_BARS_RESTORE_DELAY_MILLIS = 200L
+
+        /** 书法开屏首帧兜底超时：正常由覆盖层首帧回调放行，异常情况下也不至于卡住启动窗口。 */
+        private const val SPLASH_HOLD_TIMEOUT_MS = 1_200L
 
         private val startupUpdateCheckGate = ProcessStartupUpdateCheckGate()
 
@@ -432,7 +440,19 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen().apply {
+            // 启动窗口保持到诗句画出首帧：中间不再出现图标、白底或书架一闪
             setKeepOnScreenCondition { calligraphySplashActive.get() }
+            setOnExitAnimationListener { provider ->
+                val animator = ObjectAnimator.ofFloat(provider.view, View.ALPHA, 1f, 0f)
+                animator.interpolator = DecelerateInterpolator()
+                animator.duration = 280L
+                animator.addListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        provider.remove()
+                    }
+                })
+                animator.start()
+            }
         }
         shouldApplyDefaultToRead = savedInstanceState == null
         restoredReadBookRoute = savedInstanceState?.restoreReadBookRoute()
@@ -440,12 +460,24 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
         super.onCreate(savedInstanceState)
 
         val isColdStart = coldStartSplashPending.compareAndSet(true, false)
-        if (checkStartupRoute()) return
+        if (checkStartupRoute()) {
+            // 转交给别的 Activity 时不保留启动窗口，否则会一直停在纸色上
+            calligraphySplashActive.set(false)
+            return
+        }
         showCalligraphySplash = isColdStart && CalligraphySplashPolicy.shouldShow(
             otherSettingsGateway.currentSettings,
         )
-        // 书法欢迎屏用 Compose 全屏层展示，不占用系统 Splash 等待主界面整树组合完成。
-        calligraphySplashActive.set(false)
+        // 书法开屏用 Compose 全屏层绘制；系统启动窗口保持到该层画出首帧，
+        // 首帧之后才淡出，避免纸色垫底、诗句迟到。
+        if (showCalligraphySplash) {
+            lifecycleScope.launch {
+                delay(SPLASH_HOLD_TIMEOUT_MS)
+                calligraphySplashActive.set(false)
+            }
+        } else {
+            calligraphySplashActive.set(false)
+        }
         val shouldAutoCheckUpdate = startupUpdateCheckGate.consume(
             otherSettingsGateway.currentSettings.autoCheckUpdateOnStart
         )
@@ -551,6 +583,8 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
     override fun Content() {
         if (showCalligraphySplash) {
             CalligraphySplashOverlay(
+                text = otherSettingsGateway.currentSettings.calligraphySplashText,
+                onFirstFrame = { calligraphySplashActive.set(false) },
                 onFinished = {
                     lifecycleScope.launch {
                         CalligraphySplashPolicy.markShown(otherSettingsGateway)

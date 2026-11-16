@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#F8F2F2</color>
-    <color name="calligraphy_splash_paper">#F2EDE4</color>
+    <color name="calligraphy_splash_paper">#F7F8FA</color>
+    <!-- 开屏竖排文字色：日间墨色 / 夜间暖米白 -->
+    <color name="calligraphy_splash_ink">#2A241D</color>
+    <!-- 开屏落款印：朱红 -->
+    <color name="calligraphy_splash_seal">#C90A16</color>
+    <color name="calligraphy_splash_seal_carving">#F7F8FA</color>
     <color name="ic_launcher_bg_apricot">#F8F2F2</color>
     <color name="ic_launcher_bg_night">#14161C</color>
     <color name="ic_launcher_bg_dreambook">#E7DAF3</color>
