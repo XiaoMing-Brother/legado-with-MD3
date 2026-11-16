@@ -312,6 +312,7 @@ import io.legado.app.ui.config.otherConfig.OtherConfigViewModel
 import io.legado.app.ui.config.privateConfig.PrivateConfigViewModel
 import io.legado.app.ui.config.readConfig.ApplyReadSettingUseCase
 import io.legado.app.ui.config.readConfig.ReadConfigViewModel
+import io.legado.app.ui.config.readConfig.ReadThemePickerViewModel
 import io.legado.app.ui.config.themeConfig.ThemeConfigViewModel
 import io.legado.app.ui.config.themeManage.ThemeManageViewModel
 import io.legado.app.ui.config.translation.TranslationConfigViewModel
@@ -671,6 +672,7 @@ val appModule = module {
     viewModelOf(::CustomThemeViewModel)
     viewModelOf(::BubbleConfigViewModel)
     viewModelOf(::ReadConfigViewModel)
+    viewModelOf(::ReadThemePickerViewModel)
     viewModelOf(::CoverConfigViewModel)
     viewModelOf(::CoverAlbumManageViewModel)
     viewModelOf(::DownloadCacheConfigViewModel)

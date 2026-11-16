@@ -1909,6 +1909,15 @@
     <string name="calligraphy_splash_once_per_day_summary">After the splash is shown once each day, skip it until the next day</string>
     <string name="calligraphy_splash_text_title">Splash text</string>
     <string name="calligraphy_splash_text_summary">Shown vertically on the splash screen; line breaks split columns. Leave empty for the default verse.</string>
+    <string name="read_theme">Built-in Themes</string>
+    <string name="read_theme_summary">Day and night are chosen separately: tapping a theme applies it to the selected list only and leaves the other mode\'s background unchanged.</string>
+    <string name="read_theme_summary_title">About themes</string>
+    <string name="read_theme_day">Day themes</string>
+    <string name="read_theme_night">Night themes</string>
+    <string name="read_theme_download_count">%1$d downloads</string>
+    <string name="read_theme_saved_backgrounds">Saved reading backgrounds</string>
+    <string name="read_theme_in_use">In use</string>
+    <string name="read_theme_image_failed">Background color applied, but the background image failed to download.</string>
     <string name="onboarding_title_backup">Backup &amp; Restore</string>
     <string name="onboarding_title_book_folder">Book Folder</string>
     <string name="onboarding_title_theme">Theme Style</string>
@@ -2149,6 +2158,8 @@
     <string name="tts_paragraph_interval_summary">Current: %1$d ms. Pause between paragraphs during read-aloud.</string>
     <string name="show_swipe_animation">Enable Animation While Swiping</string>
     <string name="click_image_way">Image Tap Action</string>
+    <string name="image_night_mode">Illustration Night Treatment</string>
+    <string name="image_night_mode_summary">Applied to inline images only when the page background is dark</string>
     <string name="show_web_log">Output Logs</string>
     <string name="is_blur_progressive_enable">Enable Progressive Blur</string>
     <string name="top_bar_button_style">Top Bar Button Style</string>
@@ -4034,4 +4045,14 @@
     <string name="a11y_reorder_position">Position %1$d of %2$d</string>
     <string name="hyper_os4_components">HyperOS 4 components</string>
     <string name="hyper_os4_components_summary">Use the glass top app bar, tabs and dropdowns in the Miuix theme. Requires Android 13 and system blur.</string>
+    <string name="read_bg_palette">Pick Colors from Image</string>
+    <string name="read_bg_palette_summary">Apply text and accent colors extracted from the current background image.</string>
+    <string name="read_bg_builtin">Built-in backgrounds</string>
+    <string name="read_bg_builtin_summary">Tap to apply. No storage permission needed.</string>
+    <string name="font_delete_confirm">Delete “%1$s” from the app font folder?</string>
+    <string name="font_delete_failed">Failed to delete the font</string>
+    <string name="font_sample_text">Aa 123 永</string>
+    <string name="read_record_total_duration">Read for %1$s</string>
+    <string name="read_record_last_read">Last read %1$s</string>
+    <string name="read_bg_palette_failed">Set a background image first, or try another one.</string>
 </resources>

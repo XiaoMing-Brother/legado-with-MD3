@@ -46,6 +46,8 @@ data class ReadSettings(
     val selectText: Boolean = true,
     val noAnimScrollPage: Boolean = false,
     val clickImgWay: String = "2",
+    /** 深色页面上的插图处理：0 不处理 / 1 反转 / 2 降低亮度。 */
+    val imageNightMode: String = "0",
     val optimizeRender: Boolean = false,
     val disableReturnKey: Boolean = false,
     val expandTextMenu: Boolean = false,

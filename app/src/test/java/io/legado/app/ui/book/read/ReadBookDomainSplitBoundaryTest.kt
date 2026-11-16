@@ -117,7 +117,10 @@ class ReadBookDomainSplitBoundaryTest {
      * 行数只作粗棘轮：散落在 VM 的域内状态比总行数更能说明边界是否干净，各域另受
      * `域状态不回流进 ReadBookViewModel` 守卫约束。
      *
-     * 当前上限 2770：高亮规则支持白天/夜间两套颜色，`buildSheetConfig()` 投影表新增
+     * 当前上限 2835：合并上游 3.26.28 后恢复官方 AI 域接线（`ReadAiDelegate` 装配、
+     * 意图转发与宿主投影），按官方行数计入棘轮；另补回画布出站事件的单一入口
+     * `onReaderEvent`（+4）。旧拆分边界未回退。
+     * 回溯（上一档 2770）：高亮规则支持白天/夜间两套颜色，`buildSheetConfig()` 投影表新增
      * 规则弹层预览用的日/夜阅读底色两行（+2，派生值在
      * `ReadBookConfig.previewBackgroundColor`，一个字段一行没有逻辑可摘）与一行说明（+1）。
      * 回溯（上一档 2768）：朗读进度初值的快照捕获与身份组装已归还 `ReadAloudDelegate`，
@@ -181,14 +184,14 @@ class ReadBookDomainSplitBoundaryTest {
      * （TocViewModel 自持 flow）。
      */
     @Test
-    fun `ReadBookViewModel 不超过 2770 行`() {
+    fun `ReadBookViewModel 不超过 2835 行`() {
         val lineCount = mainSourceFile("io/legado/app/ui/book/read/ReadBookViewModel.kt")
             .readLines().size
         assertTrue(
-            "ReadBookViewModel 涨到了 $lineCount 行，超过上限 2770。\n" +
+            "ReadBookViewModel 涨到了 $lineCount 行，超过上限 2835。\n" +
                 "新功能请摘成 io/legado/app/ui/book/read/ 下的 XxxDelegate，" +
                 "并在本测试的 DOMAINS 里加一条边界。",
-            lineCount <= 2770,
+            lineCount <= 2835,
         )
     }
 

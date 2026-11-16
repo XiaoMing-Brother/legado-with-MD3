@@ -1,6 +1,9 @@
 package io.legado.app.ui.theme
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
@@ -11,6 +14,14 @@ import io.legado.app.ui.theme.LegadoTheme.composeEngine
 
 /** Space occupied by a host's bottom overlay, including its remaining system inset. */
 internal val LocalBottomOverlayPadding = compositionLocalOf { 0.dp }
+
+/**
+ * 主页面宿主不再给导航栏让出整条高度，页面把这段 inset 加进滚动内容的末尾留白，
+ * 让内容可以画到手势小横条下面，同时最后一项仍能滚到横条上方。
+ */
+@Composable
+fun mainPageBottomInset(): Dp =
+    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
 @Composable
 fun Modifier.adaptiveHorizontalPadding(): Modifier {

@@ -134,6 +134,40 @@ fun importFontFiles(context: Context, uris: List<Uri>): Int {
     return imported
 }
 
+/**
+ * 删除一个字体文件。
+ *
+ * 只允许删应用私有字体目录里的文件：配置的字体文件夹属于用户自己的存储，删除后
+ * 没有回收站，误删就是真删，所以那里只能取消选中，不能删。
+ *
+ * @return 删除是否成功；文件本来就不存在也算成功（幂等）
+ */
+fun deleteFont(context: Context, fontUri: Uri): Boolean {
+    val target = privateFontFile(context, fontUri) ?: return false
+    return runCatching {
+        !target.exists() || target.delete()
+    }.onFailure { AppLog.put("删除字体失败: $fontUri", it) }
+        .getOrDefault(false)
+}
+
+/** 是否属于应用私有字体目录（只有这里的字体允许删除）。 */
+fun isPrivateFont(context: Context, fontUri: Uri): Boolean = privateFontFile(context, fontUri) != null
+
+/**
+ * 把字体 uri 映射回私有目录里的文件；不在私有目录（用户自己的字体文件夹等）时返回 null。
+ *
+ * 只认 `file://`：私有目录的列表来自 `File.listFileDocs`，uri 一定是文件路径；
+ * `content://` 属于用户授权的文档，按名字回落到私有目录会在同名时删错文件。
+ */
+private fun privateFontFile(context: Context, fontUri: Uri): File? {
+    if (fontUri.isContentScheme()) return null
+    val dir = fontDir(context) ?: return null
+    val target = fontUri.path?.let { File(it) } ?: return null
+    return target.takeIf {
+        runCatching { it.parentFile?.canonicalPath == dir.canonicalPath }.getOrDefault(false)
+    }
+}
+
 private fun readFontFolder(context: Context, folderUri: Uri): FontFolderRead {
     if (!folderUri.isContentScheme()) {
         val dir = File(folderUri.path ?: folderUri.toString())

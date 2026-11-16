@@ -32,6 +32,18 @@
         <item name="android:layout" tools:ignore="PrivateResource">@layout/m3_alert_dialog</item>
     </style>
 
+    <!--
+        书源段评面板需要整页贴合屏幕底部。Material3 默认把系统导航栏高度加进
+        BottomSheet 的底部 padding；配置为无圆角/透明背景时，这段 padding 会露出下面的内容。
+    -->
+    <style name="ThemeOverlay.App.BottomSheetDialog" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/Widget.App.BottomSheet.Modal</item>
+    </style>
+
+    <style name="Widget.App.BottomSheet.Modal" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="paddingBottomSystemWindowInsets">false</item>
+    </style>
+
     <style name="Widget.MyApp.Chip.Assist" parent="Widget.Material3.Chip.Assist">
         <item name="chipBackgroundColor">@color/chip_background_selector</item>
         <item name="chipStrokeColor">@color/chip_stroke_selector</item>

@@ -31,8 +31,11 @@ internal fun isLocalMangaImage(path: String): Boolean =
 private val localMangaImageExtensions = setOf("jpg", "jpeg", "png", "webp", "gif", "avif", "bmp")
 
 /** Coil needs an explicit file authority separator to keep the path absolute. */
-internal fun File.toLocalMangaImageUrl(): String =
-    URI("file", "", absolutePath, null).toASCIIString()
+internal fun File.toLocalMangaImageUrl(): String {
+    val normalized = absolutePath.replace(File.separatorChar, '/')
+    val absolute = if (normalized.startsWith('/')) normalized else "/$normalized"
+    return URI("file", "", absolute, null).toASCIIString()
+}
 
 // A directory import has the image bit without the archive bit. Older CBZ records may have
 // neither bit, so keep the explicit comic extension as a fallback.
@@ -246,7 +249,9 @@ internal fun relativeMangaArchivePaths(entries: List<String>): List<String> {
         if (paths.all { it.startsWith(parent) }) break
         common = parent.parent
     }
-    return paths.map { (common?.relativize(it) ?: it).toString() }
+    return paths.map {
+        (common?.relativize(it) ?: it).toString().replace(File.separatorChar, '/')
+    }
 }
 
 internal fun <T> groupLocalMangaPages(

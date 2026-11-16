@@ -62,6 +62,7 @@ object LegacyReaderPaginationStyleFactory : KoinComponent {
             columnMode = ReaderColumnMode.fromPreference(settings.doubleHorizontalPage),
             isTablet = appCtx.isPad,
             isScroll = ReadBook.pageAnim() == 3,
+            isEInkMode = isEInkMode,
             textBottomJustify = settings.textBottomJustify,
             pageUnderline = ReadBookConfig.underline
                 .takeIf { it && ReadBook.book?.isImage != true }

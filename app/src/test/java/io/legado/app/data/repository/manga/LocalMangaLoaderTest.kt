@@ -16,6 +16,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.net.URI
 import java.nio.file.Files
+import java.nio.file.Paths
 
 class LocalMangaLoaderTest {
 
@@ -32,7 +33,7 @@ class LocalMangaLoaderTest {
             val url = LocalMangaLoader(cache).use { it.load(book, chapter).pages.single().imageUrl }
 
             assertTrue(url.startsWith("file:///"))
-            assertEquals(image.absolutePath, URI(url).path)
+            assertEquals(image.absolutePath, Paths.get(URI(url)).toFile().absolutePath)
         } finally {
             root.deleteRecursively()
             cache.deleteRecursively()

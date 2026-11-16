@@ -1,5 +1,6 @@
 package io.legado.app.help.book
 
+import io.legado.app.constant.AppPattern
 import io.legado.app.domain.model.TextProjection
 import io.legado.app.utils.replaceMapped
 import kotlin.math.max
@@ -18,6 +19,105 @@ object ContentHelp {
     fun reSegment(content: String, chapterName: String): String = reSegmentMapped(content, chapterName, null)
 
     internal fun reSegmentMapped(content: String, chapterName: String, projection: TextProjection?): String {
+        val protected = protectImageTags(content, projection)
+        val segmented = reSegmentProtected(protected.content, chapterName, projection)
+        return restoreImageTags(segmented, protected.tags, protected.placeholderStart, projection)
+    }
+
+    /**
+     * 书源段评图的 `src` 尾部直接拼接了 JSON 选项（如 `,{"style":"TEXT","click":"..."}`），
+     * 其中的引号没有 HTML 转义。若先做引号分段，这些引号会被替换成中文引号并插入换行，
+     * 图片动作随之丢失。这里先用单字符占位保护整段标签，分段结束后再原样换回。
+     */
+    internal fun protectImageTags(content: String, projection: TextProjection?): ProtectedImageTags {
+        val matches = AppPattern.imgPattern.findAll(content).toList()
+        if (matches.isEmpty()) {
+            return ProtectedImageTags(content, emptyList(), IMAGE_PLACEHOLDER_RANGES.first().first.toChar())
+        }
+        val placeholderStart = placeholderStartFor(content, matches.size)
+        val tags = ArrayList<String>(matches.size)
+        val builder = StringBuilder(content.length)
+        val edits = mutableListOf<TextProjection.Edit>()
+        var cursor = 0
+        for ((index, match) in matches.withIndex()) {
+            builder.append(content, cursor, match.range.first)
+            builder.append(imagePlaceholder(placeholderStart, index))
+            tags += match.value
+            if (projection != null) {
+                edits += TextProjection.Edit(match.range.first, match.range.last + 1, 1)
+            }
+            cursor = match.range.last + 1
+        }
+        builder.append(content, cursor, content.length)
+        if (projection != null) projection.replace(edits)
+        return ProtectedImageTags(builder.toString(), tags, placeholderStart)
+    }
+
+    internal fun restoreImageTags(
+        content: String,
+        tags: List<String>,
+        placeholderStart: Char,
+        projection: TextProjection?,
+    ): String {
+        if (tags.isEmpty()) return content
+        val builder = StringBuilder(content.length)
+        val edits = mutableListOf<TextProjection.Edit>()
+        for (index in content.indices) {
+            val char = content[index]
+            val tagIndex = char.code - placeholderStart.code
+            if (tagIndex in tags.indices) {
+                val tag = tags[tagIndex]
+                builder.append(tag)
+                if (projection != null) {
+                    edits += TextProjection.Edit(index, index + 1, tag.length)
+                }
+            } else {
+                builder.append(char)
+            }
+        }
+        if (projection != null) projection.replace(edits)
+        return builder.toString()
+    }
+
+    private fun imagePlaceholder(start: Char, index: Int): Char = (start.code + index).toChar()
+
+    /**
+     * 选一段正文里没出现过的连续字符做占位。用私用区字符会踩到「净化标点」类规则
+     * （它们常把 U+E000..U+F8FF 一起清掉，整张图随占位符消失）；这里优先用 CJK 扩展 A 的
+     * 生僻汉字，并跳过正文已出现的字符，保证还原时不会误伤原文。
+     */
+    private fun placeholderStartFor(content: String, count: Int): Char {
+        val present = content.toHashSet()
+        for (range in IMAGE_PLACEHOLDER_RANGES) {
+            val size = range.last - range.first + 1
+            if (size < count) continue
+            var offset = 0
+            while (offset <= size - count) {
+                var conflict = -1
+                for (i in 0 until count) {
+                    if ((range.first + offset + i).toChar() in present) {
+                        conflict = i
+                        break
+                    }
+                }
+                if (conflict < 0) return (range.first + offset).toChar()
+                offset += conflict + 1
+            }
+        }
+        error("单章图片数量超出段评占位上限")
+    }
+
+    internal data class ProtectedImageTags(
+        val content: String,
+        val tags: List<String>,
+        val placeholderStart: Char,
+    )
+
+    private fun reSegmentProtected(
+        content: String,
+        chapterName: String,
+        projection: TextProjection?,
+    ): String {
         var content1 = content
         val dict = makeDict(content1)
         val prepared = content1
@@ -658,6 +758,12 @@ object ContentHelp {
 
     //  限制字典的长度
     private const val WORD_MAX_LENGTH = 16
+    /** 图片占位候选区：优先生僻汉字，最后才回退到私用区。 */
+    private val IMAGE_PLACEHOLDER_RANGES = listOf(
+        0x3400..0x4DBF, // CJK 扩展 A
+        0x9FA6..0x9FCB, // CJK 统一表意文字尾部生僻字
+        0xE000..0xF8FF, // 私用区兜底
+    )
 
     private fun match(rule: String, chr: Char): Boolean {
         return rule.indexOf(chr) != -1

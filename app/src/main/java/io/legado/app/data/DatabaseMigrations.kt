@@ -563,6 +563,174 @@ object DatabaseMigrations {
         }
     }
 
+    /**
+     * 134 → 135：上游 3.26.28 的 135 新增了 AI 相关表，但本仓库先前发布的 134
+     * 与上游 134 版本号相同、schema 不同（本地 134 没有这些 AI 表）。Room 的自动
+     * 迁移只按两份 134/135 schema 的差量补列，无法给从本地 134 升级的库补表，开库
+     * 会报 “Migration didn't properly handle: ai_provider_profiles”。
+     *
+     * 这里在自动迁移之后补建缺失的表和索引；`IF NOT EXISTS` 保证从上游 134
+     * （本就带 AI 表）升级时也保持幂等。
+     */
+    class Migration_134_135 : AutoMigrationSpec {
+        override fun onPostMigrate(db: SupportSQLiteDatabase) {
+            ensureColumn(db, "highlightRules", "textColorNight", "INTEGER")
+            ensureColumn(db, "highlightRules", "bgColorNight", "INTEGER")
+            ensureColumn(db, "highlightRules", "borderColorNight", "INTEGER")
+            ensureColumn(db, "highlightRules", "underlineColorNight", "INTEGER")
+            ensureColumn(
+                db,
+                "read_aloud_audio_downloads",
+                "expectedSentenceCount",
+                "INTEGER",
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `ai_provider_profiles` (
+                    `id` TEXT NOT NULL, `name` TEXT NOT NULL, `protocol` TEXT NOT NULL,
+                    `baseUrl` TEXT NOT NULL, `modelsUrl` TEXT, `apiKey` TEXT NOT NULL,
+                    `authType` TEXT NOT NULL, `secretRef` TEXT, `headersJson` TEXT,
+                    `chatPath` TEXT, `responsesPath` TEXT, `messagesPath` TEXT,
+                    `modelsPath` TEXT, `customHeadersJson` TEXT, `enabled` INTEGER NOT NULL,
+                    `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `ai_model_profiles` (
+                    `id` TEXT NOT NULL, `providerId` TEXT NOT NULL, `displayName` TEXT NOT NULL,
+                    `modelId` TEXT NOT NULL, `contextWindow` INTEGER NOT NULL,
+                    `maxOutputTokens` INTEGER NOT NULL, `capabilities` TEXT NOT NULL,
+                    `defaultParamsJson` TEXT, `enabled` INTEGER NOT NULL,
+                    `sortNumber` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL,
+                    `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_ai_model_profiles_providerId` " +
+                    "ON `ai_model_profiles` (`providerId`)"
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `ai_task_presets` (
+                    `id` TEXT NOT NULL, `taskType` TEXT NOT NULL, `name` TEXT NOT NULL,
+                    `modelProfileId` TEXT NOT NULL, `promptTemplate` TEXT NOT NULL,
+                    `paramsJson` TEXT, `chunkPolicyJson` TEXT, `enabled` INTEGER NOT NULL,
+                    `isDefault` INTEGER NOT NULL, `sortNumber` INTEGER NOT NULL,
+                    `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_ai_task_presets_taskType` " +
+                    "ON `ai_task_presets` (`taskType`)"
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_ai_task_presets_modelProfileId` " +
+                    "ON `ai_task_presets` (`modelProfileId`)"
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `ai_artifacts` (
+                    `id` TEXT NOT NULL, `taskType` TEXT NOT NULL, `bookUrl` TEXT NOT NULL,
+                    `chapterIndex` INTEGER, `contentHash` TEXT NOT NULL,
+                    `promptHash` TEXT NOT NULL, `modelProfileId` TEXT NOT NULL,
+                    `status` INTEGER NOT NULL, `output` TEXT, `errorMessage` TEXT,
+                    `schemaVersion` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL,
+                    `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_ai_artifacts_bookUrl_chapterIndex_taskType` " +
+                    "ON `ai_artifacts` (`bookUrl`, `chapterIndex`, `taskType`)"
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_ai_artifacts_contentHash_promptHash_modelProfileId` " +
+                    "ON `ai_artifacts` (`contentHash`, `promptHash`, `modelProfileId`)"
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `ai_chat_conversations` (
+                    `id` TEXT NOT NULL, `title` TEXT NOT NULL,
+                    `reasoningLevel` TEXT NOT NULL, `modelProfileId` TEXT,
+                    `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `ai_chat_messages` (
+                    `id` TEXT NOT NULL, `conversationId` TEXT NOT NULL, `role` TEXT NOT NULL,
+                    `partsJson` TEXT NOT NULL, `createdAt` INTEGER NOT NULL,
+                    `branchIndex` INTEGER NOT NULL, `isSelected` INTEGER NOT NULL,
+                    `parentMessageId` TEXT, `thinkingDuration` INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_ai_chat_messages_conversationId_createdAt` " +
+                    "ON `ai_chat_messages` (`conversationId`, `createdAt`)"
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `ai_memory` (
+                    `conversationId` TEXT NOT NULL, `key` TEXT NOT NULL,
+                    `value` TEXT NOT NULL, `updatedAt` INTEGER NOT NULL,
+                    PRIMARY KEY(`conversationId`, `key`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_ai_memory_conversationId` " +
+                    "ON `ai_memory` (`conversationId`)"
+            )
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `ai_prompt_presets` (
+                    `id` TEXT NOT NULL, `taskType` TEXT NOT NULL, `name` TEXT NOT NULL,
+                    `instruction` TEXT NOT NULL, `enabled` INTEGER NOT NULL,
+                    `builtIn` INTEGER NOT NULL, `sortNumber` INTEGER NOT NULL,
+                    `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_ai_prompt_presets_taskType_enabled_sortNumber` " +
+                    "ON `ai_prompt_presets` (`taskType`, `enabled`, `sortNumber`)"
+            )
+        }
+
+        private fun ensureColumn(
+            db: SupportSQLiteDatabase,
+            table: String,
+            column: String,
+            type: String,
+        ) {
+            val exists = db.query("PRAGMA table_info(`$table`)").use { cursor ->
+                val nameAt = cursor.getColumnIndexOrThrow("name")
+                var found = false
+                while (cursor.moveToNext()) {
+                    if (cursor.getString(nameAt) == column) {
+                        found = true
+                        break
+                    }
+                }
+                found
+            }
+            if (!exists) {
+                db.execSQL("ALTER TABLE `$table` ADD COLUMN `$column` $type")
+            }
+        }
+    }
+
     private val migration_98_99 = object : Migration(98, 99) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL(

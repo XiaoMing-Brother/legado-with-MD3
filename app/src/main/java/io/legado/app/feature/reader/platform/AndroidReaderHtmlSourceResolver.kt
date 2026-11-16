@@ -31,7 +31,8 @@ import io.legado.app.feature.reader.core.source.ReaderInlineSourceStyle
 import org.jsoup.Jsoup
 
 object AndroidReaderHtmlSemanticTextResolver : ReaderHtmlSemanticTextResolver {
-    override fun resolve(html: String): String = parseReaderHtml(html).toString()
+    override fun resolve(html: String): String =
+        parseReaderHtml(normalizeInlineImageJson(html)).toString()
 }
 
 class AndroidReaderHtmlSourceResolver(
@@ -42,10 +43,11 @@ class AndroidReaderHtmlSourceResolver(
         html: String,
         chapterPosition: Int,
     ): List<ReaderHtmlParagraph> {
-        val spanned = parseReaderHtml(html)
+        val normalizedHtml = normalizeInlineImageJson(html)
+        val spanned = parseReaderHtml(normalizedHtml)
         // 不重写 HTML，以免改变正文空白和字符偏移。按出现顺序配对，重复 src 也有独立动作。
-        val imageActions = if (html.contains("data-legado-", ignoreCase = true)) {
-            Jsoup.parseBodyFragment(html).select("img").map { image ->
+        val imageActions = if (normalizedHtml.contains("data-legado-", ignoreCase = true)) {
+            Jsoup.parseBodyFragment(normalizedHtml).select("img").map { image ->
                 image.attr("data-legado-pclick").takeIf(String::isNotBlank)
                     ?: image.attr("data-legado-click").takeIf(String::isNotBlank)
             }
@@ -191,6 +193,71 @@ private fun Layout.Alignment.toReaderAlignment(): ReaderTextAlignment = when (th
     Layout.Alignment.ALIGN_CENTER -> ReaderTextAlignment.CENTER
     Layout.Alignment.ALIGN_OPPOSITE -> ReaderTextAlignment.END
     else -> ReaderTextAlignment.START
+}
+
+private val imageTagPattern = Regex("""<img\b[^>]*>""", RegexOption.IGNORE_CASE)
+private val srcAttributePattern = Regex("""\bsrc\s*=\s*""", RegexOption.IGNORE_CASE)
+
+/**
+ * 书源会把图片选项 JSON 原样拼在 `src` 后面；外层再用双引号时，JSON 里的引号会让
+ * `Html.fromHtml` 把 `src` 截断在 `,{`，段评气泡因此只剩显示文字而丢失 `click`。
+ * 只把该属性的外引号换成单引号，字符数不变，章节偏移仍与语义投影一致。
+ */
+internal fun normalizeInlineImageJson(html: String): String {
+    if (!html.contains(",{")) return html
+    return imageTagPattern.replace(html) { match ->
+        normalizeImageTag(match.value)
+    }
+}
+
+private fun normalizeImageTag(tag: String): String {
+    val srcMatch = srcAttributePattern.find(tag) ?: return tag
+    var cursor = srcMatch.range.last + 1
+    while (cursor < tag.length && tag[cursor].isWhitespace()) cursor++
+    if (cursor >= tag.length || tag[cursor] != '"') return tag
+    val openQuote = cursor
+    val contentStart = openQuote + 1
+    val optionStart = tag.indexOf(",{", contentStart)
+    if (optionStart < 0) return tag
+
+    var depth = 0
+    var inString = false
+    var escaped = false
+    var index = optionStart + 1
+    while (index < tag.length) {
+        val char = tag[index]
+        if (inString) {
+            when {
+                escaped -> escaped = false
+                char == '\\' -> escaped = true
+                char == '"' -> inString = false
+            }
+        } else {
+            when (char) {
+                '"' -> inString = true
+                '{' -> depth++
+                '}' -> {
+                    depth--
+                    if (depth == 0) {
+                        var closeQuote = index + 1
+                        while (closeQuote < tag.length && tag[closeQuote].isWhitespace()) {
+                            closeQuote++
+                        }
+                        if (closeQuote >= tag.length || tag[closeQuote] != '"') return tag
+                        return buildString(tag.length) {
+                            append(tag, 0, openQuote)
+                            append('\'')
+                            append(tag, contentStart, closeQuote)
+                            append('\'')
+                            append(tag, closeQuote + 1, tag.length)
+                        }
+                    }
+                }
+            }
+        }
+        index++
+    }
+    return tag
 }
 
 private fun parseReaderHtml(html: String): Spanned = html.parseAsHtml(

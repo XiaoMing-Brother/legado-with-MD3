@@ -24,6 +24,8 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import io.legado.app.ui.widget.components.image.cover.ShelfViewportOverlayClip
+import io.legado.app.ui.widget.components.image.cover.isBookshelfSharedCoverKey
 import io.legado.app.ui.widget.components.image.cover.sharedCoverSourceRadius
 
 /**
@@ -60,10 +62,21 @@ fun Modifier.readerSharedBounds(
     //（`PlayerMorphHost` 里对同一件事有同样的告诫）。
     val clipShape = remember(radiusState) { AnimatedCornerShape(radiusState::value) }
     // 裁剪框的曲线用播放器那一份临界阻尼弹簧：一次到位、不回弹，收尾是硬边而不是「弹一下」。
+    // 返回书架时还要把这块面裁到列表可见区域：overlay 画在整棵 SharedTransitionLayout 之上，
+    // 格子落在顶栏后面时正文会盖住顶栏，看起来就是动画层级错了。
+    // 只在收回的那一侧裁剪——打开书籍时 target 是 Visible，仍按整屏展开。
+    val readerScope = animatedVisibilityScope
     return this.then(with(sharedTransitionScope) {
+        val overlayClip = if (isBookshelfSharedCoverKey(sharedCoverKey)) {
+            ShelfViewportOverlayClip(clipShape) {
+                readerScope.transition.targetState != EnterExitState.Visible
+            }
+        } else {
+            OverlayClip(clipShape)
+        }
         Modifier.sharedBounds(
             sharedContentState = rememberSharedContentState(sharedCoverKey),
-            animatedVisibilityScope = animatedVisibilityScope,
+            animatedVisibilityScope = readerScope,
             // 进入只留很短的淡入：这块面要读起来是「不透明的板子」，600ms 淡入会一路透出书架，
             // 展开的就成了淡出的一张纸而不是一块板。
             enter = fadeIn(animationSpec = tween(140)),
@@ -74,7 +87,7 @@ fun Modifier.readerSharedBounds(
             boundsTransform = BoundsTransform { _, _ -> readerBoundsSpring },
             resizeMode = ResizeMode.scaleToBounds(ContentScale.None, Alignment.TopStart),
             zIndexInOverlay = 1f,
-            clipInOverlayDuringTransition = OverlayClip(clipShape),
+            clipInOverlayDuringTransition = overlayClip,
         )
     })
 }

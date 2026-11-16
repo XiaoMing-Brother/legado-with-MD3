@@ -765,6 +765,11 @@ class ReadBookViewModel(
 
     // --- MVI Intent Dispatcher ---
 
+    /** Track D：阅读器画布/控制器出站事件的单一入口。 */
+    fun onReaderEvent(event: ReaderEvent) {
+        ReaderEventIntentMapper.dispatch(event, ::onIntent)
+    }
+
     fun onIntent(intent: ReadBookIntent) {
         when (intent) {
             is ReadBookIntent.InitData -> {
@@ -780,11 +785,37 @@ class ReadBookViewModel(
             is ReadBookIntent.PrevPage -> ReadBook.moveToPrevPage()
             is ReadBookIntent.NextChapter -> ReadBook.moveToNextChapter(upContent = true)
             is ReadBookIntent.PrevChapter -> ReadBook.moveToPrevChapter(upContent = true, toLast = false)
+            is ReadBookIntent.ComposeTurnPage -> {
+                ReaderComposeChapterNavigator.advanceToChapter(
+                    targetChapterIndex = intent.targetChapterIndex,
+                    currentChapterIndex = { ReadBook.durChapterIndex },
+                    moveToNextChapter = {
+                        ReadBook.moveToNextChapter(upContent = false, upContentInPlace = false)
+                    },
+                    moveToPrevChapter = {
+                        ReadBook.moveToPrevChapter(
+                            upContent = false,
+                            toLast = true,
+                        )
+                    },
+                )
+            }
+            is ReadBookIntent.ToggleReaderReadAloud -> handleToggleReaderReadAloud(intent)
+            is ReadBookIntent.ToggleReadAloudPlayback -> {
+                if (BaseReadAloudService.isPlay()) {
+                    ReadAloud.pause(context)
+                } else {
+                    ReadAloud.resume(context)
+                }
+            }
             is ReadBookIntent.OpenChapter -> {
                 ReadBook.saveReadingAnchorBeforeChapterJump(intent.index, intent.pos)
                 openChapter(intent.index, intent.pos)
             }
             is ReadBookIntent.SkipToPage -> ReadBook.skipToPage(intent.pageIndex)
+            is ReadBookIntent.SetParagraphCommentHeight -> viewModelScope.launch {
+                readSettingsRepository.update { it.copy(paragraphCommentHeightPercent = intent.percent) }
+            }
             is ReadBookIntent.ToggleMenu -> {
                 if (_uiState.value.menuVisible) {
                     _uiState.update {
@@ -1492,6 +1523,9 @@ class ReadBookViewModel(
             is ReadBookIntent.DeleteCurrentReadStyleConfig ->
                 if (styleDelegate.deleteCurrentStyle()) dismissActiveSheet()
             is ReadBookIntent.ApplyPresetTheme -> styleDelegate.applyPresetTheme(intent.presetIndex)
+            is ReadBookIntent.OpenReadThemePicker -> styleDelegate.openReadThemePicker()
+            is ReadBookIntent.ApplyReadTheme -> styleDelegate.applyReadTheme(intent.themeId, intent.target)
+            is ReadBookIntent.ApplyBackgroundPalette -> styleDelegate.applyBackgroundPalette()
             is ReadBookIntent.MoveReadStyleConfig -> styleDelegate.moveStyle(intent.from, intent.to)
             is ReadBookIntent.DeleteReadStyleConfigs -> styleDelegate.deleteStylesAt(intent.indices)
             is ReadBookIntent.MoveReadStylesToEdge -> styleDelegate.moveStylesToEdge(intent.indices, intent.toTop)
@@ -2035,6 +2069,10 @@ class ReadBookViewModel(
         footerFont = ReadBookConfig.footerFont,
         headerFontSize = ReadBookConfig.headerFontSize,
         footerFontSize = ReadBookConfig.footerFontSize,
+        headerBold = ReadBookConfig.headerBold,
+        footerBold = ReadBookConfig.footerBold,
+        headerItalic = ReadBookConfig.headerItalic,
+        footerItalic = ReadBookConfig.footerItalic,
         applyHeaderStyle = ReadBookConfig.applyHeaderStyle,
         tipDividerColor = ReadBookConfig.tipDividerColor,
         headerMode = ReadBookConfig.headerMode,
@@ -2709,6 +2747,31 @@ class ReadBookViewModel(
             )
         }
         _effects.tryEmit(ReadBookEffect.ExitSearch)
+    }
+
+    private fun handleToggleReaderReadAloud(intent: ReadBookIntent.ToggleReaderReadAloud) {
+        _effects.tryEmit(ReadBookEffect.StopAutoPage)
+        when {
+            !ReadBook.isCurrentBookReadAloud -> {
+                if (!readAloudFromVisibleStart(intent.visibleChapterIndex, intent.visibleChapterPosition)) {
+                    ReadBook.readAloud()
+                }
+            }
+            BaseReadAloudService.pause -> {
+                val restarted = intent.pageChangedSinceToggle &&
+                    readAloudFromVisibleStart(intent.visibleChapterIndex, intent.visibleChapterPosition)
+                if (!restarted) ReadAloud.resume(context)
+            }
+            else -> ReadAloud.pause(context)
+        }
+    }
+
+    private fun readAloudFromVisibleStart(chapterIndex: Int?, chapterPosition: Int?): Boolean {
+        if (chapterIndex == null || chapterPosition == null) return false
+        if (chapterIndex != ReadBook.durChapterIndex) return false
+        ReadBook.updateReadingPosition(chapterPosition)
+        ReadBook.readAloud(chapterPosition = chapterPosition)
+        return true
     }
 
     private fun navigateSearchResultByOffset(offset: Int) {

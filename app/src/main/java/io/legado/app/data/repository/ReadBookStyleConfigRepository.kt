@@ -13,9 +13,22 @@ import io.legado.app.domain.gateway.ReadStyleStringKey
 import io.legado.app.domain.model.settings.READ_STYLE_PRESET_COUNT
 import io.legado.app.domain.model.settings.ReadStyleItem
 import io.legado.app.domain.model.settings.ReadStyleState
+import io.legado.app.domain.model.settings.ReadBackgroundPalette
+import io.legado.app.domain.model.settings.ReadThemeNightPalette
+import io.legado.app.domain.model.settings.ReadThemePreset
+import io.legado.app.domain.model.settings.ReadThemeTarget
+import io.legado.app.domain.model.settings.deriveNightTextPalette
+import io.legado.app.domain.model.settings.isDarkBackgroundColor
+import io.legado.app.domain.model.settings.parseArgbColor
+import io.legado.app.domain.model.settings.toArgbHex
+import io.legado.app.domain.model.settings.themeMipmapUrlCandidates
+import io.legado.app.domain.model.settings.toStyle
 import io.legado.app.help.DefaultData
 import io.legado.app.help.config.AppConfigStore
 import io.legado.app.help.config.ReadBookConfig
+import io.legado.app.help.config.ReadStyleResolver
+import io.legado.app.help.http.newCallResponse
+import io.legado.app.help.http.okHttpClient
 import io.legado.app.utils.GSON
 import io.legado.app.utils.fromJsonObject
 import kotlinx.coroutines.CancellationException
@@ -27,6 +40,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import splitties.init.appCtx
 import java.io.InputStream
 import java.util.concurrent.atomic.AtomicLong
@@ -78,8 +92,14 @@ class ReadBookStyleConfigRepository(
             is ReadStyleMutation.BooleanValue -> updateBoolean(mutation.key, mutation.value)
             is ReadStyleMutation.StringValue -> updateString(mutation.key, mutation.value)
             is ReadStyleMutation.ColorValue -> updateColor(mutation.key, mutation.value)
-            is ReadStyleMutation.Background ->
-                mutateCurrentStyle { it.withCurBg(mutation.type, mutation.value) }
+            is ReadStyleMutation.Background -> mutateCurrentStyle {
+                val changed = it.withCurBg(mutation.type, mutation.value)
+                when (ReadStyleResolver.currentMode()) {
+                    ReadStyleResolver.ReadStyleMode.EInk -> changed
+                    ReadStyleResolver.ReadStyleMode.Night -> changed.copy(readThemeIdNight = null)
+                    ReadStyleResolver.ReadStyleMode.Day -> changed.copy(readThemeIdDay = null)
+                }
+            }
         }
         publishState()
     }
@@ -96,6 +116,73 @@ class ReadBookStyleConfigRepository(
         ReadBookConfig.durConfig = copy
         save()
         return true
+    }
+
+    /**
+     * 应用内置主题。
+     *
+     * **只改 [target] 那一份背景**：日间写主题底色（并同步墨水屏），夜间写
+     * [ReadThemeStyle.nightBackground]，另一模式保持用户原来的选择。夜间列表只列深色主题，
+     * 派生底色只用于「手动把浅色主题当夜间主题」的兜底。状态栏图标按各自底色反色，与背景
+     * 一起走 [mutateCurrentStyle]。
+     *
+     * 字体颜色、字号、标题/页眉页脚颜色、边距与样式名都是用户自己的设置，应用主题时保持不变；
+     * 也不碰共享排版那份（背景与状态栏图标本来就不属于共享排版）。
+     */
+    override fun applyReadTheme(themeId: Int, target: ReadThemeTarget): Boolean {
+        val theme = DefaultData.readThemes.firstOrNull { it.id == themeId } ?: return false
+        val style = theme.toStyle()
+        mutateCurrentStyle {
+            when (target) {
+                ReadThemeTarget.Day -> it.copy(
+                    bgStr = style.background,
+                    bgStrEInk = style.background,
+                    bgType = READ_THEME_BG_TYPE,
+                    bgTypeEInk = READ_THEME_BG_TYPE,
+                    readThemeIdDay = theme.id,
+                    darkStatusIcon = style.darkStatusIcon,
+                    darkStatusIconEInk = style.darkStatusIcon,
+                )
+
+                ReadThemeTarget.Night -> it.copy(
+                    bgStrNight = style.nightBackground,
+                    bgTypeNight = READ_THEME_BG_TYPE,
+                    readThemeIdNight = theme.id,
+                    darkStatusIconNight = style.darkStatusIconNight,
+                )
+            }
+        }
+        save()
+        return true
+    }
+
+    /**
+     * 下载主题背景图并落盘到 bg 目录。
+     *
+     * 图床在源数据里多为明文 http，先试 [themeMipmapUrlCandidates] 的 https 版本，失败再回落
+     * 原始地址；全都失败返回 null（调用方只提示一次，配色不回滚）。
+     */
+    override suspend fun downloadReadThemeBackground(theme: ReadThemePreset): String? {
+        val url = theme.mipmap ?: return null
+        return withContext(Dispatchers.IO) {
+            for (candidate in themeMipmapUrlCandidates(url)) {
+                val path = runCatching {
+                    okHttpClient.newCallResponse { url(candidate) }.use { response ->
+                        check(response.isSuccessful) { "HTTP ${response.code}" }
+                        // 传候选地址本身做文件名：它末段本来就是图床给的文件名（含扩展名），
+                        // saveBackgroundImage 会取 name 并追加时间戳，不会互相覆盖。
+                        readStyleRepository.saveBackgroundImage(response.body.byteStream(), candidate)
+                    }
+                }.getOrElse { error ->
+                    // 取消/超时不是「这个地址不行」，不能顺着候选列表继续重试，
+                    // 也不能变成 null 让调用方提示「下载失败」。
+                    if (error is CancellationException) throw error
+                    null
+                }
+                if (path != null) return@withContext path
+            }
+            null
+        }
     }
 
     override fun addStyle(): Int {
@@ -287,16 +374,110 @@ class ReadBookStyleConfigRepository(
         readStyleRepository.saveBackgroundImage(inputStream, displayName)
 
     override fun setCurrentBackgroundImage(path: String) {
-        mutateCurrentStyle { it.withCurBg(2, path) }
+        mutateCurrentStyle {
+            it.withCurBg(2, path).let { changed ->
+                when (ReadStyleResolver.currentMode()) {
+                    ReadStyleResolver.ReadStyleMode.EInk -> changed
+                    ReadStyleResolver.ReadStyleMode.Night -> changed.copy(readThemeIdNight = null)
+                    ReadStyleResolver.ReadStyleMode.Day -> changed.copy(readThemeIdDay = null)
+                }
+            }
+        }
         save()
+    }
+
+    /**
+     * 主题自带背景图落盘后写入排版配置。
+     *
+     * [target] 决定写哪份：日间写白天与墨水屏，夜间只写 `bgStrNight`——两个列表各自独立，
+     * 选日间主题的图不会出现在夜间，反之亦然。与 [setCurrentBackgroundImage] 的区别在写入范围。
+     */
+    override fun setReadThemeBackgroundImage(path: String, target: ReadThemeTarget) {
+        mutateCurrentStyle {
+            when (target) {
+                ReadThemeTarget.Day -> it.copy(
+                    bgType = READ_THEME_BG_TYPE_IMAGE,
+                    bgStr = path,
+                    bgTypeEInk = READ_THEME_BG_TYPE_IMAGE,
+                    bgStrEInk = path,
+                )
+
+                ReadThemeTarget.Night -> it.copy(
+                    bgTypeNight = READ_THEME_BG_TYPE_IMAGE,
+                    bgStrNight = path,
+                )
+            }
+        }
+        save()
+    }
+
+    /**
+     * 从背景图提取的配色写进**当前样式**。
+     *
+     * [mutateCurrentStyle] 而不是 `mutateEffective`：这是「给这张图配一套色」，属于样式自己的
+     * 背景相关项；共享排版开着时不覆盖共享那份（共享排版不拥有背景图）。
+     *
+     * 白天与墨水屏写图片取色；夜间按夜间槽位自己的底色重算：主题派生/用户配置的夜间底通常是
+     * 纯色深底（见 [applyReadTheme]），把白天亮图上的深色文字原样压上去会糊成一片。夜间也用图时
+     * 保持三种模式同一套——那张图就是取色的对象。
+     *
+     * 页眉页脚色与 [applyReadTheme] 一样走 [mutateEffective]：这两项在 ReadBookConfig 里是
+     * 「生效项」，落点必须与 [ReadStyleColorKey.TipHeader] 保持一致，否则共享排版开着时改的是
+     * 另一份。状态栏图标（`darkStatusIcon*`）按样式走 [mutateCurrentStyle]。
+     */
+    override fun applyReadBackgroundPalette(palette: ReadBackgroundPalette) {
+        val night = configStore.configAt(ReadBookConfig.styleSelect).nightTextPaletteFor(palette)
+        val nightContent = night?.contentArgb ?: palette.contentArgb
+        val nightSecondary = night?.secondaryArgb ?: palette.secondaryArgb
+        val nightControl = night?.controlArgb ?: palette.controlArgb
+        val nightStatusIcon = night?.backgroundArgb
+            ?.let { !isDarkBackgroundColor(it.toArgbHex()) }
+            ?: palette.darkStatusIcon
+        mutateCurrentStyle { config ->
+            config
+                .withCurTextColor(palette.contentArgb)
+                .withCurTextAccentColor(palette.controlArgb)
+                .copy(
+                    textColorNight = nightContent.toArgbHex(),
+                    textColorEInk = palette.contentArgb.toArgbHex(),
+                    textAccentColorNight = nightControl.toArgbHex(),
+                    textAccentColorEInk = palette.controlArgb.toArgbHex(),
+                    darkStatusIcon = palette.darkStatusIcon,
+                    darkStatusIconNight = nightStatusIcon,
+                    darkStatusIconEInk = palette.darkStatusIcon,
+                )
+        }
+        mutateEffective {
+            it.copy(
+                tipHeaderColor = palette.secondaryArgb,
+                tipHeaderColorNight = nightSecondary,
+                tipFooterColor = palette.secondaryArgb,
+                tipFooterColorNight = nightSecondary,
+            )
+        }
+        save()
+    }
+
+    /** 夜间是纯色底时按这个底反推文字色；夜间用图（或颜色解析失败）时沿用图片取色。 */
+    private fun ReadBookConfig.Config.nightTextPaletteFor(
+        palette: ReadBackgroundPalette,
+    ): ReadThemeNightPalette? {
+        if (bgTypeNight != 0) return null
+        val nightBackground = parseArgbColor(bgStrNight) ?: return null
+        return deriveNightTextPalette(
+            backgroundArgb = nightBackground,
+            contentArgb = palette.contentArgb,
+            secondaryArgb = palette.secondaryArgb,
+            controlArgb = palette.controlArgb,
+        )
     }
 
     override fun setCurrentBackgroundImageForMode(path: String, isNight: Boolean) {
         mutateCurrentStyle {
             if (isNight) {
-                it.copy(bgTypeNight = 2, bgStrNight = path)
+                it.copy(bgTypeNight = 2, bgStrNight = path, readThemeIdNight = null)
             } else {
-                it.copy(bgType = 2, bgStr = path)
+                it.copy(bgType = 2, bgStr = path, readThemeIdDay = null)
             }
         }
         save()
@@ -369,6 +550,8 @@ class ReadBookStyleConfigRepository(
             ReadStyleIntKey.TipFooterRight -> mutateEffective { it.copy(tipFooterRight = value) }
             ReadStyleIntKey.HeaderFontSize -> mutateEffective { it.copy(headerFontSize = value) }
             ReadStyleIntKey.FooterFontSize -> mutateEffective { it.copy(footerFontSize = value) }
+            ReadStyleIntKey.HeaderBold -> mutateEffective { it.copy(headerBold = value) }
+            ReadStyleIntKey.FooterBold -> mutateEffective { it.copy(footerBold = value) }
             ReadStyleIntKey.PageAnim -> mutateEffective { it.withCurPageAnim(value) }
             ReadStyleIntKey.PageAnimSpeed -> mutateEffective { it.withPageAnimSpeed(value) }
             ReadStyleIntKey.UnderlineHeight -> mutateEffective { it.copy(underlineHeight = value) }
@@ -424,6 +607,8 @@ class ReadBookStyleConfigRepository(
             ReadStyleBooleanKey.ShowFooterLine -> mutateEffective { it.copy(showFooterLine = value) }
             ReadStyleBooleanKey.ApplyHeaderStyle ->
                 mutateEffective { it.copy(applyHeaderStyle = value) }
+            ReadStyleBooleanKey.HeaderItalic -> mutateEffective { it.copy(headerItalic = value) }
+            ReadStyleBooleanKey.FooterItalic -> mutateEffective { it.copy(footerItalic = value) }
             ReadStyleBooleanKey.StatusIconDark ->
                 mutateCurrentStyle { it.withCurStatusIconDark(value) }
         }
@@ -449,8 +634,12 @@ class ReadBookStyleConfigRepository(
                 mutateEffective { it.copy(customTipFooterMiddle = value) }
             ReadStyleStringKey.CustomTipFooterRight ->
                 mutateEffective { it.copy(customTipFooterRight = value) }
-            ReadStyleStringKey.BgStr -> mutateCurrentStyle { it.copy(bgStr = value) }
-            ReadStyleStringKey.BgStrNight -> mutateCurrentStyle { it.copy(bgStrNight = value) }
+            ReadStyleStringKey.BgStr -> mutateCurrentStyle {
+                it.copy(bgStr = value, readThemeIdDay = null)
+            }
+            ReadStyleStringKey.BgStrNight -> mutateCurrentStyle {
+                it.copy(bgStrNight = value, readThemeIdNight = null)
+            }
             ReadStyleStringKey.BgStrEInk -> mutateCurrentStyle { it.copy(bgStrEInk = value) }
             ReadStyleStringKey.StyleName -> mutateCurrentStyle { it.copy(name = value) }
         }
@@ -486,6 +675,8 @@ class ReadBookStyleConfigRepository(
                 bgValueNight = config.bgStrNight,
                 bgTypeEInk = config.bgTypeEInk,
                 bgValueEInk = config.bgStrEInk,
+                readThemeIdDay = config.readThemeIdDay,
+                readThemeIdNight = config.readThemeIdNight,
                 textColor = config.getTextColor().toColorIntOrDefault(),
                 textColorNight = config.getTextColorNight().toColorIntOrDefault(),
                 textColorEInk = config.getTextColorEInk().toColorIntOrDefault(),
@@ -498,6 +689,12 @@ class ReadBookStyleConfigRepository(
     private fun String.toColorIntOrDefault(): Int =
         runCatching { android.graphics.Color.parseColor(this) }.getOrDefault(0)
 }
+
+/** 内置主题先只用配色：背景图由下载流程异步补上，这里先用颜色（0）占位。 */
+private const val READ_THEME_BG_TYPE = 0
+
+/** `ReadBookConfig.Config.bgType` 里的「其它图片」，值来自本地文件路径。 */
+private const val READ_THEME_BG_TYPE_IMAGE = 2
 
 internal data class ReadStyleSaveSnapshot(
     val configs: List<ReadBookConfig.Config>,

@@ -2,6 +2,7 @@ package io.legado.app.ui.widget.components.privacy
 
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.fadeIn
@@ -39,6 +40,7 @@ import io.legado.app.ui.widget.components.button.PrimaryButton
 import io.legado.app.ui.widget.components.icon.AppIcon
 import io.legado.app.ui.widget.components.image.cover.BookCoverImage
 import io.legado.app.ui.widget.components.image.cover.rememberSharedCoverTransitionShape
+import io.legado.app.ui.widget.components.image.cover.ShelfViewportOverlayClip
 import io.legado.app.ui.widget.components.text.AppText
 
 /** 运行时模糊（`Modifier.blur`）从 API 31 起才生效，低版本是 no-op */
@@ -115,6 +117,8 @@ fun PrivateLockedCover(
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     onImageAspectRatio: ((Float) -> Unit)? = null,
+    /** 书架卡片专用：收回列表时把共享元素裁到列表可见区域（顶栏以下） */
+    clipInOverlayToShelfViewport: Boolean = false,
 ) {
     val shape = rememberSharedCoverTransitionShape(
         sharedCoverKey = sharedCoverKey,
@@ -131,11 +135,19 @@ fun PrivateLockedCover(
             }
             .then(
                 with(sharedTransitionScope) {
-                    if (this != null && animatedVisibilityScope != null && sharedCoverKey != null) {
+                    val coverScope = animatedVisibilityScope
+                    if (this != null && coverScope != null && sharedCoverKey != null) {
+                        val overlayClip = if (clipInOverlayToShelfViewport) {
+                            ShelfViewportOverlayClip(shape) {
+                                coverScope.transition.targetState == EnterExitState.Visible
+                            }
+                        } else {
+                            OverlayClip(shape)
+                        }
                         Modifier.sharedBounds(
                             sharedContentState = rememberSharedContentState(sharedCoverKey),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            clipInOverlayDuringTransition = OverlayClip(shape)
+                            animatedVisibilityScope = coverScope,
+                            clipInOverlayDuringTransition = overlayClip
                         )
                     } else {
                         Modifier

@@ -15,10 +15,8 @@ import androidx.compose.material.icons.filled.Update
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import io.legado.app.core.ui.morph.BookCoverMorphAnchors
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.widget.components.card.TextCard
 import io.legado.app.ui.widget.components.progressIndicator.AppLinearProgressIndicator
@@ -48,6 +46,8 @@ fun BookshelfCover(
     contentBlur: Dp = 0.dp,
     /** 盖在封面上的叠加层（遮罩/点阵/锁标），必须渲染在共享节点内部 */
     overlayContent: (@Composable BoxScope.() -> Unit)? = null,
+    /** 书架卡片专用：收回列表时把共享元素裁到列表可见区域（顶栏以下） */
+    clipInOverlayToShelfViewport: Boolean = false,
 ) {
     Box(modifier = modifier) {
         CoilBookCover(
@@ -68,6 +68,7 @@ fun BookshelfCover(
             badgeText = badgeText,
             showBadgeDot = showBadgeDot,
             leftBottomText = leftBottomText,
+            clipInOverlayToShelfViewport = clipInOverlayToShelfViewport,
         )
 
         // 使用 animatedVisibilityScope 的 animateEnterExit 为叠加层添加同步动画
@@ -90,11 +91,7 @@ fun BookshelfCover(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(2.dp)
-                    .then(overlayModifier)
-                    .graphicsLayer {
-                        alpha =
-                            if (BookCoverMorphAnchors.isOriginCoverHidden(sharedCoverKey)) 0f else 1f
-                    },
+                    .then(overlayModifier),
                 cornerRadius = 4.dp,
                 horizontalPadding = 4.dp,
                 verticalPadding = 2.dp
@@ -109,11 +106,7 @@ fun BookshelfCover(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(2.dp)
-                    .then(overlayModifier)
-                    .graphicsLayer {
-                        alpha =
-                            if (BookCoverMorphAnchors.isOriginCoverHidden(sharedCoverKey)) 0f else 1f
-                    },
+                    .then(overlayModifier),
                 cornerRadius = 4.dp,
                 horizontalPadding = 4.dp,
                 verticalPadding = 2.dp
@@ -128,10 +121,6 @@ fun BookshelfCover(
                     .padding(horizontal = 4.dp, vertical = 6.dp)
                     .height(3.dp)
                     .then(overlayModifier)
-                    .graphicsLayer {
-                        alpha =
-                            if (BookCoverMorphAnchors.isOriginCoverHidden(sharedCoverKey)) 0f else 1f
-                    }
             )
         }
     }

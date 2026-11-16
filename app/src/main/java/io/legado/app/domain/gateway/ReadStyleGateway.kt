@@ -1,6 +1,9 @@
 package io.legado.app.domain.gateway
 
 import io.legado.app.domain.model.settings.ReadStyleState
+import io.legado.app.domain.model.settings.ReadBackgroundPalette
+import io.legado.app.domain.model.settings.ReadThemePreset
+import io.legado.app.domain.model.settings.ReadThemeTarget
 import kotlinx.coroutines.flow.StateFlow
 import java.io.InputStream
 
@@ -25,6 +28,46 @@ interface ReadStyleGateway {
      */
     fun clearMissingTextFont()
     fun applyPreset(index: Int): Boolean
+
+    /**
+     * 应用一个内置阅读主题（清墨 LightInk 主题商店快照，见 `assets/defaultData/readThemes.json`）。
+     *
+     * **只写 [target] 那份底色与状态栏图标**：日间写 `bgStr`（并同步墨水屏），夜间写
+     * `bgStrNight`，另一模式保持不动。字体颜色、字号、页边距属于用户排版设置，应用主题时不得覆盖。
+     * 返回 false 表示主题 id 不存在。主题自带背景图时这里**只**写背景色——图片由
+     * [downloadReadThemeBackground] 异步落盘后再经 [setReadThemeBackgroundImage] 补上，
+     * 背景色先一步生效，不等下载。
+     */
+    fun applyReadTheme(themeId: Int, target: ReadThemeTarget): Boolean
+
+    /**
+     * 把主题背景图下载到本地 bg 目录，返回绝对路径；全部候选地址都失败时返回 null。
+     *
+     * 纯下载，不碰排版配置——写配置由 [setReadThemeBackgroundImage] 负责，两步分开
+     * 才能保证下载失败时配色照旧生效。
+     *
+     * 主题商店的图床在数据里多为 `http://`，候选顺序见 `themeMipmapUrlCandidates`。
+     */
+    suspend fun downloadReadThemeBackground(theme: ReadThemePreset): String?
+
+    /**
+     * 把已落盘的主题背景图写进排版配置并落盘一次。
+     *
+     * [target] 决定写哪份：日间写白天与墨水屏，夜间只写 `bgStrNight`，另一模式保持不动。
+     * 与 [setCurrentBackgroundImage] 的区别仅在写入范围。
+     */
+    fun setReadThemeBackgroundImage(path: String, target: ReadThemeTarget)
+
+    /**
+     * 把从背景图提取出来的一套配色写进**当前样式**（清墨：「主题编辑器会根据图片提取出一套配色
+     * 便于快捷搭配」）。
+     *
+     * 只改文字相关项：底色仍由背景图提供（[ReadBackgroundPalette.backgroundArgb] 仅用于判定状态栏
+     * 图标明暗）。白天与墨水屏写图片取色；夜间槽位是纯色底时按该底色重新反推文字色，避免白天亮图
+     * 取出的深色文字压在深色夜间底上看不清。夜间也用这张图时保持三种模式同一套配色。
+     */
+    fun applyReadBackgroundPalette(palette: ReadBackgroundPalette)
+
     fun addStyle(): Int
     fun deleteCurrentStyle(): Boolean
 

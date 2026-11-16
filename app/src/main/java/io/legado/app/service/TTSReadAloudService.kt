@@ -13,7 +13,6 @@ import io.legado.app.R
 import io.legado.app.constant.AppConst
 import io.legado.app.constant.AppLog
 import io.legado.app.constant.IntentAction
-import io.legado.app.domain.gateway.ReadAloudSettingsGateway
 import io.legado.app.domain.model.readaloud.ReadAloudPlaybackCursor
 import io.legado.app.domain.model.readaloud.ReadAloudVoice
 import io.legado.app.domain.model.readaloud.SpeechEngineRoute
@@ -27,7 +26,6 @@ import io.legado.app.help.readaloud.effect.VoiceEffectAudio
 import io.legado.app.help.readaloud.effect.VoiceEffectStore
 import io.legado.app.lib.dialogs.SelectItem
 import io.legado.app.model.ReadAloud
-import io.legado.app.ui.config.readConfig.ReadConfig
 import io.legado.app.utils.GSON
 import io.legado.app.utils.LogUtils
 import io.legado.app.utils.fromJsonObject
@@ -55,9 +53,8 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
     private val pendingUtterances = mutableMapOf<String, CastMarkers.Spoken>()
 
     protected override val currentSpeechRate: Float
-        get() = if (ReadConfig.ttsFollowSys) 1f else (speechRateSetting + 5) / 10f
+        get() = if (aloudSettings.ttsFollowSys) 1f else (speechRateSetting + 5) / 10f
 
-    private val readAloudSettingsGateway: ReadAloudSettingsGateway by inject()
     @Volatile
     private var speechRateSetting: Int = 5
 
@@ -263,7 +260,7 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
         val session = ++speakSession
         speakJob?.cancel()
         resetSpeechTracking()
-        val interval = ReadConfig.ttsParagraphInterval.toLong()
+        val interval = aloudSettings.ttsParagraphInterval.toLong()
         // 章节批量入队无法在同一段内等上一片完成，超长段留给逐段路径处理。
         serialPlayback = interval > 0 ||
             (!hasSpeechPlaybackQueue && contentList.any { it.length > TextToSpeech.getMaxSpeechInputLength() })
@@ -485,7 +482,7 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
             !pause &&
             (hasSpeechPlaybackQueue || serialPlayback)
         ) {
-            needParagraphInterval = ReadConfig.ttsParagraphInterval > 0
+        needParagraphInterval = aloudSettings.ttsParagraphInterval > 0
             advancedFromUtteranceDone = true
             play()
         }
@@ -562,7 +559,7 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
      */
     @Synchronized
     private fun fillSpeechWindow(session: Int) {
-        if (!hasSpeechPlaybackQueue || ReadConfig.ttsParagraphInterval > 0 || pause) return
+        if (!hasSpeechPlaybackQueue || aloudSettings.ttsParagraphInterval > 0 || pause) return
         if (session != speakSession || speechWindow.session != session) return
         val tts = textToSpeech ?: return
         var cursor = playbackCursor ?: ReadAloudPlaybackCursor(nowSpeak, paragraphStartPos)
@@ -608,7 +605,7 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
     /** 补队尾；引擎调用一律放到 IO 上，不占回调线程。 */
     private fun refillSpeechWindow() {
         if (!hasSpeechPlaybackQueue || pause) return
-        if (ReadConfig.ttsParagraphInterval > 0) return
+        if (aloudSettings.ttsParagraphInterval > 0) return
         val session = speakSession
         execute { fillSpeechWindow(session) }
     }
@@ -692,7 +689,7 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
         val config = runCatching {
             GSON.fromJson(voice.traitsJson, SystemTtsVoiceConfig::class.java)
         }.getOrNull() ?: SystemTtsVoiceConfig()
-        val globalRate = if (ReadConfig.ttsFollowSys) {
+        val globalRate = if (aloudSettings.ttsFollowSys) {
             1f
         } else {
             (speechRateSetting + 5) / 10f
@@ -730,7 +727,7 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
 
     private fun applyDefaultPreset() {
         val tts = textToSpeech ?: return
-        val rate = if (ReadConfig.ttsFollowSys) 1f else (speechRateSetting + 5) / 10f
+        val rate = if (aloudSettings.ttsFollowSys) 1f else (speechRateSetting + 5) / 10f
         if (rate != appliedSpeechRate) {
             appliedSpeechRate = rate
             tts.setSpeechRate(rate)
@@ -759,7 +756,7 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
      */
     @Synchronized
     override fun upSpeechRate(reset: Boolean) {
-        if (ReadConfig.ttsFollowSys) {
+        if (aloudSettings.ttsFollowSys) {
             if (reset) {
                 val shouldPlay = !pause && canStartPreparedPlayback
                 clearTTS()
@@ -930,7 +927,7 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
                     return
                 }
                 if (pause) return
-                needParagraphInterval = ReadConfig.ttsParagraphInterval > 0
+        needParagraphInterval = aloudSettings.ttsParagraphInterval > 0
                 advancedFromUtteranceDone = true
                 play()
                 return
@@ -941,7 +938,7 @@ class TTSReadAloudService : BaseReadAloudService(), KoinComponent {
             if (!advanceOnce(utteranceId, reason)) return
             val paragraphAdvanced = nextParagraph(naturalCompletion = true)
             if (paragraphAdvanced && !pause && serialPlayback) {
-                needParagraphInterval = ReadConfig.ttsParagraphInterval > 0
+        needParagraphInterval = aloudSettings.ttsParagraphInterval > 0
                 advancedFromUtteranceDone = true
                 play()
             }

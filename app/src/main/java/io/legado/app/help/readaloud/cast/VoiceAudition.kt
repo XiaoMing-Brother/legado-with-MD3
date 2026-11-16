@@ -11,7 +11,6 @@ import io.legado.app.domain.model.readaloud.ReadAloudVoice
 import io.legado.app.domain.model.readaloud.SystemTtsVoiceConfig
 import io.legado.app.help.readaloud.playback.CloudTtsAudioSynthesizer
 import io.legado.app.help.readaloud.playback.SystemTtsFileSynthesizer
-import io.legado.app.ui.config.readConfig.ReadConfig
 import io.legado.app.utils.GSON
 import org.koin.core.context.GlobalContext
 import java.io.File
@@ -58,9 +57,9 @@ object VoiceAudition {
     }
 
     /** 与 TTSReadAloudService.applyPreset 同源的全局语速，音色自身没配语速时用它。 */
-    private fun globalSpeechRate(): Float = when {
-        ReadConfig.ttsFollowSys -> 1f
-        else -> (ReadConfig.ttsSpeechRate + 5) / 10f
+    private fun globalSpeechRate(): Float {
+        val settings = GlobalContext.get().get<ReadAloudSettingsGateway>().currentSettings
+        return if (settings.ttsFollowSys) 1f else (settings.ttsSpeechRate + 5) / 10f
     }
 
     /** 通用试听文本：用户在角色声音池里自定义过就用他的，否则用内置示例句。 */

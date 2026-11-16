@@ -5,6 +5,7 @@ import io.legado.app.R
 
 /** Presentation metadata only: these IDs are independent of preference/storage keys. */
 enum class ReadSettingSection(@param:StringRes val titleRes: Int) {
+    Style(R.string.read_style),
     Screen(R.string.screen_settings),
     PageControl(R.string.page_control),
     Other(R.string.other),
@@ -17,6 +18,7 @@ enum class ReadSetting(
     @param:StringRes val descriptionRes: Int? = null,
     @param:StringRes val keywordsRes: Int? = null,
 ) {
+    ThemePicker("reading.theme_picker", R.string.read_theme, ReadSettingSection.Style, R.string.read_theme_summary),
     Orientation("reading.orientation", R.string.screen_direction, ReadSettingSection.Screen),
     KeepLight("reading.keep_light", R.string.keep_light, ReadSettingSection.Screen),
     HideStatusBar("reading.hide_status_bar", R.string.pt_hide_status_bar, ReadSettingSection.Screen),

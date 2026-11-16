@@ -41,6 +41,7 @@ import io.legado.app.ui.book.read.sheet.PageKeyConfigSheet
 import io.legado.app.ui.book.read.sheet.PhotoSheet
 import io.legado.app.ui.book.read.sheet.ReadAloudConfigContent
 import io.legado.app.ui.book.read.sheet.ReadAloudNumberConfigSheet
+import io.legado.app.ui.book.read.sheet.ReadThemePresetSheet
 import io.legado.app.ui.book.read.sheet.ReaderMoreActionsSheet
 import io.legado.app.ui.book.read.sheet.ShadowSetSheet
 import io.legado.app.ui.book.read.sheet.SimulatedReadingSheet
@@ -751,6 +752,20 @@ private fun ReadBookSheetContent(
         AppLogSheet(
             show = visibleState.findSheet<ReadBookSheet.AppLog>() != null,
             onDismissRequest = dismissSheet(visibleState.findSheet<ReadBookSheet.AppLog>()),
+        )
+    }
+    if (state.activeSheet is ReadBookSheet.ReadThemePicker) {
+        // 入口在全局页，关掉即回到全局页。
+        val currentStyle = state.styleConfig.styleItems
+            .getOrNull(state.styleConfig.styleSelect)
+        ReadThemePresetSheet(
+            show = visibleState.findSheet<ReadBookSheet.ReadThemePicker>() != null,
+            onDismissRequest = dismissSheet(visibleState.findSheet<ReadBookSheet.ReadThemePicker>()),
+            initialDayThemeId = currentStyle?.readThemeIdDay,
+            initialNightThemeId = currentStyle?.readThemeIdNight,
+            onSelectTheme = { themeId, target ->
+                onIntent(ReadBookIntent.ApplyReadTheme(themeId, target))
+            },
         )
     }
     if (state.activeSheet is ReadBookSheet.BgTextConfig) {

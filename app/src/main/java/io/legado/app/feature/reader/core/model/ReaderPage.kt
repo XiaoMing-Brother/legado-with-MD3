@@ -388,14 +388,21 @@ data class ReaderPage(
     val contentLeftPx: Float = 0f,
     val contentRightPx: Float = widthPx.toFloat(),
 ) {
-    fun elementAt(x: Float, y: Float): ReaderElement? =
+    fun elementAt(x: Float, y: Float): ReaderElement? {
+        // 段评图为了满足 48dp 触摸区会向外扩，扩出来的部分可能与相邻文字重叠。
+        // 先让「有动作的图片」按触摸区命中，否则左侧文字会抢先吃掉点击，气泡只剩中心可点。
         elements.firstOrNull {
+            it is ReaderElement.Image && !it.action.isNullOrBlank() &&
+                it.touchBounds.contains(x, y)
+        }?.let { return it }
+        return elements.firstOrNull {
             if (it is ReaderElement.Image) {
                 it.touchBounds.contains(x, y) && (!it.useMeasuredBounds || y < it.touchBounds.bottom)
             } else {
                 it.bounds.contains(x, y)
             }
         }
+    }
 
     fun hasSameGeometryAs(other: ReaderPage): Boolean =
         id == other.id &&
@@ -441,6 +448,10 @@ data class ReaderTipRow(
     val dividerColorArgb: Int?,
     /** 未设页眉页脚字体时回落正文字体族（旧 `tipTypeface ?: ChapterProvider.typeface`）。 */
     val fontFamily: String = "sans-serif",
+    /** 页眉页脚独立的字重（400 = 常规）。旧 View 的页眉页脚恒为常规，这里默认保持一致。 */
+    val fontWeight: Int = 400,
+    /** 页眉页脚独立的斜体。旧 View 恒为常规直立体。 */
+    val italic: Boolean = false,
     /** 根层安全区内缩：分隔线只画在内缩后的宽度里（旧 `vwRoot` 的刘海 padding）。 */
     val insetLeftPx: Float = 0f,
     val insetRightPx: Float = 0f,

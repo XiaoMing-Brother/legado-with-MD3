@@ -246,6 +246,18 @@ object ReadBookConfig {
     val footerFontSize: Int
         get() = config.footerFontSize.takeIf { it > 0 } ?: 12
 
+    val headerBold: Int
+        get() = config.headerBold
+
+    val footerBold: Int
+        get() = config.footerBold
+
+    val headerItalic: Boolean
+        get() = config.headerItalic
+
+    val footerItalic: Boolean
+        get() = config.footerItalic
+
     val applyHeaderStyle: Boolean
         get() = config.applyHeaderStyle
 
@@ -500,6 +512,10 @@ object ReadBookConfig {
             footerFont = shareConfig.footerFont,
             headerFontSize = shareConfig.headerFontSize,
             footerFontSize = shareConfig.footerFontSize,
+            headerBold = shareConfig.headerBold,
+            footerBold = shareConfig.footerBold,
+            headerItalic = shareConfig.headerItalic,
+            footerItalic = shareConfig.footerItalic,
             applyHeaderStyle = shareConfig.applyHeaderStyle,
             textBold = shareConfig.textBold,
             textSize = shareConfig.textSize,
@@ -580,6 +596,9 @@ object ReadBookConfig {
         val bgType: Int = 0,//白天背景类型 0:颜色, 1:assets图片, 2其它图片
         val bgTypeNight: Int = 0,//夜间背景类型
         val bgTypeEInk: Int = 0,//EInk背景类型
+        // 当前日间/夜间背景来自哪个内置主题；手动改背景时清空，用于设置页回显「使用中」。
+        val readThemeIdDay: Int? = null,
+        val readThemeIdNight: Int? = null,
         private val darkStatusIcon: Boolean = true,//白天是否暗色状态栏
         private val darkStatusIconNight: Boolean = false,//晚上是否暗色状态栏
         private val darkStatusIconEInk: Boolean = true,
@@ -600,6 +619,10 @@ object ReadBookConfig {
         val footerFont: String = "",//页脚字体
         val headerFontSize: Int = 12,//页眉字号
         val footerFontSize: Int = 12,//页脚字号
+        val headerBold: Int = 0,//页眉字重 0:常规, 1:粗体, 2:细体, 100..900:直接值
+        val footerBold: Int = 0,//页脚字重，取值同页眉
+        val headerItalic: Boolean = false,//页眉斜体
+        val footerItalic: Boolean = false,//页脚斜体
         val applyHeaderStyle: Boolean = true,//页脚是否应用页眉字体样式
         val textBold: Int = 500,//是否粗体字 0:正常, 1:粗体, 2:细体
         val textSize: Int = 20,//文字大小
@@ -611,8 +634,8 @@ object ReadBookConfig {
         private val shadowColor: String = "#3E3D3B",
         private val shadowColorN: String = "#3E3D3B",
         val letterSpacing: Float = 0.1f,//字间距
-        val lineSpacingExtra: Int = 12,//行间距
-        val paragraphSpacing: Int = 2,//段距
+        val lineSpacingExtra: Int = 14,//行间距
+        val paragraphSpacing: Int = 5,//段距
         val titleMode: Int = 0,//标题位置 0:居左 1:居中 2:隐藏
         val titleSize: Int = 4,//标题字号：相对模式为相对正文的偏移，绝对模式为绝对 sp
         val titleSizeRelative: Boolean? = null,//是否相对正文：null 表示按旧值自动识别
@@ -787,6 +810,10 @@ object ReadBookConfig {
             "footerFont" to footerFont,
             "headerFontSize" to headerFontSize,
             "footerFontSize" to footerFontSize,
+            "headerBold" to headerBold,
+            "footerBold" to footerBold,
+            "headerItalic" to headerItalic,
+            "footerItalic" to footerItalic,
             "applyHeaderStyle" to applyHeaderStyle,
             "textBold" to textBold,
             "textSize" to textSize,
@@ -1005,6 +1032,8 @@ object ReadBookConfig {
                 bgStrNight = defaults.bgStrNight,
                 bgTypeEInk = defaults.bgTypeEInk,
                 bgStrEInk = defaults.bgStrEInk,
+                readThemeIdDay = null,
+                readThemeIdNight = null,
                 bgAlpha = defaults.bgAlpha,
                 darkStatusIcon = defaults.darkStatusIcon,
                 darkStatusIconNight = defaults.darkStatusIconNight,

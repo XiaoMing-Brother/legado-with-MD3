@@ -44,7 +44,6 @@ import io.legado.app.data.entities.HttpTTS
 import io.legado.app.data.entities.VoiceEffectPreset
 import io.legado.app.data.repository.HttpTtsRepository
 import io.legado.app.domain.gateway.CloudTtsEngineGateway
-import io.legado.app.domain.gateway.ReadAloudSettingsGateway
 import io.legado.app.domain.model.readaloud.ReadAloudPlaybackCursor
 import io.legado.app.domain.model.readaloud.ReadAloudPlaybackQueue
 import io.legado.app.domain.model.readaloud.ReadAloudVoice
@@ -125,7 +124,6 @@ class HttpReadAloudService : BaseReadAloudService(),
         get() = synthesisSpeed(ReadAloud.httpTTS) * globalPlaybackSpeed
 
     private val httpAudioSynthesizer = HttpTtsAudioSynthesizer(GlobalContext.get().get<HttpTtsRepository>())
-    private val readAloudSettingsGateway = GlobalContext.get().get<ReadAloudSettingsGateway>()
     private var readAloudSettings: ReadAloudSettings = readAloudSettingsGateway.currentSettings
 
     private val speechRatePlay: Int

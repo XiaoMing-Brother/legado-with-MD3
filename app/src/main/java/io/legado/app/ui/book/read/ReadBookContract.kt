@@ -21,6 +21,7 @@ import io.legado.app.domain.model.readaloud.SpeechRoleType
 import io.legado.app.domain.model.settings.ReadAloudContentSplitMode
 import io.legado.app.domain.model.settings.ReadAloudTimerMode
 import io.legado.app.domain.model.settings.ReadStyleItem
+import io.legado.app.domain.model.settings.ReadThemeTarget
 import io.legado.app.domain.usecase.BookmarkTargetVerdict
 import io.legado.app.model.translation.TranslationChapterStatus
 import io.legado.app.ui.book.read.sheet.ReaderBookSheetTab
@@ -180,6 +181,11 @@ data class ReadSheetConfigUiState(
     val footerFont: String = "",
     val headerFontSize: Int = 12,
     val footerFontSize: Int = 12,
+    /** 页眉字重：0 常规 / 1 粗体 / 2 细体 / 100..900 直接值。 */
+    val headerBold: Int = 0,
+    val footerBold: Int = 0,
+    val headerItalic: Boolean = false,
+    val footerItalic: Boolean = false,
     val applyHeaderStyle: Boolean = true,
     /** -1 表示"跟随主题分割线"，0 表示"跟随正文颜色"。 */
     val tipDividerColor: Int = 0,
@@ -616,6 +622,17 @@ sealed interface ReadBookIntent {
     data object PrevPage : ReadBookIntent
     data object NextChapter : ReadBookIntent
     data object PrevChapter : ReadBookIntent
+    /** Canvas 翻页跨章：不触发 upContent=true 的菜单换章路径。 */
+    /** Canvas 页表章号与 [ReadBook.durChapterIndex] 对齐；不触发整页 `upContent`。 */
+    data class ComposeTurnPage(val targetChapterIndex: Int) : ReadBookIntent
+    /** 阅读画布上的朗读胶囊/快捷键切换，含从可见正文起点开读。 */
+    data class ToggleReaderReadAloud(
+        val visibleChapterIndex: Int? = null,
+        val visibleChapterPosition: Int? = null,
+        val pageChangedSinceToggle: Boolean = false,
+    ) : ReadBookIntent
+    /** 分区点击：仅暂停/继续，不触发自动翻页停止或从可见起点重读。 */
+    data object ToggleReadAloudPlayback : ReadBookIntent
     data class OpenChapter(val index: Int, val pos: Int = 0) : ReadBookIntent
     data class SkipToPage(val pageIndex: Int) : ReadBookIntent
 
@@ -737,6 +754,7 @@ sealed interface ReadBookIntent {
     data object OpenChapterUrl : ReadBookIntent
     data class SourceCustomButton(val longClick: Boolean) : ReadBookIntent
     data object ToggleReadUrlInBrowser : ReadBookIntent
+    data class SetParagraphCommentHeight(val percent: Int) : ReadBookIntent
 
     // Content edit
     data object OpenContentEdit : ReadBookIntent
@@ -819,6 +837,18 @@ sealed interface ReadBookIntent {
     data class DeleteReadStyleConfigs(val indices: List<Int>) : ReadBookIntent
     data class MoveReadStylesToEdge(val indices: List<Int>, val toTop: Boolean) : ReadBookIntent
     data class ApplyPresetTheme(val presetIndex: Int) : ReadBookIntent
+
+    /** 打开内置阅读主题选择（清墨 LightInk 主题商店快照）。 */
+    data object OpenReadThemePicker : ReadBookIntent
+
+    /** 应用内置主题：只改当前所选模式（日间/夜间）的背景，自带背景图随后异步下载。 */
+    data class ApplyReadTheme(
+        val themeId: Int,
+        val target: ReadThemeTarget,
+    ) : ReadBookIntent
+
+    /** 从当前背景图取一套配色并套用到正文/强调色（清墨同款「图片取色」）。 */
+    data object ApplyBackgroundPalette : ReadBookIntent
 
     // Bookshelf
     data object RemoveFromBookshelf : ReadBookIntent
@@ -1372,6 +1402,9 @@ sealed interface ReadBookSheet {
 
     data object TextSelectMenuConfig : ReadBookSheet
     data object BgTextConfig : ReadBookSheet
+
+    /** 内置阅读主题选择弹层（从「背景与文字」进入）。 */
+    data object ReadThemePicker : ReadBookSheet
     data object ReadAloudConfig : ReadBookSheet
     data object PreDownloadConfig : ReadBookSheet
     data object PreSynthesisConcurrencyConfig : ReadBookSheet
@@ -1635,6 +1668,18 @@ sealed interface ConfigUpdate {
         override val actions = setOf(ConfigUpdateAction.UpdateStyle)
     }
     data class FooterFontSize(val value: Int) : ConfigUpdate {
+        override val actions = setOf(ConfigUpdateAction.UpdateStyle)
+    }
+    data class HeaderBold(val value: Int) : ConfigUpdate {
+        override val actions = setOf(ConfigUpdateAction.UpdateStyle)
+    }
+    data class FooterBold(val value: Int) : ConfigUpdate {
+        override val actions = setOf(ConfigUpdateAction.UpdateStyle)
+    }
+    data class HeaderItalic(val value: Boolean) : ConfigUpdate {
+        override val actions = setOf(ConfigUpdateAction.UpdateStyle)
+    }
+    data class FooterItalic(val value: Boolean) : ConfigUpdate {
         override val actions = setOf(ConfigUpdateAction.UpdateStyle)
     }
     data class ApplyHeaderStyle(val value: Boolean) : ConfigUpdate {
@@ -2091,6 +2136,9 @@ sealed interface ConfigUpdate {
         )
     }
     data class ClickImgWay(val value: String) : ConfigUpdate {
+        override val actions = emptySet<ConfigUpdateAction>()
+    }
+    data class ImageNightMode(val value: String) : ConfigUpdate {
         override val actions = emptySet<ConfigUpdateAction>()
     }
     data class DisableReturnKey(val value: Boolean) : ConfigUpdate {

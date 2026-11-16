@@ -1083,7 +1083,7 @@ fun ThemeConfigScreen(
 
     LauncherIconPickerSheet(
         show = state.activeSheet == ThemeConfigSheet.LauncherIcon,
-        selectedValue = appShell.launcherIcon,
+        selectedValue = LauncherIcons.canonicalValue(appShell.launcherIcon).orEmpty(),
         onDismissRequest = { onIntent(ThemeConfigIntent.DismissSheet) },
         onValueChange = { onIntent(ThemeConfigIntent.SelectLauncherIcon(it)) }
     )

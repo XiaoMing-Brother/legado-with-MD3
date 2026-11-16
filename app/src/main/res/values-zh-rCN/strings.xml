@@ -1854,6 +1854,15 @@
     <string name="calligraphy_splash_once_per_day_summary">当天已显示过后，再次冷启动不再显示，次日恢复</string>
     <string name="calligraphy_splash_text_title">开屏文字</string>
     <string name="calligraphy_splash_text_summary">竖排显示在开屏页，换行可分列；留空使用默认诗句</string>
+    <string name="read_theme">内置主题</string>
+    <string name="read_theme_summary">日间与夜间分开选择：点按主题只应用到当前列表对应的模式，另一模式的背景保持不变。</string>
+    <string name="read_theme_summary_title">主题说明</string>
+    <string name="read_theme_day">日间主题</string>
+    <string name="read_theme_night">夜间主题</string>
+    <string name="read_theme_download_count">%1$d 次下载</string>
+    <string name="read_theme_saved_backgrounds">已设置的阅读背景</string>
+    <string name="read_theme_in_use">使用中</string>
+    <string name="read_theme_image_failed">背景色已应用，背景图下载失败。</string>
     <string name="onboarding_title_backup">备份与恢复</string>
     <string name="onboarding_title_book_folder">书籍文件夹</string>
     <string name="onboarding_title_theme">主题样式</string>
@@ -2092,6 +2101,8 @@
     <string name="tts_paragraph_interval_summary">当前: %1$d 毫秒。朗读时段落之间的停顿时间。</string>
     <string name="show_swipe_animation">启用滑动时动画</string>
     <string name="click_image_way">点击图片行为</string>
+    <string name="image_night_mode">插图夜景处理</string>
+    <string name="image_night_mode_summary">仅在页面底色为深色时处理正文插图</string>
     <string name="show_web_log">输出日志</string>
     <string name="is_blur_progressive_enable">启用渐变模糊</string>
     <string name="top_bar_button_style">顶栏按钮样式</string>
@@ -4031,4 +4042,14 @@
     <string name="a11y_reorder_position">第 %1$d 项，共 %2$d 项</string>
     <string name="hyper_os4_components">HyperOS 4 风格组件</string>
     <string name="hyper_os4_components_summary">在 Miuix 主题下使用玻璃顶栏、标签页与下拉菜单。需要 Android 13 与系统模糊支持。</string>
+    <string name="read_bg_palette">从背景图取色</string>
+    <string name="read_bg_palette_summary">按当前背景图提一套正文与强调色，直接套用。</string>
+    <string name="read_bg_builtin">内置背景图</string>
+    <string name="read_bg_builtin_summary">点按即用，无需存储权限。</string>
+    <string name="font_delete_confirm">从应用内字体目录删除「%1$s」？</string>
+    <string name="font_delete_failed">删除字体失败</string>
+    <string name="font_sample_text">永 Aa 123</string>
+    <string name="read_record_total_duration">累计阅读 %1$s</string>
+    <string name="read_record_last_read">最近阅读 %1$s</string>
+    <string name="read_bg_palette_failed">先设置一张背景图，或换一张再试。</string>
 </resources>

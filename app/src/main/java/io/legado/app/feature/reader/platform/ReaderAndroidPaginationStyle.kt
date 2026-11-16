@@ -31,6 +31,7 @@ data class ReaderAndroidPaginationStyle(
     val columnMode: ReaderColumnMode = ReaderColumnMode.SINGLE,
     val isTablet: Boolean = false,
     val isScroll: Boolean = false,
+    val isEInkMode: Boolean = false,
     val textBottomJustify: Boolean = false,
     val pageUnderline: ReaderPageUnderline? = null,
     val emphasisUnderlineStyle: ReaderEmphasisUnderline? = null,

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SpaceBar
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.TextFields
@@ -47,6 +48,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
@@ -351,6 +355,16 @@ fun GlobalThemePage(
 
         Spacer(Modifier.height(8.dp))
 
+        // 内置主题入口：换背景色与背景图，字体颜色、字号和边距保持不动。
+        TinySettingItem(
+            title = stringResource(R.string.read_theme),
+            description = stringResource(R.string.read_theme_summary),
+            imageVector = Icons.Default.Palette,
+            onClick = { onIntent(ReadBookIntent.OpenReadThemePicker) },
+        )
+
+        Spacer(Modifier.height(8.dp))
+
         // 每一项带自己的 PageAnim 取值：菜单里加一项或换个顺序都不会再让「下标 == 常量值」这个
         // 隐含约定错位（菜单里加一项或换个顺序都不会再让「下标 == 常量值」这个隐含约定错位）。
         val pageAnimOptions = listOf(
@@ -477,7 +491,10 @@ fun StyleCard(
         .width(44.dp)
         .height(56.dp),
     imageContentScale: ContentScale = ContentScale.Crop,
-    onClick: () -> Unit,
+    // 设置页顶部空间有限，只留背景预览，名称交给无障碍描述
+    showName: Boolean = true,
+    // 传 null 时仅作预览；设置页顶部的已保存背景会传 onClick 供切换
+    onClick: (() -> Unit)? = null,
     // 传 null 才不装内层长按监听（管理模式的长按要留给外层拖动）
     onLongClick: (() -> Unit)? = null,
 ) {
@@ -509,10 +526,20 @@ fun StyleCard(
         }
     )
     val name = config.name.ifBlank { stringResource(R.string.text_bg_style) }
-    val bgPath = ReadStyleResolver.backgroundPath(bgType, bgValue)
+    val bgPath = when (bgType) {
+        1 -> "file:///android_asset/${ReadStyleResolver.ASSET_BG_DIR}/$bgValue"
+        else -> ReadStyleResolver.backgroundPath(bgType, bgValue)
+    }
 
     NormalCard(
-        modifier = modifier,
+        modifier = if (onClick != null) {
+            modifier.semantics {
+                selected = isSelected
+                if (!showName) contentDescription = name
+            }
+        } else {
+            modifier
+        },
         cornerRadius = 8.dp,
         containerColor = bgColor,
         onClick = onClick,
@@ -527,16 +554,18 @@ fun StyleCard(
                     modifier = Modifier.fillMaxSize(),
                 )
             }
-            AppText(
-                text = name,
-                style = LegadoTheme.typography.labelSmall,
-                color = textColor,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(horizontal = 8.dp),
-            )
+            if (showName) {
+                AppText(
+                    text = name,
+                    style = LegadoTheme.typography.labelSmall,
+                    color = textColor,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 8.dp),
+                )
+            }
             if (isSelected) {
                 Box(
                     modifier = Modifier

@@ -143,6 +143,8 @@ class ConfigUpdateActionsInvariantTest {
             "SliderVibrator",
             "SelectVibrator",
             "ClickImgWay",
+            // 插图夜景处理只写 DataStore，画布经 readPreferences 快照反应式刷新滤镜。
+            "ImageNightMode",
             "DisableReturnKey",
             "NoAnimScrollPage",
             // 文本选择菜单

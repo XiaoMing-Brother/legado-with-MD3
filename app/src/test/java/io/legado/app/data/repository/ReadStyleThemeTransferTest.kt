@@ -5,7 +5,12 @@ import io.legado.app.data.entities.HighlightRule
 import io.legado.app.domain.gateway.ReadSettingsGateway
 import io.legado.app.domain.gateway.AppShellSettingsGateway
 import io.legado.app.domain.gateway.ThemeSettingsGateway
+import io.legado.app.domain.model.settings.ReadBackgroundPalette
 import io.legado.app.domain.model.settings.ReadSettings
+import io.legado.app.domain.model.settings.ReadThemeTarget
+import io.legado.app.domain.model.settings.contrastRatio
+import io.legado.app.domain.model.settings.parseArgbColor
+import io.legado.app.help.DefaultData
 import io.legado.app.help.config.AppConfigStore
 import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.support.InMemoryAppDatabaseFixture
@@ -169,6 +174,193 @@ class ReadStyleThemeTransferTest {
         val addedIndex = store.addConfig(original)
         assertNotEquals(original.id, store.configAt(addedIndex).id)
         assertFalse(GSON.toJson(store.configAt(addedIndex)).contains("\"id\""))
+    }
+
+    @Test
+    fun applyingADayThemeLeavesTheNightBackgroundUntouched() {
+        val theme = DefaultData.readThemes.first { it.id == 312 } // 漫绿：浅纸色
+        val before = store.configAt(5)
+        assertTrue(gateway.applyReadTheme(theme.id, ReadThemeTarget.Day))
+
+        val config = store.configAt(5)
+        assertEquals("日间用主题原色", theme.background, config.bgStr)
+        assertEquals("记录日间应用的主题 id", theme.id, config.readThemeIdDay)
+        assertNull("夜间主题 id 不受影响", config.readThemeIdNight)
+        assertEquals("夜间背景保持用户原来的设置", before.bgStrNight, config.bgStrNight)
+        assertEquals(before.bgTypeNight, config.bgTypeNight)
+        assertEquals(before.getDarkStatusIconNight(), config.getDarkStatusIconNight())
+        assertTrue("浅色日间底要用深色状态栏图标", config.getDarkStatusIcon())
+    }
+
+    @Test
+    fun applyingANightThemeOnlyChangesTheNightBackground() {
+        val theme = DefaultData.readThemes.first { it.id == 513 } // 大海：深色
+        val before = store.configAt(5)
+        assertTrue(gateway.applyReadTheme(theme.id, ReadThemeTarget.Night))
+
+        val config = store.configAt(5)
+        assertEquals("夜间直接用主题底色", theme.background, config.bgStrNight)
+        assertEquals("记录夜间应用的主题 id", theme.id, config.readThemeIdNight)
+        assertNull("日间主题 id 不受影响", config.readThemeIdDay)
+        assertEquals("样式名保持用户设置", before.name, config.name)
+        assertEquals("日间背景保持用户原来的设置", before.bgStr, config.bgStr)
+        assertEquals(before.bgType, config.bgType)
+        assertEquals(before.getDarkStatusIcon(), config.getDarkStatusIcon())
+        assertFalse("深色夜间底要用浅色状态栏图标", config.getDarkStatusIconNight())
+    }
+
+    @Test
+    fun appliedThemeIdsFollowTheModeTheyWereAppliedTo() {
+        val dayTheme = DefaultData.readThemes.first { it.id == 312 }
+        val nightTheme = DefaultData.readThemes.first { it.id == 513 }
+
+        assertTrue(gateway.applyReadTheme(dayTheme.id, ReadThemeTarget.Day))
+        val afterDay = store.configAt(5)
+        assertEquals(dayTheme.id, afterDay.readThemeIdDay)
+        assertNull(afterDay.readThemeIdNight)
+
+        assertTrue(gateway.applyReadTheme(nightTheme.id, ReadThemeTarget.Night))
+        val afterNight = store.configAt(5)
+        assertEquals(dayTheme.id, afterNight.readThemeIdDay)
+        assertEquals(nightTheme.id, afterNight.readThemeIdNight)
+    }
+
+    @Test
+    fun manuallyChangingOneBackgroundClearsOnlyThatModesThemeId() {
+        val dayTheme = DefaultData.readThemes.first { it.id == 312 }
+        val nightTheme = DefaultData.readThemes.first { it.id == 513 }
+        gateway.applyReadTheme(dayTheme.id, ReadThemeTarget.Day)
+        gateway.applyReadTheme(nightTheme.id, ReadThemeTarget.Night)
+
+        gateway.setCurrentBackgroundImageForMode("/tmp/manual-night.png", isNight = true)
+        val afterNight = store.configAt(5)
+        assertEquals("手动换夜间背景不影响日间主题标记", dayTheme.id, afterNight.readThemeIdDay)
+        assertNull("手动换夜间背景后不再算作夜间主题", afterNight.readThemeIdNight)
+
+        gateway.setCurrentBackgroundImageForMode("/tmp/manual-day.png", isNight = false)
+        val afterDay = store.configAt(5)
+        assertNull(afterDay.readThemeIdDay)
+        assertNull(afterDay.readThemeIdNight)
+    }
+
+    @Test
+    fun applyingTheThemesOwnBackgroundImageKeepsTheThemeId() {
+        val theme = DefaultData.readThemes.first { it.id == 312 }
+        gateway.applyReadTheme(theme.id, ReadThemeTarget.Day)
+
+        gateway.setReadThemeBackgroundImage("/tmp/theme.png", ReadThemeTarget.Day)
+
+        assertEquals(theme.id, store.configAt(5).readThemeIdDay)
+    }
+
+    @Test
+    fun aNewStyleDoesNotInheritAppliedThemeIds() {
+        val dayTheme = DefaultData.readThemes.first { it.id == 312 }
+        val nightTheme = DefaultData.readThemes.first { it.id == 513 }
+        gateway.applyReadTheme(dayTheme.id, ReadThemeTarget.Day)
+        gateway.applyReadTheme(nightTheme.id, ReadThemeTarget.Night)
+
+        val newIndex = gateway.addStyle()
+
+        assertNull(store.configAt(newIndex).readThemeIdDay)
+        assertNull(store.configAt(newIndex).readThemeIdNight)
+    }
+
+    @Test
+    fun applyingABuiltInThemeKeepsTypographyAndMargins() {
+        val mine = ReadBookConfig.Config(
+            name = "mine",
+            textColor = "#ff112233",
+            textColorNight = "#ff445566",
+            textColorEInk = "#ff778899",
+            textAccentColor = "#ff0a0b0c",
+            textAccentColorNight = "#ff0d0e0f",
+            textAccentColorEInk = "#ff101112",
+            titleColor = 0xFF131415.toInt(),
+            titleColorNight = 0xFF161718.toInt(),
+            tipHeaderColor = 0xFF191A1B.toInt(),
+            tipHeaderColorNight = 0xFF1C1D1E.toInt(),
+            tipFooterColor = 0xFF1F2021.toInt(),
+            tipFooterColorNight = 0xFF222324.toInt(),
+            textSize = 33,
+            paddingTop = 11,
+            paddingBottom = 12,
+            paddingLeft = 13,
+            paddingRight = 14,
+        )
+        store.updateStyleAt(5) { mine }
+
+        val theme = DefaultData.readThemes.first { it.id == 312 }
+        assertTrue(gateway.applyReadTheme(theme.id, ReadThemeTarget.Day))
+
+        val after = store.configAt(5)
+        assertEquals("背景仍然按主题应用", theme.background, after.bgStr)
+        assertEquals("样式名保持用户设置", "mine", after.name)
+        val beforeJson = GSON.toJsonTree(mine).asJsonObject
+        val afterJson = GSON.toJsonTree(after).asJsonObject
+        listOf(
+            "textColor", "textColorNight", "textColorEInk",
+            "textAccentColor", "textAccentColorNight", "textAccentColorEInk",
+            "titleColor", "titleColorNight",
+            "tipHeaderColor", "tipHeaderColorNight",
+            "tipFooterColor", "tipFooterColorNight",
+            "textSize", "paddingTop", "paddingBottom", "paddingLeft", "paddingRight",
+        ).forEach { key ->
+            assertEquals("应用主题不应修改 $key", beforeJson.get(key), afterJson.get(key))
+        }
+    }
+
+    @Test
+    fun themeBackgroundImagesStayInTheirOwnMode() {
+        val theme = DefaultData.readThemes.first { it.id == 312 }
+        gateway.applyReadTheme(theme.id, ReadThemeTarget.Day)
+        val before = store.configAt(5)
+        val nightBefore = before.bgStrNight
+        val nightTypeBefore = before.bgTypeNight
+
+        gateway.setReadThemeBackgroundImage("/tmp/theme.png", ReadThemeTarget.Day)
+        val dayImageConfig = store.configAt(5)
+        assertEquals(2, dayImageConfig.bgType)
+        assertEquals("/tmp/theme.png", dayImageConfig.bgStr)
+        assertEquals("日间主题的图不进入夜间", nightTypeBefore, dayImageConfig.bgTypeNight)
+        assertEquals(nightBefore, dayImageConfig.bgStrNight)
+        assertEquals("墨水屏跟随日间", 2, dayImageConfig.bgTypeEInk)
+        assertEquals("/tmp/theme.png", dayImageConfig.bgStrEInk)
+
+        gateway.setReadThemeBackgroundImage("/tmp/night.png", ReadThemeTarget.Night)
+        val nightImageConfig = store.configAt(5)
+        assertEquals(2, nightImageConfig.bgTypeNight)
+        assertEquals("/tmp/night.png", nightImageConfig.bgStrNight)
+        assertEquals("夜间主题的图不覆盖日间", "/tmp/theme.png", nightImageConfig.bgStr)
+        assertEquals(2, nightImageConfig.bgType)
+    }
+
+    @Test
+    fun extractedPaletteTextIsRederivedForTheSolidNightBackground() {
+        val theme = DefaultData.readThemes.first { it.id == 312 }
+        gateway.applyReadTheme(theme.id, ReadThemeTarget.Day)
+        gateway.applyReadTheme(theme.id, ReadThemeTarget.Night)
+        val palette = ReadBackgroundPalette(
+            backgroundArgb = 0xFFF5F5F0.toInt(),
+            contentArgb = 0xFF2D2D33.toInt(),
+            secondaryArgb = 0xFF6A6A6A.toInt(),
+            controlArgb = 0xFF3473E7.toInt(),
+        )
+
+        gateway.applyReadBackgroundPalette(palette)
+
+        val config = store.configAt(5)
+        assertEquals("白天仍用图片取色", 0xFF2D2D33.toInt(), parseArgbColor(config.getTextColor()))
+        val nightBackground = parseArgbColor(config.bgStrNight)!!
+        assertTrue(
+            "夜间正文要重新反推成浅色",
+            contrastRatio(parseArgbColor(config.getTextColorNight())!!, nightBackground) >= 4.5,
+        )
+        assertTrue(
+            "夜间页眉页脚要重新反推成浅色",
+            contrastRatio(config.tipHeaderColorNight, nightBackground) >= 4.5,
+        )
+        assertFalse("夜间深底要用浅色状态栏图标", config.getDarkStatusIconNight())
     }
 
     private fun rule(id: String, name: String?, pattern: String) = HighlightRule(

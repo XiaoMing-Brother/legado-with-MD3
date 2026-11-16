@@ -23,6 +23,18 @@ internal fun coverMemoryCacheKey(
  */
 internal fun bookshelfSharedCoverSourceId(groupId: Long): String = "bookshelf:$groupId"
 
+/** [bookCoverSharedElementKey] 拼上书架来源标识后的固定前缀。 */
+private const val BookshelfSharedCoverKeyPrefix = "book-cover:bookshelf:"
+
+/**
+ * 这个共享元素 key 是否来自书架卡片。
+ *
+ * 阅读页据此判断返回目标是书架，从而把 sharedBounds 的 overlay 裁到列表可见区域
+ * （见 [ShelfViewportOverlayClip]）；其他入口不受影响。
+ */
+internal fun isBookshelfSharedCoverKey(key: String?): Boolean =
+    key != null && key.startsWith(BookshelfSharedCoverKeyPrefix)
+
 /** 书架分组页卡片的封面内存缓存键（与卡片请求里的 memoryCacheKey 必须完全一致）。 */
 internal fun bookshelfCoverMemoryCacheKey(
     groupId: Long,

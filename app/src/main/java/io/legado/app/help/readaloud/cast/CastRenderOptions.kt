@@ -3,12 +3,12 @@ package io.legado.app.help.readaloud.cast
 import io.legado.app.data.appDb
 import io.legado.app.data.entities.HighlightRule
 import io.legado.app.data.repository.configNames
+import io.legado.app.domain.gateway.ReadAloudSettingsGateway
 import io.legado.app.feature.reader.core.layout.ReaderCastOptions
 import io.legado.app.feature.reader.core.layout.ReaderCastProfile
 import io.legado.app.feature.reader.legacy.LegacyReaderStyleRangeMapper
 import io.legado.app.help.config.ReadBookConfig
 import io.legado.app.help.config.ReadStyleResolver
-import io.legado.app.ui.config.readConfig.ReadConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -30,7 +30,7 @@ object CastRenderOptions {
      */
     suspend fun signatureFor(bookUrl: String, chapterIndex: Int): Int =
         withContext(Dispatchers.IO) {
-            if (!ReadConfig.multiRoleCast) return@withContext 0
+            if (!aloudSettings().multiRoleCast) return@withContext 0
             val chapterEffects = appDb.chapterRoleAssignmentDao
                 .getForChapter(bookUrl, chapterIndex)
                 .filter { it.voiceEffect.isNotBlank() }
@@ -53,7 +53,7 @@ object CastRenderOptions {
         }
 
     suspend fun load(bookUrl: String, chapterIndex: Int): ReaderCastOptions {
-        if (!ReadConfig.multiRoleCast) return ReaderCastOptions.Disabled
+        if (!aloudSettings().multiRoleCast) return ReaderCastOptions.Disabled
         val profiles = withContext(Dispatchers.IO) {
             appDb.bookKnowledgeDao.getCharacterProfiles(bookUrl, 500)
         }
@@ -108,4 +108,7 @@ object CastRenderOptions {
         val bound = configName.orEmpty().configNames()
         return bound.isEmpty() || bound.contains(ReadBookConfig.durConfig.name)
     }
+
+    private fun aloudSettings() =
+        org.koin.core.context.GlobalContext.get().get<ReadAloudSettingsGateway>().currentSettings
 }

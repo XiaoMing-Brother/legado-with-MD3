@@ -53,6 +53,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.legado.app.R
 import io.legado.app.ui.file.FileManageActivity
 import io.legado.app.ui.theme.adaptiveContentPadding
+import io.legado.app.ui.theme.mainPageBottomInset
 import io.legado.app.ui.theme.LocalBottomOverlayPadding
 import io.legado.app.ui.widget.components.AppScaffold
 import io.legado.app.ui.widget.components.SplicedColumnGroup
@@ -137,7 +138,8 @@ fun MyScreen(
                 .padding(
                     adaptiveContentPadding(
                         top = padding.calculateTopPadding(),
-                        bottom = 120.dp.coerceAtLeast(LocalBottomOverlayPadding.current)
+                        bottom = 120.dp.coerceAtLeast(LocalBottomOverlayPadding.current) +
+                                mainPageBottomInset()
                     )
                 )
         ) {

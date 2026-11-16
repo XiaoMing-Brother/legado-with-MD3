@@ -16,26 +16,36 @@ object LegacyReaderImageOptionsResolver : ReaderImageOptionsResolver {
     /** 与 `Book.imgStyleText` 一致；这里不引入数据层依赖，靠单测钉住取值。 */
     private const val imgStyleText = "TEXT"
     private const val imgStyleTextLowercase = "text"
+    /**
+     * 与旧 `TextChapterLayout.reviewCharWidth` 同口径：段评图标槽宽 = `袮` 的 advance × 1.5556。
+     * `꧁` 的字面 advance 只有 0.3em 左右，直接按它排版会把奇思妙想的气泡缩成一个小点。
+     */
+    private const val paragraphCommentInlineWidthScale = 1.5556f
 
     override fun resolve(source: String, htmlParagraph: Boolean): ReaderImageOptions? {
         val values = sourceOptions(source)
-        // 段评气泡：尺寸由渲染器给（正方形），一律按「文字嵌入」排版，等宽于一个占位字。
+        // 段评气泡：尺寸由渲染器给（正方形），一律按「文字嵌入」排版，槽宽沿用旧版段评图标基准。
         // 不能沿用书源里的 style，否则会被当成整图铺满一页。
+        // 占位字必须用 CJK 的 `袮`：旧版把气泡源改写成 `bubble://...` 后已不带 `style=TEXT`，
+        // 因此走的是 `srcReplaceChar` 分支；`꧁` 在部分字体里只有半个字宽，会让气泡缩成小圆点。
         if (ParagraphBubbleSource.parse(source) != null) {
             return ReaderImageOptions(
                 layoutMode = ReaderImageLayoutMode.INLINE,
                 horizontalAlignment = ReaderTextAlignment.CENTER,
                 action = values?.valueIgnoreCase("pclick")?.takeIf(String::isNotBlank)
                     ?: values?.valueIgnoreCase("click")?.takeIf(String::isNotBlank),
-                inlinePlaceholder = ReaderInlineImagePlaceholder.REVIEW,
-                // 包内缩放要影响排版，否则气泡永远等于一个占位字宽（旧 `inlineWidth`）。
-                inlineWidthScale = ParagraphBubbleRenderer.inlineWidthScale(),
+                inlinePlaceholder = ReaderInlineImagePlaceholder.SRC_REPLACE,
+                // 软件气泡同样要保留旧版段评图标的 1.5556 倍基准；包内缩放再叠加上去，
+                // 否则默认包会缩成一个字宽，开启“接管书源段评图”后反而比原图更小。
+                inlineWidthScale = paragraphCommentSlotScale(),
+                paragraphCommentIcon = true,
             )
         }
         if (values == null) return null
         val rawStyle = values.valueIgnoreCase("style")
         val style = rawStyle?.uppercase()
         val width = values.valueIgnoreCase("width")
+        val paragraphCommentIcon = values.isParagraphCommentIcon()
         return ReaderImageOptions(
             layoutMode = when {
                 rawStyle == null -> null
@@ -64,12 +74,21 @@ object LegacyReaderImageOptionsResolver : ReaderImageOptionsResolver {
                 ?: values.valueIgnoreCase("click")?.takeIf(String::isNotBlank),
             // 占位字只是**纯文本**路径的概念：`"text"` 用 `srcReplaceChar`（袮）、`"TEXT"` 用
             // `reviewChar`（꧁）。旧 HTML 路径的行内图宽来自 ImageSpan 的 advance（没有占位字），
-            // 这里取纯文本默认的袮。
-            inlinePlaceholder = if (!htmlParagraph && rawStyle == imgStyleText) {
+            // 这里取纯文本默认的袮。段评图标例外：旧版给它的槽宽是 `袮` 的 1.5556 倍，不能按
+            // `꧁` 自身的 advance 量。
+            inlinePlaceholder = if (paragraphCommentIcon) {
+                ReaderInlineImagePlaceholder.SRC_REPLACE
+            } else if (!htmlParagraph && rawStyle == imgStyleText) {
                 ReaderInlineImagePlaceholder.REVIEW
             } else {
                 ReaderInlineImagePlaceholder.SRC_REPLACE
             },
+            inlineWidthScale = if (paragraphCommentIcon) {
+                paragraphCommentSlotScale()
+            } else {
+                1f
+            },
+            paragraphCommentIcon = paragraphCommentIcon,
         )
     }
 
@@ -91,7 +110,43 @@ object LegacyReaderImageOptionsResolver : ReaderImageOptionsResolver {
     private fun Map<String, String>.valueIgnoreCase(name: String): String? =
         get(name) ?: entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
 
+    private fun Map<String, String>.isParagraphCommentIcon(): Boolean {
+        val style = valueIgnoreCase("style")
+        if (!style.equals(imgStyleText, ignoreCase = true)) return false
+        val type = valueIgnoreCase("type")?.lowercase()
+        if (type in paragraphCommentTypes) return true
+        val click = listOfNotNull(
+            valueIgnoreCase("pclick"),
+            valueIgnoreCase("click"),
+        ).joinToString(separator = "\n").lowercase()
+        return paragraphCommentClickMarkers.any(click::contains)
+    }
+
     private fun textIsInline(rawStyle: String, htmlParagraph: Boolean): Boolean =
         if (htmlParagraph) rawStyle.uppercase() == imgStyleText
         else rawStyle == imgStyleText || rawStyle == imgStyleTextLowercase
+
+    private fun paragraphCommentSlotScale(): Float =
+        paragraphCommentInlineWidthScale * ParagraphBubbleRenderer.inlineWidthScale()
+
+    private val paragraphCommentTypes = setOf(
+        "qd",
+        "fqpl",
+        "fanqie",
+        "cmt",
+        "comment",
+        "comments",
+        "review",
+        "paragraph",
+        "paragraphcomment",
+    )
+
+    private val paragraphCommentClickMarkers = listOf(
+        "showqdcmt(",
+        "showfqcmt(",
+        "showqmcmt(",
+        "showcmt(",
+        "showcomment(",
+        "showparagraph",
+    )
 }

@@ -93,7 +93,7 @@ internal class IosCurlTurn {
             if (automatic) CurlKind.Automatic else CurlKind.Manual)
         config = c
         val begin = CurlControl.begin(c)
-        beginDurationSeconds = scaledDuration(begin.durationSeconds, speed)
+        beginDurationSeconds = scaledDuration(begin.durationSeconds, speed.baseDurationMillis)
         values = begin.from
         target = if (automatic) begin.to else CurlControl.update(c, c.initial).renderValues()
         elapsed = 0.0
@@ -131,6 +131,7 @@ internal class IosCurlTurn {
         commit: Boolean,
         velocity: Double,
         speed: ReaderPageTurnSpeed = ReaderPageTurnSpeed.Default,
+        baseDurationMillis: Int? = null,
     ) {
         beginJob?.cancel()
         val c = config ?: return
@@ -142,7 +143,7 @@ internal class IosCurlTurn {
         val duration = scaledDuration(
             if (automatic) begin.durationSeconds else
                 CurlControl.duration(c, velocity, commit, from.time),
-            speed,
+            baseDurationMillis ?: speed.baseDurationMillis,
         )
         if (duration <= 0.0) {
             values = to
@@ -182,8 +183,8 @@ internal class IosCurlTurn {
 
     // Normalize the native 400ms full turn to the shared speed setting. Keep the
     // relative warm-up/release timing and velocity-dependent settling intact.
-    private fun scaledDuration(seconds: Double, speed: ReaderPageTurnSpeed): Double =
-        seconds * speed.baseDurationMillis / 400.0
+    private fun scaledDuration(seconds: Double, baseDurationMillis: Int): Double =
+        seconds * baseDurationMillis / 400.0
 
     private companion object {
         /** 约 0.5s @60Hz；足够覆盖一次冷捕获，又不会把翻页挂死。 */

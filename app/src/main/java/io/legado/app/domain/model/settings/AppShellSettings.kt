@@ -12,7 +12,7 @@ data class AppShellSettings(
     val predictiveBackEnabled: Boolean = true,
     val readerSharedElementEnabled: Boolean = true,
     val showBottomView: Boolean = true,
-    val useFloatingBottomBar: Boolean = false,
+    val useFloatingBottomBar: Boolean = true,
     val useFloatingBottomBarLiquidGlass: Boolean = false,
     val tabletInterface: String = "auto",
     val multiPaneMode: String = "auto",

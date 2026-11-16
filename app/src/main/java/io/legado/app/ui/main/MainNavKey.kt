@@ -87,6 +87,9 @@ data object MainRouteSettingsOther : MainRoute
 data object MainRouteSettingsRead : MainRoute
 
 @Serializable
+data object MainRouteSettingsReadTheme : MainRoute
+
+@Serializable
 data class MainRouteSettingsManga(val openTranslation: Boolean = false) : MainRoute
 
 @Serializable

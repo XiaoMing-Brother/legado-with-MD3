@@ -4,7 +4,8 @@ import io.legado.app.data.appDb
 import io.legado.app.data.entities.BookVoiceBindingEntity
 import io.legado.app.data.entities.CastCharacter
 import io.legado.app.domain.model.readaloud.BookVoiceBinding
-import io.legado.app.ui.config.readConfig.ReadConfig
+import io.legado.app.domain.gateway.ReadAloudSettingsGateway
+import org.koin.core.context.GlobalContext
 
 /**
  * 角色音色的本地自动选择（不联网、不调 AI）：在该池**启用**的音色里挑本书用得最少的一批、
@@ -21,7 +22,8 @@ object CastVoicePicker {
         if (picked && !stale) return character
         // 没选过音色的角色只在多角色朗读/分配表开启时才补；音色被删掉的必须换，
         // 不换就永远卡在配音页那句「已指定的声音不可用」，朗读也拿不到角色音
-        if (!picked && !ReadConfig.useMultiSpeaker && !ReadConfig.multiRoleCast) return character
+        val settings = GlobalContext.get().get<ReadAloudSettingsGateway>().currentSettings
+        if (!picked && !settings.useMultiSpeaker && !settings.multiRoleCast) return character
         val poolVoices = VoicePoolStore.enabledVoiceIdsOfPool(character.poolLabel)
         if (poolVoices.isEmpty()) return character
         val usage = appDb.castCharacterDao.getByBook(character.bookUrl)

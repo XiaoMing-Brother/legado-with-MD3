@@ -82,6 +82,32 @@ class ReaderImageOptionsTest {
     }
 
     @Test
+    fun actionableCommentIconWinsTapsInsideItsExpandedTouchTarget() = runBlocking {
+        val source = ReaderChapterSourceParser.parse(
+            0, "", listOf("A<img src=\"image\">"), false, false,
+        )
+        val result = ReaderChapterBlockMeasurer(
+            shaper, shaper, { ReaderImageDimensions(10f, 10f) },
+            imageOptionsResolver = { _, _ ->
+                ReaderImageOptions(
+                    ReaderImageLayoutMode.INLINE,
+                    action = "run()",
+                    paragraphCommentIcon = true,
+                )
+            },
+        ).measure(source, baseStyle) as ReaderChapterMeasureResult.Success
+        val page = ReaderPaginator.paginateBlocks(result.blocks, config).single()
+        val image = page.elements.filterIsInstance<ReaderElement.Image>().single()
+        val text = page.elements.filterIsInstance<ReaderElement.Text>().first()
+        val overlapX = (text.bounds.left + text.bounds.right) / 2f
+        val y = image.bounds.top + 1f
+
+        // 48dp 触摸区向左盖住前一个字；有动作的段评图必须优先命中，否则点击会被文字吃掉。
+        assertTrue(image.touchBounds.contains(overlapX, y))
+        assertSame(image, page.elementAt(overlapX, y))
+    }
+
+    @Test
     fun bottomJustificationMovesInlineImageTouchBoundsWithItsRow() = runBlocking {
         val result = measure(ReaderImageOptions(ReaderImageLayoutMode.INLINE))
         val blocks = result.blocks + result.blocks

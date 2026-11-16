@@ -285,7 +285,7 @@ val appDb by lazy {
         AutoMigration(from = 133, to = 134),
         // highlight_rules 新增四列夜间颜色：可空（null = 跟随白天那一栏），老规则读回来
         // 四列都是 NULL，解析口径见 HighlightRule.colorsFor。
-        AutoMigration(from = 134, to = 135),
+        AutoMigration(from = 134, to = 135, spec = DatabaseMigrations.Migration_134_135::class),
     ]
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -77,6 +77,7 @@ import io.legado.app.constant.ReadMenuBlurMode
 import io.legado.app.feature.reader.ReaderBackgroundSurface
 import io.legado.app.feature.reader.ReaderCanvasSurface
 import io.legado.app.feature.reader.core.gesture.ReaderTapActionGrid
+import io.legado.app.feature.reader.core.model.ReaderImageNightMode
 import io.legado.app.feature.reader.core.model.readerBackgroundAlpha
 import io.legado.app.feature.reader.core.transition.ReaderPageTurnSpeed
 import io.legado.app.feature.reader.core.transition.ReaderTransitionMode
@@ -205,7 +206,8 @@ fun ReadBookRouteScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val appUiConfiguration = LocalAppUiConfiguration.current
     val isDarkTheme = appUiConfiguration.isDarkTheme
-    val isEInkMode = appUiConfiguration.theme.appTheme == "4"
+    val isEInkMode = io.legado.app.model.ReadBook.paginationEnvironment?.style?.isEInkMode
+        ?: (appUiConfiguration.theme.appTheme == "4")
     val eyeProtectionActive = rememberEyeProtectionActive(
         enabled = state.eyeProtection.enabled,
         autoNight = state.eyeProtection.autoNight,
@@ -765,6 +767,7 @@ fun ReadBookRouteScreen(
                 autoPagePaused = state.menuVisible,
                 autoReadSpeedSeconds = readPreferences.autoReadSpeed,
                 isEInkMode = isEInkMode,
+                imageNightMode = ReaderImageNightMode.fromPref(readPreferences.imageNightMode),
                 onAutoPageStop = controller::stopAutoPage,
                 onShowSelectionMenu = controller::showComposeTextActionMenu,
                 onDismissSelectionMenu = controller::dismissTextActionMenu,

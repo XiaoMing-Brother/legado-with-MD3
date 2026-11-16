@@ -209,6 +209,7 @@ object PreferKey {
     const val importKeepEnable = "importKeepEnable"
     const val previewImageByClick = "previewImageByClick"
     const val clickImgWay = "clickImgWay"
+    const val imageNightMode = "imageNightMode"
     const val keyPageOnLongPress = "keyPageOnLongPress"
     const val swipeToAddBookmark = "swipeToAddBookmark"
     const val bookmarkBadgeImage = "bookmarkBadgeImage"

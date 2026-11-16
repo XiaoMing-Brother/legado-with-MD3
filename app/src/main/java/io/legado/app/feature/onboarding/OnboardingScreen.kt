@@ -69,13 +69,13 @@ fun OnboardingScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                painter = painterResource(R.drawable.ic_launcher_foreground),
+                painter = painterResource(R.drawable.ic_logo_mark),
                 contentDescription = null,
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .padding(top = 16.dp)
-                    .height(96.dp)
-                    .width(128.dp)
+                    .size(108.dp)
+                    .clip(RoundedCornerShape(28.dp))
             )
             AppText(
                 text = pageTitle(state.page),

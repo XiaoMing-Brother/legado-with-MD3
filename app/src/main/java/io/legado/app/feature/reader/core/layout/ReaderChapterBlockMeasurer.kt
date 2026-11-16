@@ -82,6 +82,8 @@ data class ReaderImageOptions(
      * （对齐旧 `TextChapterLayout.applyInlineImageWidths` 的 `inlineWidth`）。
      */
     val inlineWidthScale: Float = 1f,
+    /** 段评图标：书源用行内 SVG 画出的段评入口，触摸区按无障碍下限补齐。 */
+    val paragraphCommentIcon: Boolean = false,
 )
 
 fun interface ReaderImageDimensionsResolver {
@@ -533,6 +535,7 @@ class ReaderChapterBlockMeasurer(
                                 heightPx = cellHeightPx,
                                 chapterPosition = item.chapterPosition,
                                 action = action,
+                                paragraphCommentIcon = options?.paragraphCommentIcon == true,
                                 link = item.presentation?.link,
                                 useMeasuredBounds = localInlineSize != null,
                             )

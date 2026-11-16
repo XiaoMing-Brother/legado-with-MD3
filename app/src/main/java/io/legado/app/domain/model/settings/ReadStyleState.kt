@@ -27,6 +27,9 @@ data class ReadStyleItem(
     val bgValueNight: String,
     val bgTypeEInk: Int,
     val bgValueEInk: String,
+    /** 当前日间/夜间背景来自哪个内置主题；手动改背景后为 null。 */
+    val readThemeIdDay: Int? = null,
+    val readThemeIdNight: Int? = null,
     val textColor: Int,
     val textColorNight: Int,
     val textColorEInk: Int,

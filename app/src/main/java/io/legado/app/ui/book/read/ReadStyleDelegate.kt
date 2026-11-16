@@ -1,6 +1,7 @@
 package io.legado.app.ui.book.read
 
 import android.content.Context
+import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.core.graphics.toColorInt
@@ -14,17 +15,24 @@ import io.legado.app.domain.gateway.ReadStyleGateway
 import io.legado.app.domain.gateway.ReadStyleMutation
 import io.legado.app.domain.gateway.ReadStyleStringKey
 import io.legado.app.domain.gateway.ThemeSettingsGateway
+import io.legado.app.domain.model.settings.ReadThemeTarget
 import io.legado.app.domain.model.settings.ThemeSettings
 import io.legado.app.domain.model.settings.isEyeProtectionConfigured
+import io.legado.app.help.DefaultData
+import io.legado.app.help.config.ReadBookConfig
+import io.legado.app.help.config.ReadStyleResolver
+import io.legado.app.help.palette.ReaderBackgroundPaletteExtractor
 import io.legado.app.model.ReadSessionState
 import io.legado.app.utils.hexString
 import io.legado.app.utils.postEvent
 import io.legado.app.utils.share
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileNotFoundException
 import kotlin.time.Duration.Companion.milliseconds
@@ -236,6 +244,78 @@ class ReadStyleDelegate(
         )
     }
 
+    /**
+     * 打开内置主题选择弹层（清墨 LightInk 主题商店快照）。
+     */
+    fun openReadThemePicker() {
+        host.updateState { it.withSheet(ReadBookSheet.ReadThemePicker) }
+    }
+
+    /**
+     * 应用内置主题。
+     *
+     * 只写 [target] 那一份背景（日间含墨水屏，夜间只改夜间）与状态栏图标并落盘，随即通知渲染；
+     * 另一模式的背景、字体颜色、字号与边距保持用户当前设置。主题自带背景图时**不阻塞**这一步——
+     * 图片下载完成后才补 `bgType=2` 与本地路径。下载失败只提示一次，背景色保留。
+     */
+    fun applyReadTheme(themeId: Int, target: ReadThemeTarget) {
+        val theme = DefaultData.readThemes.firstOrNull { it.id == themeId } ?: return
+        if (!readStyleGateway.applyReadTheme(themeId, target)) return
+        emitConfigUpdate(
+            ConfigUpdateAction.UpdateBackground,
+            ConfigUpdateAction.UpdateStyle,
+            ConfigUpdateAction.UpdateSystemUi,
+            ConfigUpdateAction.ReloadContent,
+        )
+        if (theme.mipmap == null) return
+        scope.launch(IO) {
+            val path = readStyleGateway.downloadReadThemeBackground(theme)
+            if (path == null) {
+                host.emitEffect(
+                    ReadBookEffect.ShowToast(context.getString(R.string.read_theme_image_failed))
+                )
+                return@launch
+            }
+            readStyleGateway.setReadThemeBackgroundImage(path, target)
+            emitConfigUpdate(ConfigUpdateAction.UpdateBackground)
+        }
+    }
+
+    /**
+     * 按当前背景图提取一套配色并套用到文字（清墨：「主题编辑器会根据图片提取出一套配色便于
+     * 快捷搭配」）。
+     *
+     * 纯色背景没有可提取的配色，直接提示失败而不是把颜色改坏。取色在 IO 线程做，成功后写配置并
+     * 触发重绘——文字颜色改了必须重建 TextPage，否则画布还在用旧 paint。
+     */
+    fun applyBackgroundPalette() {
+        scope.launch(IO) {
+            val drawable = runCatching {
+                ReadStyleResolver.currentBackgroundDrawable(
+                    config = ReadBookConfig.durConfig,
+                    width = ReaderBackgroundPaletteExtractor.sampleSizePx(),
+                    height = ReaderBackgroundPaletteExtractor.sampleSizePx(),
+                )
+            }.getOrNull()
+            // 纯色背景没有可提取的配色：提示而不是硬造一套颜色。
+            val palette = (drawable as? BitmapDrawable)?.let { bitmapDrawable ->
+                withContext(Dispatchers.Default) {
+                    val bitmap = bitmapDrawable.bitmap ?: return@withContext null
+                    ReaderBackgroundPaletteExtractor.extract(bitmap)
+                }
+            }
+            if (palette == null) {
+                host.emitEffect(
+                    ReadBookEffect.ShowToast(context.getString(R.string.read_bg_palette_failed))
+                )
+                return@launch
+            }
+            readStyleGateway.applyReadBackgroundPalette(palette)
+            // 状态栏图标也跟着配色走，与 applyPresetTheme/applyReadTheme 一致。
+            emitRepaintTextActions(ConfigUpdateAction.UpdateSystemUi)
+        }
+    }
+
     fun openBgTextConfig(index: Int) {
         scope.launch {
             readSettingsRepository.setStyleSelect(ReadSessionState.isComic, index)
@@ -435,11 +515,12 @@ class ReadStyleDelegate(
     }
 
     /** 改颜色要重绘已排好的 TextPage，不只是换 paint。 */
-    private fun emitRepaintTextActions() = emitConfigUpdate(
+    private fun emitRepaintTextActions(vararg extra: ConfigUpdateAction) = emitConfigUpdate(
         ConfigUpdateAction.UpdateStyle,
         ConfigUpdateAction.UpdateContent,
         ConfigUpdateAction.InvalidateTextPage,
         ConfigUpdateAction.SubmitRenderTask,
+        *extra,
     )
 
     private fun postActionBarUpdateIfFollowingPage() {

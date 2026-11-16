@@ -41,6 +41,7 @@ fun ReadConfigScreen(
     onIntent: (ReadConfigIntent) -> Unit,
     onBackClick: () -> Unit,
     focusSettingId: String? = null,
+    onNavigateToReadThemePicker: () -> Unit = {},
 ) {
     val scrollBehavior = GlassTopAppBarDefaults.defaultScrollBehavior()
     val settings = state
@@ -97,6 +98,17 @@ fun ReadConfigScreen(
                 bottom = 120.dp
             )
         ) {
+            item(ReadSettingSection.Style.name) {
+                SplicedColumnGroup(title = stringResource(ReadSettingSection.Style.titleRes)) {
+                    Setting(ReadSetting.ThemePicker) {
+                        ClickableSettingItem(
+                            title = stringResource(ReadSetting.ThemePicker.titleRes),
+                            description = stringResource(R.string.read_theme_summary),
+                            onClick = onNavigateToReadThemePicker,
+                        )
+                    }
+                }
+            }
             item(ReadSettingSection.Screen.name) {
                 SplicedColumnGroup(title = stringResource(ReadSettingSection.Screen.titleRes)) {
                     Setting(ReadSetting.Orientation) {

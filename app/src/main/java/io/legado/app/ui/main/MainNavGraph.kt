@@ -165,6 +165,7 @@ import io.legado.app.ui.config.labConfig.LabConfigRouteScreen
 import io.legado.app.ui.config.otherConfig.OtherConfigRouteScreen
 import io.legado.app.ui.config.privateConfig.PrivateConfigRouteScreen
 import io.legado.app.ui.config.readConfig.ReadConfigRouteScreen
+import io.legado.app.ui.config.readConfig.ReadThemePickerRouteScreen
 import io.legado.app.ui.config.themeConfig.ThemeConfigRouteScreen
 import io.legado.app.ui.config.themeManage.ThemeManageRouteScreen
 import io.legado.app.ui.config.translation.TranslationConfigRouteScreen
@@ -734,6 +735,7 @@ fun MainActivity.mainEntryProvider(
         ReadConfigRouteScreen(
             onBackClick = { onNavigateBack() },
             focusSettingId = route.settingId,
+            onNavigateToReadThemePicker = { pushRoute(MainRouteSettingsReadTheme) },
         )
     }
 
@@ -743,6 +745,10 @@ fun MainActivity.mainEntryProvider(
 
     entry<MainRouteSettingsRead> {
         SettingsDestinationContent(SettingsSearchPage.Reading, onNavigateBack)
+    }
+
+    entry<MainRouteSettingsReadTheme> {
+        ReadThemePickerRouteScreen(onBackClick = { onNavigateBack() })
     }
 
     entry<MainRouteSettingsManga> { route ->
@@ -2173,7 +2179,10 @@ private fun MainEntryNavigation.SettingsDestinationContent(
 ) {
     when (page) {
         SettingsSearchPage.Reading -> {
-            ReadConfigRouteScreen(onBackClick = { onNavigateBack() })
+            ReadConfigRouteScreen(
+                onBackClick = { onNavigateBack() },
+                onNavigateToReadThemePicker = { pushRoute(MainRouteSettingsReadTheme) },
+            )
         }
         SettingsSearchPage.Theme -> {
             ThemeConfigRouteScreen(

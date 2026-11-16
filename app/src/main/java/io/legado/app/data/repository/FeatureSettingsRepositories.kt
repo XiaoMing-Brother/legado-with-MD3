@@ -299,7 +299,7 @@ internal fun Preferences.toAppShellSettings(): AppShellSettings = AppShellSettin
     textAnimationLevel = TextAnimationLevel.fromStoredValue(compatDsString(PreferKey.textAnimationLevel)),
     readerSharedElementEnabled = compatDsBoolean(PreferKey.readerSharedElementEnabled) ?: true,
     showBottomView = compatDsBoolean(PreferKey.showBottomView) ?: true,
-    useFloatingBottomBar = compatDsBoolean(PreferKey.useFloatingBottomBar) ?: false,
+    useFloatingBottomBar = compatDsBoolean(PreferKey.useFloatingBottomBar) ?: true,
     useFloatingBottomBarLiquidGlass =
         compatDsBoolean(PreferKey.useFloatingBottomBarLiquidGlass) ?: false,
     tabletInterface = compatDsString(PreferKey.tabletInterface) ?: "auto",

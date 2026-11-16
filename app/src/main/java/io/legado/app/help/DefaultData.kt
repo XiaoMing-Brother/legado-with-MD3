@@ -6,6 +6,7 @@ import io.legado.app.data.entities.HttpTTS
 import io.legado.app.data.entities.KeyboardAssist
 import io.legado.app.data.entities.RssSource
 import io.legado.app.data.entities.TxtTocRule
+import io.legado.app.domain.model.settings.ReadThemePreset
 import io.legado.app.help.config.LocalConfig
 import io.legado.app.help.config.ThemeConfigStore
 import io.legado.app.help.config.ReadBookConfig
@@ -74,6 +75,18 @@ object DefaultData {
         )
         GSON.fromJsonArray<ReadBookConfig.Config>(json).getOrNull()
             ?: emptyList()
+    }
+
+    /**
+     * 内置阅读主题（清墨 LightInk 主题商店快照）。资源里已按下载量降序排列，
+     * 同名主题靠 [ReadThemePreset.id] 区分。
+     */
+    val readThemes: List<ReadThemePreset> by lazy {
+        val json = String(
+            appCtx.assets.open("defaultData/readThemes.json")
+                .readBytes()
+        )
+        GSON.fromJsonArray<ReadThemePreset>(json).getOrNull() ?: emptyList()
     }
 
     val txtTocRules: List<TxtTocRule> by lazy {
