@@ -1903,6 +1903,12 @@
     <string name="welcome_book_folder_tip">Set where local books are stored. You can change it later in Settings.</string>
     <string name="welcome_book_folder_not_selected">No folder selected</string>
     <string name="onboarding_title_welcome">Welcome</string>
+    <string name="calligraphy_splash_enabled_title">Calligraphy welcome screen</string>
+    <string name="calligraphy_splash_enabled_summary">Show the paper-style calligraphy splash when the app cold-starts</string>
+    <string name="calligraphy_splash_once_per_day_title">Once per day</string>
+    <string name="calligraphy_splash_once_per_day_summary">After the splash is shown once each day, skip it until the next day</string>
+    <string name="calligraphy_splash_text_title">Splash text</string>
+    <string name="calligraphy_splash_text_summary">Shown vertically on the splash screen; line breaks split columns. Leave empty for the default verse.</string>
     <string name="onboarding_title_backup">Backup &amp; Restore</string>
     <string name="onboarding_title_book_folder">Book Folder</string>
     <string name="onboarding_title_theme">Theme Style</string>

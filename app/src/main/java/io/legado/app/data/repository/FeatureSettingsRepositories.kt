@@ -555,6 +555,10 @@ internal fun Preferences.toOtherSettings(): OtherSettings {
         importKeepEnable = compatDsBoolean(PreferKey.importKeepEnable) ?: false,
         fontSort = compatDsInt(PreferKey.fontSort) ?: 0,
         blockSourceBrowser = compatDsBoolean(PreferKey.blockSourceBrowser) ?: false,
+        calligraphySplashEnabled = compatDsBoolean(PreferKey.calligraphySplashEnabled) ?: true,
+        calligraphySplashOncePerDay = compatDsBoolean(PreferKey.calligraphySplashOncePerDay) ?: false,
+        calligraphySplashLastShownDay = compatDsInt(PreferKey.calligraphySplashLastShownDay) ?: 0,
+        calligraphySplashText = compatDsString(PreferKey.calligraphySplashText) ?: "",
     )
 }
 
@@ -586,6 +590,10 @@ internal fun OtherSettings.toPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.importKeepEnable to importKeepEnable,
     PreferKey.fontSort to fontSort,
     PreferKey.blockSourceBrowser to blockSourceBrowser,
+    PreferKey.calligraphySplashEnabled to calligraphySplashEnabled,
+    PreferKey.calligraphySplashOncePerDay to calligraphySplashOncePerDay,
+    PreferKey.calligraphySplashLastShownDay to calligraphySplashLastShownDay,
+    PreferKey.calligraphySplashText to calligraphySplashText,
 )
 
 class OtherSettingsRepository : OtherSettingsGateway {

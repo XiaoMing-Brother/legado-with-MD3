@@ -29,4 +29,9 @@ data class OtherSettings(
     val importKeepEnable: Boolean = false,
     val fontSort: Int = 0,
     val blockSourceBrowser: Boolean = false,
+    val calligraphySplashEnabled: Boolean = true,
+    val calligraphySplashOncePerDay: Boolean = false,
+    val calligraphySplashLastShownDay: Int = 0,
+    /** 开屏竖排文字，空串表示使用内置默认诗句；用 \n 分列 */
+    val calligraphySplashText: String = "",
 )

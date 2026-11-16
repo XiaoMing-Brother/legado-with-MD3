@@ -1848,6 +1848,12 @@
     <string name="welcome_book_folder_tip">设置本地书籍保存目录，后续也可在设置中修改。</string>
     <string name="welcome_book_folder_not_selected">未选择文件夹</string>
     <string name="onboarding_title_welcome">欢迎</string>
+    <string name="calligraphy_splash_enabled_title">启动书法欢迎屏</string>
+    <string name="calligraphy_splash_enabled_summary">冷启动进入主界面时显示纸纹书法开屏</string>
+    <string name="calligraphy_splash_once_per_day_title">每日仅显示一次</string>
+    <string name="calligraphy_splash_once_per_day_summary">当天已显示过后，再次冷启动不再显示，次日恢复</string>
+    <string name="calligraphy_splash_text_title">开屏文字</string>
+    <string name="calligraphy_splash_text_summary">竖排显示在开屏页，换行可分列；留空使用默认诗句</string>
     <string name="onboarding_title_backup">备份与恢复</string>
     <string name="onboarding_title_book_folder">书籍文件夹</string>
     <string name="onboarding_title_theme">主题样式</string>

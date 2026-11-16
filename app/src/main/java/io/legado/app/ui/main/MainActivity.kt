@@ -1,6 +1,9 @@
 package io.legado.app.ui.main
 
 import android.Manifest
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
@@ -10,6 +13,8 @@ import android.text.format.DateUtils
 import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
+import android.view.View
+import android.view.animation.DecelerateInterpolator
 import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContentTransitionScope
@@ -106,6 +111,8 @@ import io.legado.app.ui.book.readaloud.morph.CapsuleAnchorKind
 import io.legado.app.ui.book.readaloud.morph.LocalReadAloudMorph
 import io.legado.app.ui.book.readaloud.morph.rememberReadAloudMorphState
 import io.legado.app.ui.book.readaloud.player.ReadAloudPlayerViewModel
+import io.legado.app.feature.splash.CalligraphySplashOverlay
+import io.legado.app.feature.splash.CalligraphySplashPolicy
 import io.legado.app.ui.main.bookshelf.BookshelfCoverPreloader
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.LocalAppUiConfiguration
@@ -132,6 +139,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicBoolean
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import kotlin.coroutines.resume
@@ -141,6 +149,9 @@ import kotlin.coroutines.suspendCoroutine
  * 主界面
  */
 open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
+
+    private val calligraphySplashActive = AtomicBoolean(true)
+    private var showCalligraphySplash = false
 
     private data class RouteEvent(
         val route: NavKey,
@@ -167,7 +178,16 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
         /** 播放页收起后等待的时长：期间若重新展开（听书 ⇄ 朗读切换）就不还原本地系统栏状态。 */
         private const val SYSTEM_BARS_RESTORE_DELAY_MILLIS = 200L
 
+        /** 书法开屏首帧兜底超时：正常由覆盖层首帧回调放行，异常情况下也不至于卡住启动窗口。 */
+        private const val SPLASH_HOLD_TIMEOUT_MS = 1_200L
+
         private val startupUpdateCheckGate = ProcessStartupUpdateCheckGate()
+
+        /**
+         * 进程内首个 [MainActivity] 创建即冷启动。Activity 重建（字号/密度/主题等配置变化）、
+         * 从后台重新进入都不会再次置为 true，因此书法开屏只在冷启动出现。
+         */
+        private val coldStartSplashPending = AtomicBoolean(true)
 
         @Volatile
         var hasActiveReadBookRoute: Boolean = false
@@ -435,13 +455,45 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        installSplashScreen().apply {
+            // 启动窗口保持到诗句画出首帧：中间不再出现图标、白底或书架一闪
+            setKeepOnScreenCondition { calligraphySplashActive.get() }
+            setOnExitAnimationListener { provider ->
+                val animator = ObjectAnimator.ofFloat(provider.view, View.ALPHA, 1f, 0f)
+                animator.interpolator = DecelerateInterpolator()
+                animator.duration = 280L
+                animator.addListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        provider.remove()
+                    }
+                })
+                animator.start()
+            }
+        }
         shouldApplyDefaultToRead = savedInstanceState == null
         restoredReadBookRoute = savedInstanceState?.restoreReadBookRoute()
             ?: navRouteTracker.lastReadBookRoute()
         super.onCreate(savedInstanceState)
 
-        if (checkStartupRoute()) return
+        val isColdStart = coldStartSplashPending.compareAndSet(true, false)
+        if (checkStartupRoute()) {
+            // 转交给别的 Activity 时不保留启动窗口，否则会一直停在纸色上
+            calligraphySplashActive.set(false)
+            return
+        }
+        showCalligraphySplash = isColdStart && CalligraphySplashPolicy.shouldShow(
+            otherSettingsGateway.currentSettings,
+        )
+        // 书法开屏用 Compose 全屏层绘制；系统启动窗口保持到该层画出首帧，
+        // 首帧之后才淡出，避免纸色垫底、诗句迟到。
+        if (showCalligraphySplash) {
+            lifecycleScope.launch {
+                delay(SPLASH_HOLD_TIMEOUT_MS)
+                calligraphySplashActive.set(false)
+            }
+        } else {
+            calligraphySplashActive.set(false)
+        }
         val shouldAutoCheckUpdate = startupUpdateCheckGate.consume(
             otherSettingsGateway.currentSettings.autoCheckUpdateOnStart
         )
@@ -545,6 +597,17 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
     @OptIn(ExperimentalSharedTransitionApi::class)
     @Composable
     override fun Content() {
+        if (showCalligraphySplash) {
+            CalligraphySplashOverlay(
+                text = otherSettingsGateway.currentSettings.calligraphySplashText,
+                onFirstFrame = { calligraphySplashActive.set(false) },
+                onFinished = {
+                    lifecycleScope.launch {
+                        CalligraphySplashPolicy.markShown(otherSettingsGateway)
+                    }
+                },
+            )
+        }
         val configuration = LocalAppUiConfiguration.current
         val navigationAnimationStyle = configuration.appShell.navigationAnimationStyle
         val navigationLayoutDirection = LocalLayoutDirection.current

@@ -121,6 +121,40 @@ fun OtherConfigScreen(
                         onCheckedChange = { onIntent(OtherConfigIntent.DefaultToReadChanged(it)) }
                     )
                 }
+                SearchableSetting("other.calligraphy_splash_enabled_title") {
+                    SwitchSettingItem(
+                        title = stringResource(R.string.calligraphy_splash_enabled_title),
+                        description = stringResource(R.string.calligraphy_splash_enabled_summary),
+                        checked = state.calligraphySplashEnabled,
+                        onCheckedChange = {
+                            onIntent(OtherConfigIntent.CalligraphySplashEnabledChanged(it))
+                        },
+                    )
+                }
+
+                SearchableSetting("other.calligraphy_splash_once_per_day_title") {
+                    SwitchSettingItem(
+                        title = stringResource(R.string.calligraphy_splash_once_per_day_title),
+                        description = stringResource(R.string.calligraphy_splash_once_per_day_summary),
+                        checked = state.calligraphySplashOncePerDay,
+                        enabled = state.calligraphySplashEnabled,
+                        onCheckedChange = {
+                            onIntent(OtherConfigIntent.CalligraphySplashOncePerDayChanged(it))
+                        },
+                    )
+                }
+
+                SearchableSetting("other.calligraphy_splash_text_title") {
+                    InputSettingItem(
+                        title = stringResource(R.string.calligraphy_splash_text_title),
+                        value = state.calligraphySplashText,
+                        defaultValue = "",
+                        description = stringResource(R.string.calligraphy_splash_text_summary),
+                        onConfirm = {
+                            onIntent(OtherConfigIntent.CalligraphySplashTextChanged(it))
+                        },
+                    )
+                }
             }
 
             SplicedColumnGroup(title = stringResource(R.string.read)) {

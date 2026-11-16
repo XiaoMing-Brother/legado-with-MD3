@@ -187,11 +187,25 @@ KMP 任务名在模块实际创建后才存在；不要假装运行尚未定义�
 - Rhino 书源/RSS/TTS 规则、Android 服务、Web 服务和阅读器渲染属于高行为风险平台能力，迁移前必须建立兼容测试或
   capability 边界。
 - `modules/web` 必须连接应用内 Ktor WebService；开发环境通过 `VITE_API` 指向设备服务地址。
-- 发布形态为 **`core` + `comic` 双包**（2026-10-31 定案，2026-11-05 产品标记由 `full` 改为 `comic`）：
-  `core` 是基础包，`comic` 是带本地漫画引擎的漫画增强版；两者同一 Release、同签名、同 versionCode。
-  APK 附件名必须带 `core`/`comic` 产品标记，应用内更新按 `AppProduct` 只挑本产品那一份；
-  R8 mapping 按产品分别上传。不再为减体积替换推理栈或引入扩展包路线。详见
-  `docs/dev/manga-engine-extension-plan.md` §5.1。
+- 发布形态为**单包**（2026-11-04 起）：一个 Release、一份签名、APK 附件名不带产品标记
+  （`legado-<版本>-<abi>.apk`），R8 mapping 只上传一份 `mapping.txt`。旧的 `core`/`full`（3.26.23 起
+  上游改称 `comic`）双包已删除，其内置的本地推理栈与模型无代码消费，属于死重；不要再引入按功能分包
+  或扩展包。
+- **本地打包默认用 lyc486 公开 key**（清单见 `~/.android/legado-signing/README.md`）：本地/自测/
+  coexist 打包与兼容 `io.legado.app` 等老包排查，**默认**使用 lyc486 公开 key——`gradle.properties`
+  的 `TEMP-SIGNING` 段把 `RELEASE_STORE_FILE` 指向 `lyc486-legado-public.jks`，本地构建无需每次询问。
+  **正式发布仍必须走 CI 的 `secrets.SIGNING_KEY`（CN=kudomaga，DD:C9:EB…）**；本机无私钥，要覆盖已装
+  正式版只能走 CI。lyc486 私钥已在公网公开（`.github/workflows/legado.jks`，93:A2:84…），
+  **仅限本地/自测，禁止用于正式发版**。
+- **签名与安装/打包**：本地模拟器安装、USB 真机调试、`assemble*`/`install*`/「打包」默认按上一条
+  使用 lyc486，不再逐次确认；**仅当目标是正式发布（覆盖已装线上版）时**必须确认走 CI kudomaga，
+  不得在本地用 lyc486 / legado-md3 出「正式包」。可用密钥：
+  - **debug**：`debug.keystore`，日常开发、`installDebug`、模拟器/USB 调试安装。
+  - **legado-md3**：本机 Release/coexist 自测；无法覆盖 kudomaga 签的已装正式版。
+  - **kudomaga**：GitHub Actions 正式发版（单包）；本机无私钥，需走 CI。
+  - **lyc486 公开 key**：本地/自测/兼容老包排查的默认签名；**禁止用于正式发版**。
+  同时确认 **单包 / `coexist`** 与 **debug / release** 变体；完整指纹与决策表见
+  `~/.android/legado-signing/README.md`。
 
 ## 交付说明
 
