@@ -29,7 +29,7 @@ fun ChangeSourceMigrationOptionsSheet(
     title: String,
     subtitle: String? = null,
     initialOptions: ChangeSourceMigrationOptions = ChangeSourceMigrationOptions(),
-    /** 是否展示「删除已下载章节」。共存场景两本书都留在书架，删缓存没有意义。 */
+    /** 是否展示「同时删除图片缓存」。共存场景两本书都留在书架，删缓存没有意义。 */
     showDeleteDownloaded: Boolean = true,
     onDismissRequest: () -> Unit,
     onConfirm: (ChangeSourceMigrationOptions) -> Unit,
@@ -95,7 +95,7 @@ fun ChangeSourceMigrationOptionsSheet(
             CheckboxItem("作者", checked = migrateAuthor) { migrateAuthor = it }
             CheckboxItem("阅读设置", checked = migrateReadConfig) { migrateReadConfig = it }
             if (showDeleteDownloaded) {
-                CheckboxItem("删除已下载章节", checked = deleteDownloadedChapters) {
+                CheckboxItem("同时删除图片缓存", checked = deleteDownloadedChapters) {
                     deleteDownloadedChapters = it
                 }
             }

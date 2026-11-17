@@ -69,6 +69,25 @@ class BookHelpChapterCacheTest {
     }
 
     @Test
+    fun `source invalidation removes text caches but keeps chapter images`() {
+        val current = BookHelp.getChapterContentFile(book, chapter).apply {
+            parentFile!!.mkdirs()
+            writeText("Old source content")
+        }
+        val legacy = File(bookDir, chapter.getFileName()).apply { writeText("Legacy content") }
+        File(bookDir, chapter.getFileName("nr")).writeText("")
+        val image = File(current.parentFile, "cover.jpg").apply { writeText("image") }
+
+        BookHelp.clearChapterContentCache(book)
+
+        assertFalse(current.exists())
+        assertFalse(legacy.exists())
+        assertFalse(File(bookDir, chapter.getFileName("nr")).exists())
+        assertTrue(image.isFile)
+        assertNull(BookHelp.getContent(book, chapter))
+    }
+
+    @Test
     fun `old title marker remains readable`() {
         File(bookDir, chapter.getFileName("nr")).createNewFile()
         assertFalse(BookHelp.removeSameTitle(book, chapter))

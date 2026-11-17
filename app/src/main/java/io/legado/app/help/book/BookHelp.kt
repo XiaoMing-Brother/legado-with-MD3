@@ -133,6 +133,25 @@ object BookHelp {
         if (book.isMarkdown) MarkdownFile.clear()
     }
 
+    /**
+     * 换源后正文缓存属于旧书源，不能继续按章节序号和标题复用。
+     *
+     * 只删除正文及“去除重复标题”标记，保留章节目录下的图片和其他下载资源；
+     * 是否连图片缓存一起删除由换源选项决定。
+     */
+    fun clearChapterContentCache(book: Book) {
+        val bookDir = File(FileUtils.getPath(downloadDir, cacheFolderName, book.getFolderName()))
+        bookDir.walkTopDown()
+            .filter { it.isFile && (it.extension == "nb" || it.extension == "nr") }
+            .forEach { it.delete() }
+        bookDir.listFiles()
+            ?.filter { it.isDirectory && it.name != cacheImageFolderName }
+            ?.forEach { chapterDir ->
+                if (chapterDir.listFiles()?.isEmpty() == true) chapterDir.delete()
+            }
+        ContentProcessor.invalidateSemanticContent(book.bookUrl)
+    }
+
     private fun deleteImageCacheDirectory(directory: File) {
         imageFiles.deleteIfIdle(directory) {
             FileUtils.delete(it.absolutePath)

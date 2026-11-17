@@ -103,8 +103,15 @@ class ChangeBookSourceUseCase(
         applyMigration(oldBook, newBook, chapters, options)
         if (options.deleteDownloadedChapters) {
             BookHelp.clearCache(oldBook)
-        } else if (oldBook.bookUrl != newBook.bookUrl) {
-            BookHelp.updateCacheFolder(oldBook, newBook)
+        } else {
+            if (oldBook.origin != newBook.origin) {
+                // 新源即使章节标题相同，也不能命中旧源正文；先清理再迁移目录，
+                // 避免延迟迁移把旧正文带回新书的缓存目录。
+                BookHelp.clearChapterContentCache(oldBook)
+            }
+            if (oldBook.bookUrl != newBook.bookUrl) {
+                BookHelp.updateCacheFolder(oldBook, newBook)
+            }
         }
         database.withTransaction {
             bookChapterDao.delByBook(oldBook.bookUrl)
