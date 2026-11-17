@@ -195,6 +195,41 @@ class BottomWebViewDialogTest {
         }
     }
 
+    @Test
+    fun usesBottomSheetThemeWithoutBottomSystemWindowPadding() {
+        val source = source("https://source.test")
+        fixture.database.bookSourceDao.insert(source)
+        val dialog = BottomWebViewDialog(
+            source.getKey(),
+            BookType.text,
+            source.bookSourceUrl,
+            html = "<html>comments</html>",
+        )
+        showDialog(dialog) {
+            val theme = dialog.requireDialog().context.theme
+            val themeAttributes = theme.obtainStyledAttributes(
+                intArrayOf(com.google.android.material.R.attr.bottomSheetStyle),
+            )
+            val bottomSheetStyle = try {
+                themeAttributes.getResourceId(0, 0)
+            } finally {
+                themeAttributes.recycle()
+            }
+            assertEquals(R.style.Widget_App_BottomSheet_Modal, bottomSheetStyle)
+
+            val styleAttributes = theme.obtainStyledAttributes(
+                bottomSheetStyle,
+                intArrayOf(com.google.android.material.R.attr.paddingBottomSystemWindowInsets),
+            )
+            val paddingEnabled = try {
+                styleAttributes.getBoolean(0, true)
+            } finally {
+                styleAttributes.recycle()
+            }
+            assertEquals(false, paddingEnabled)
+        }
+    }
+
     private fun sheetBehavior(dialog: BottomWebViewDialog): BottomSheetBehavior<View> {
         val sheet = dialog.requireDialog().findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
         return BottomSheetBehavior.from(sheet)

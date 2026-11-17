@@ -173,6 +173,8 @@ class BottomWebViewDialog() : BottomSheetDialogFragment(R.layout.dialog_web_view
         initWebViewBaseConfig()
     }
 
+    override fun getTheme(): Int = R.style.ThemeOverlay_App_BottomSheetDialog
+
 
     override fun onStart() {
         applyPreferredHeight()
