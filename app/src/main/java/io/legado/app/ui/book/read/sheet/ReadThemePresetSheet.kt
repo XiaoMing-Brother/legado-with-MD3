@@ -96,12 +96,10 @@ fun ReadThemePresetSheet(
         show = show,
         onDismissRequest = onDismissRequest,
         title = stringResource(R.string.read_theme),
-        // 阅读页这个弹层底部不留系统栏安全区：窗口 inset 归零，且关掉组件自带的
-        // 16dp 内容内边距（左右由调用侧补），让网格最后一行直接贴到弹层底边、
-        // 由系统手势条叠在内容上。设置页整页仍由 AppScaffold 负责 inset。
+        // 阅读页这个弹层不留底部系统栏安全区：网格一直铺到屏幕底边，
+        // 手势条直接叠在内容上。左右内边距由调用侧补，避免组件底部 16dp 内边距。
         contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
         contentPaddingEnabled = false,
-        // 高度不再锁死 360dp，也不再铺满：上限沿用组件默认 0.8，实际高度由两行卡片决定。
     ) {
         ReadThemePickerContent(
             themes = themes,
@@ -188,9 +186,8 @@ fun ReadThemePickerContent(
             )
         }
     } else {
-        // 弹层模式：高度对齐「更多」弹层的观感——固定两行卡片的量（320dp），
-        // 主题更多时在网格内滚动。用固定值而不是按宽度换算，避免首帧测量差异
-        // 让同一次打开出现两种弹层高度。
+        // 弹层模式：与「更多设置」弹层一致，取组件允许的最大高度，
+        // 页签固定在顶部，主题列表占满剩余空间并在网格内滚动。
         Column(modifier = modifier.fillMaxWidth()) {
             ReadThemeTargetTabs(
                 target = target,
@@ -202,7 +199,7 @@ fun ReadThemePickerContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = gridModifier
-                    .height(320.dp)
+                    .weight(1f)
                     .fillMaxWidth(),
             ) {
                 ReadThemeGridItems(
