@@ -21,6 +21,7 @@ import io.legado.app.help.glide.progress.ProgressManager
 import io.legado.app.help.glide.progress.ProgressResponseBody
 import io.legado.app.help.http.await
 import io.legado.app.help.http.okHttpClient
+import io.legado.app.model.ParagraphBubbleRenderer
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.localBook.LocalBook
 import io.legado.app.model.localBook.MarkdownFile
@@ -342,7 +343,8 @@ object BookHelp {
         // 保存阅读缓存文本(.nb)
         getChapterContentFile(book, bookChapter).apply { parentFile?.mkdirs() }.writeText(content)
         if (notifyContentChange) ContentProcessor.invalidateSemanticContent(book.bookUrl, bookChapter.index)
-        if (book.isOnLineTxt && readGateway.currentSettings.tocCountWords) {
+        if (readGateway.currentSettings.tocCountWords) {
+            // 本地 EPUB/MOBI 也在此统计章节字数（原先仅在线小说）。
             // 正文里携带的 <img src="data:base64">、内联 SVG 等富文本源码会把章节字数虚抬
             // 几倍（3 页正文显示 3000+ 字）。这里剔除标签/Base64 后按可读纯文本计数，
             // 取代原先的 StringUtils.wordCountFormat(content.length)。
@@ -429,10 +431,20 @@ object BookHelp {
         }
     }
 
+    /**
+     * 段评气泡在排版时现算，没有远程资源可下载；枚举图片时必须跳过，
+     * 否则 `dp:` / `bubble://` 会被当成图片地址去下载并必然失败（#2593）。
+     */
+    private fun String.isBubbleImageSrc(): Boolean {
+        return isParagraphBubbleImageSrc(this) || ParagraphBubbleRenderer.isBubbleSrc(this)
+    }
+
     fun flowImages(bookChapter: BookChapter, content: String): Flow<String> {
         return flow {
             for (m in AppPattern.imgPattern.findAll(content)) {
                 val src = m.groupValues[1].takeIf { it.isNotEmpty() } ?: continue
+                // 先按原始 src 过滤：气泡地址连 URL 拼接都不该走，避免刷 "unknown protocol" 日志
+                if (src.isBubbleImageSrc()) continue
                 val mSrc = NetworkUtils.getAbsoluteURL(bookChapter.url, src)
                 emit(mSrc)
             }
@@ -442,7 +454,10 @@ object BookHelp {
     fun countImagesInContent(bookChapter: BookChapter, content: String): Int {
         var count = 0
         for (m in AppPattern.imgPattern.findAll(content)) {
-            if (m.groupValues[1].isNotEmpty()) count++
+            val src = m.groupValues[1].takeIf { it.isNotEmpty() } ?: continue
+            // 与 flowImages 同一口径：总数不含气泡，下载进度才能跑满
+            if (src.isBubbleImageSrc()) continue
+            count++
         }
         return count
     }
@@ -990,13 +1005,14 @@ object BookHelp {
         val file = cachedChapterContentFile(book, bookChapter)
         if (file.exists()) {
             forEachImageSrc(file) { src ->
-                action(NetworkUtils.getAbsoluteURL(bookChapter.url, src))
+                if (!src.isBubbleImageSrc()) action(NetworkUtils.getAbsoluteURL(bookChapter.url, src))
             }
             return
         }
         getContent(book, bookChapter)?.let { content ->
             for (m in AppPattern.imgPattern.findAll(content)) {
                 val src = m.groupValues[1].takeIf { it.isNotEmpty() } ?: continue
+                if (src.isBubbleImageSrc()) continue
                 action(NetworkUtils.getAbsoluteURL(bookChapter.url, src))
             }
         }
@@ -1072,7 +1088,7 @@ object BookHelp {
         }
         if (book.isLocal) {
             val string = LocalBook.getContent(book, bookChapter)
-            if (string != null && book.isEpub) {
+            if (string != null && (book.isEpub || book.isMobi)) {
                 saveText(book, bookChapter, string, notifyContentChange = false)
             }
             return string
