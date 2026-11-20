@@ -320,7 +320,7 @@ fun AppModalBottomSheet(
                 )
             }
         }
-        ComposeEngine.Material, ComposeEngine.Mochi, ComposeEngine.Coui -> {
+        ComposeEngine.Oxygen, ComposeEngine.Material, ComposeEngine.Mochi, ComposeEngine.Coui -> {
             if (show) {
                 val sheetState = rememberBottomSheetState(
                     initialValue = Hidden,
