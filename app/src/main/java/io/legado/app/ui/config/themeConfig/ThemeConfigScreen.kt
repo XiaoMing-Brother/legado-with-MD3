@@ -7,11 +7,11 @@ import android.content.Context
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,12 +35,9 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.ButtonGroupDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ToggleButton
 import androidx.compose.material3.ToggleButtonDefaults
@@ -79,10 +76,11 @@ import io.legado.app.ui.widget.components.FontFolderState
 import io.legado.app.ui.widget.components.FontSelectSheet
 import io.legado.app.ui.widget.components.SplicedColumnGroup
 import io.legado.app.ui.widget.components.alert.AppAlertDialog
-import io.legado.app.ui.widget.components.button.series.MediumTonalButton
 import io.legado.app.ui.widget.components.card.InfoCard
 import io.legado.app.ui.widget.components.dialog.ColorPickerSheet
 import io.legado.app.ui.widget.components.dialog.TimePickerDialog
+import io.legado.app.ui.widget.components.icon.AppIcon
+import io.legado.app.ui.widget.components.modalBottomSheet.SheetAction
 import io.legado.app.ui.widget.components.settingItem.ClickableSettingItem
 import io.legado.app.ui.widget.components.settingItem.DropdownListSettingItem
 import io.legado.app.ui.widget.components.settingItem.SliderSettingItem
@@ -429,15 +427,20 @@ fun ThemeConfigScreen(
                 }
 
                 SplicedColumnGroup(title = stringResource(R.string.main_activity)) {
-                    SearchableSetting("theme.main_navigation_settings") {
-                        ClickableSettingItem(
-                            title = stringResource(R.string.main_navigation_settings),
-                            description = stringResource(R.string.main_navigation_settings_summary),
-                            onClick = {
-                                onIntent(ThemeConfigIntent.ShowSheet(ThemeConfigSheet.MainNavigation))
-                            },
-                        )
-                    }
+                    MainNavigationSettingsSection(
+                        settings = appShell,
+                        onSetDefault = { onIntent(ThemeConfigIntent.SetDefaultHomePage(it)) },
+                        onSetLabelVisibilityMode = {
+                            onIntent(ThemeConfigIntent.SetLabelVisibilityMode(it))
+                        },
+                        onOpenNavIcons = {
+                            onIntent(ThemeConfigIntent.ShowSheet(ThemeConfigSheet.NavIcons))
+                        },
+                        onSetVisible = { route, visible ->
+                            onIntent(ThemeConfigIntent.SetMainDestinationVisible(route, visible))
+                        },
+                        onSetOrder = { onIntent(ThemeConfigIntent.SetMainNavigationOrder(it)) },
+                    )
                     SearchableSetting("theme.show_status") {
                         SwitchSettingItem(
                             title = stringResource(R.string.show_status),
@@ -459,15 +462,6 @@ fun ThemeConfigScreen(
                                     ThemeConfigIntent.SetSwipeAnimation(it)
                                 )
                             }
-                        )
-                    }
-                    SearchableSetting("theme.top_bottom_bar_settings") {
-                        ClickableSettingItem(
-                            title = stringResource(R.string.top_bottom_bar_settings),
-                            description = stringResource(R.string.top_bottom_bar_settings_summary),
-                            onClick = {
-                                onIntent(ThemeConfigIntent.ShowSheet(ThemeConfigSheet.TopBottomBar))
-                            },
                         )
                     }
                     SearchableSetting("theme.tabletInterface") {
@@ -492,6 +486,14 @@ fun ThemeConfigScreen(
                             onValueChange = { onIntent(ThemeConfigIntent.SetMultiPaneMode(it)) },
                         )
                     }
+                }
+
+                SplicedColumnGroup(title = stringResource(R.string.top_bottom_bar_settings)) {
+                    TopBottomBarSettingsSection(
+                        appShell = appShell,
+                        theme = theme,
+                        onIntent = onIntent,
+                    )
                 }
 
                 SplicedColumnGroup(title = stringResource(R.string.book_info_page)) {
@@ -893,7 +895,7 @@ fun ThemeConfigScreen(
                                                 .background(Color(theme.itemDividerColor))
                                                 .border(
                                                     1.dp,
-                                                    MaterialTheme.colorScheme.outlineVariant,
+                                                    LegadoTheme.colorScheme.outlineVariant,
                                                     CircleShape
                                                 )
                                         )
@@ -1056,29 +1058,12 @@ fun ThemeConfigScreen(
         onRemoveDark = { removeImage(true) },
     )
 
-    MainNavigationSettingsSheet(
-        show = state.activeSheet == ThemeConfigSheet.MainNavigation,
+    NavIconManageSheet(
+        show = state.activeSheet == ThemeConfigSheet.NavIcons,
         settings = appShell,
         onDismissRequest = { onIntent(ThemeConfigIntent.DismissSheet) },
-        onSetVisible = { route, visible ->
-            onIntent(ThemeConfigIntent.SetMainDestinationVisible(route, visible))
-        },
-        onSetOrder = { onIntent(ThemeConfigIntent.SetMainNavigationOrder(it)) },
-        onSetDefault = { onIntent(ThemeConfigIntent.SetDefaultHomePage(it)) },
-        onRequestNavigationIcon = { onIntent(ThemeConfigIntent.RequestNavigationIcon(it)) },
-        onClearNavigationIcon = { onIntent(ThemeConfigIntent.SelectNavigationIcon(it, "")) },
-        onSetLabelVisibilityMode = {
-            onIntent(ThemeConfigIntent.SetLabelVisibilityMode(it))
-        },
-    )
-
-    TopBottomBarSettingsSheet(
-        show = state.activeSheet == ThemeConfigSheet.TopBottomBar,
-        appShell = appShell,
-        theme = theme,
-        isMiuixEngine = ThemeResolver.resolveComposeEngine(appShell.composeEngine) == ComposeEngine.Miuix,
-        onDismissRequest = { onIntent(ThemeConfigIntent.DismissSheet) },
-        onIntent = onIntent,
+        onSelectIcon = { onIntent(ThemeConfigIntent.RequestNavigationIcon(it)) },
+        onClearIcon = { onIntent(ThemeConfigIntent.SelectNavigationIcon(it, "")) },
     )
 
 
@@ -1128,16 +1113,14 @@ fun ThemeConfigScreen(
         onDismissRequest = { onIntent(ThemeConfigIntent.DismissSheet) },
         onSelectFont = { onIntent(ThemeConfigIntent.SelectAppFont(it)) },
         onOpenFolderPicker = { onIntent(ThemeConfigIntent.RequestFontFolder) },
-        startAction = {
-            MediumTonalButton(
-                icon = Icons.Default.Delete,
-                contentDescription = stringResource(R.string.clear),
-                onClick = {
-                    onIntent(ThemeConfigIntent.ClearAppFont)
-                    onIntent(ThemeConfigIntent.DismissSheet)
-                }
-            )
-        },
+        startSheetAction = SheetAction(
+            icon = Icons.Default.Delete,
+            contentDescription = stringResource(R.string.clear),
+            onClick = {
+                onIntent(ThemeConfigIntent.ClearAppFont)
+                onIntent(ThemeConfigIntent.DismissSheet)
+            },
+        ),
         folderIcon = Icons.Default.Add,
         folderContentDescription = stringResource(R.string.select_folder),
         emptyText = stringResource(R.string.theme_config_no_font_files),
@@ -1194,7 +1177,7 @@ private fun BaseCardBorderColorSettingItem(
                         color.takeIf { it != 0 }?.let(::Color)
                             ?: LegadoTheme.colorScheme.outlineVariant
                     )
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                    .border(1.dp, LegadoTheme.colorScheme.outlineVariant, CircleShape)
             )
         }
     )
@@ -1311,15 +1294,24 @@ fun ThemeColorButton(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Card(
-            onClick = onClick,
-            modifier = Modifier.size(64.dp),
-            shape = RoundedCornerShape(16.dp),
-            border = if (isSelected) BorderStroke(
-                borderWidth,
-                LegadoTheme.colorScheme.primary
-            ) else null,
-            colors = CardDefaults.cardColors(containerColor = colors.surfaceContainer)
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(colors.surfaceContainer)
+                .then(
+                    if (isSelected) {
+                        Modifier.border(
+                            borderWidth,
+                            LegadoTheme.colorScheme.primary,
+                            RoundedCornerShape(16.dp)
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
+                .clickable(role = Role.Button, onClick = onClick),
+            contentAlignment = Alignment.Center,
         ) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -1364,10 +1356,10 @@ fun ThemeColorButton(
                             .clip(RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
+                        AppIcon(
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary,
+                            tint = LegadoTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -1414,13 +1406,13 @@ fun ThemeCard(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Card(
+        Box(
             modifier = Modifier
                 .width(128.dp)
-                .height(256.dp),
-            shape = MaterialTheme.shapes.large,
-            border = BorderStroke(1.dp, colors.primary),
-            colors = CardDefaults.cardColors(containerColor = colors.surface)
+                .height(256.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(colors.surface)
+                .border(1.dp, colors.primary, RoundedCornerShape(16.dp))
         ) {
             ConstraintLayout(
                 modifier = Modifier.fillMaxSize()

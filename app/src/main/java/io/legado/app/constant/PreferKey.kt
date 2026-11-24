@@ -213,6 +213,9 @@ object PreferKey {
     const val swipeToAddBookmark = "swipeToAddBookmark"
     const val bookmarkBadgeImage = "bookmarkBadgeImage"
     const val bookmarkBadgeSize = "bookmarkBadgeSize"
+    const val bookmarkBadgePosition = "bookmarkBadgePosition"
+    const val bookmarkBadgeOffsetX = "bookmarkBadgeOffsetX"
+    const val bookmarkBadgeOffsetY = "bookmarkBadgeOffsetY"
     const val volumeKeyPage = "volumeKeyPage"
     const val volumeKeyPageOnPlay = "volumeKeyPageOnPlay"
     const val mouseWheelPage = "mouseWheelPage"
@@ -322,6 +325,7 @@ object PreferKey {
     const val themePref = "themePref"
     const val bookshelfSortOrder = "bookshelfSortOrder"
     const val showBottomView = "showBottomView"
+    const val usePagerTopBar = "usePagerTopBar"
     const val useFloatingBottomBar = "useFloatingBottomBar"
     const val useFloatingBottomBarLiquidGlass = "useFloatingBottomBarLiquidGlass"
     const val mangaScrollMode = "mangaScrollMode"
@@ -383,6 +387,7 @@ object PreferKey {
     const val bookshelfGridCoverWidth = "bookshelfGridCoverWidth"
     const val bookshelfGridFixedColumns = "bookshelfGridFixedColumns"
     const val bookshelfGridFixedCoverWidth = "bookshelfGridFixedCoverWidth"
+    const val bookshelfGridImmersive = "bookshelfGridImmersive"
 
 
     const val tabletInterface = "tabletInterface"

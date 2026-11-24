@@ -408,6 +408,13 @@
     <string name="bookmark_badge_custom">Custom image</string>
     <string name="bookmark_badge_reset">Reset bookmark badge</string>
     <string name="bookmark_badge_size">Badge size</string>
+    <string name="bookmark_badge_position">Badge position</string>
+    <string name="bookmark_badge_position_top_start">Top left</string>
+    <string name="bookmark_badge_position_top_end">Top right</string>
+    <string name="bookmark_badge_position_custom">Custom</string>
+    <string name="bookmark_badge_offset_x">Horizontal offset</string>
+    <string name="bookmark_badge_offset_y">Vertical offset</string>
+    <string name="bookmark_badge_offset_origin">Measured from the top-left corner of the text area</string>
     <string name="menu_mark">Mark line</string>
     <string name="bookmark_mark">Mark line</string>
     <string name="bookmark_mark_selection">Selected text</string>
@@ -1275,8 +1282,8 @@
     <string name="autobackup_fail">Autobackup failed\n%s</string>
     <string name="end">end</string>
     <string name="custom_group_summary">Turn off Replace Group / Turn on Add Group</string>
-    <string name="pref_media_button_per_next">Media Buttons • Previous | Next</string>
-    <string name="pref_media_button_per_next_summary">Previous Paragraph|Next Paragraph/Previous Chapter|Next Chapter</string>
+    <string name="pref_media_button_per_next">Media buttons skip by chapter</string>
+    <string name="pref_media_button_per_next_summary">On: previous/next on the notification, lock screen and headset switch chapters. Off: they rewind/fast-forward by paragraph.</string>
     <string name="read_aloud_by_page_summary">Turning pages in time, with a pause when the page is turned</string>
     <string name="check_source_show_debug_message">Check book source shows debug message</string>
     <string name="check_source_show_debug_message_summary">Show network status and timestamp during source checking</string>
@@ -2012,6 +2019,8 @@
     <string name="custom_mode">Custom Mode</string>
     <string name="be_swiped">Pages can still be swiped</string>
     <string name="show_bottom_nav">Show Navigation Bar</string>
+    <string name="use_pager_top_bar">Horizontal Pager Top Bar</string>
+    <string name="use_pager_top_bar_summary">Use OxygenX pager top bar for the main pages and hide the bottom navigation bar</string>
     <string name="floating_bottom_bar">Floating Bottom Bar</string>
     <string name="floating_bottom_bar_summary">Use a detached capsule style for the bottom navigation bar</string>
     <string name="coui_floating_bottom_bar_summary">COUI always uses a floating bottom bar when bottom navigation is shown</string>
@@ -2699,6 +2708,8 @@
     <string name="bookshelf_grid_fixed_columns_summary">When off, columns follow the cover width</string>
     <string name="bookshelf_grid_fixed_cover_width">Fixed Cover Width</string>
     <string name="bookshelf_grid_fixed_cover_width_summary">When off, covers fill the column width and scale with the column count</string>
+    <string name="bookshelf_grid_immersive">Immersive Grid</string>
+    <string name="bookshelf_grid_immersive_summary">1dp gaps between covers, no side margins, square corners (compact and cover-only styles)</string>
     <string name="day_card_bg_color">Day Card Background Color</string>
     <string name="night_card_bg_color">Night Card Background Color</string>
     <string name="compact_details">Compact Details</string>
@@ -4059,4 +4070,25 @@
     <string name="read_record_total_duration">Read for %1$s</string>
     <string name="read_record_last_read">Last read %1$s</string>
     <string name="read_bg_palette_failed">Set a background image first, or try another one.</string>
+    <!-- 书架折叠收纳（同系列多卷） -->
+    <string name="bookshelf_series_count">%1$d volumes</string>
+    <string name="bookshelf_series_create">Group into series</string>
+    <string name="bookshelf_series_remove">Remove from series</string>
+    <string name="bookshelf_series_rename">Rename series</string>
+    <string name="bookshelf_series_dissolve">Dissolve series</string>
+    <string name="bookshelf_series_dissolve_message">Dissolve %1$s? %2$d books will return to the shelf.</string>
+    <string name="bookshelf_series_name_label">Series name</string>
+    <string name="bookshelf_series_name_empty">Series name cannot be empty</string>
+    <string name="bookshelf_series_name_conflict">A series with that name already exists</string>
+    <string name="bookshelf_series_created">Grouped %2$d books as %1$s</string>
+    <string name="bookshelf_series_dissolved">Dissolved %1$s</string>
+    <string name="bookshelf_series_removed">Removed %1$d books from the series</string>
+    <string name="bookshelf_series_manage">Manage books in series</string>
+    <string name="bookshelf_series_count_read">%1$d volumes · %2$d read</string>
+    <string name="bookshelf_series_progress_summary">%1$d/%2$d read</string>
+    <string name="bookshelf_series_reading_volume">Reading vol. %1$d</string>
+    <string name="bookshelf_series_collapse">Collapse</string>
+    <string name="bookshelf_series_pick_cover">Set cover</string>
+    <string name="bookshelf_series_reset_cover">Use volume covers</string>
+    <string name="bookshelf_series">Book series</string>
 </resources>

@@ -114,6 +114,7 @@ import io.legado.app.ui.book.readaloud.player.ReadAloudPlayerViewModel
 import io.legado.app.feature.splash.CalligraphySplashOverlay
 import io.legado.app.feature.splash.CalligraphySplashPolicy
 import io.legado.app.ui.main.bookshelf.BookshelfCoverPreloader
+import io.legado.app.ui.theme.ComposeEngine
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.LocalAppUiConfiguration
 import io.legado.app.ui.theme.ThemeResolver
@@ -844,8 +845,15 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
         val useFloatingBottomBar = ThemeResolver.useFloatingBottomBar(
             LegadoTheme.composeEngine, configuration.appShell.useFloatingBottomBar,
         )
+        // 横划顶栏接管主页导航后底栏隐藏，胶囊锚点必须回到全局胶囊。
+        val pagerTopBarActive =
+            ThemeResolver.resolveComposeEngine(configuration.appShell.composeEngine) ==
+                ComposeEngine.Oxygen && configuration.appShell.usePagerTopBar
         val useHomeCapsule = shouldUseHomePlaybackCapsule(
-            onMainRoute, configuration.appShell.showBottomView, useFloatingBottomBar, useRail,
+            onMainRoute,
+            configuration.appShell.showBottomView && !pagerTopBarActive,
+            useFloatingBottomBar,
+            useRail,
         )
         SideEffect {
             readAloudMorph.expectCapsuleAnchors(

@@ -377,6 +377,13 @@
     <string name="bookmark_badge_custom">自定义图片</string>
     <string name="bookmark_badge_reset">恢复默认书签角标</string>
     <string name="bookmark_badge_size">角标大小</string>
+    <string name="bookmark_badge_position">角标位置</string>
+    <string name="bookmark_badge_position_top_start">左上角</string>
+    <string name="bookmark_badge_position_top_end">右上角</string>
+    <string name="bookmark_badge_position_custom">自定义</string>
+    <string name="bookmark_badge_offset_x">水平偏移</string>
+    <string name="bookmark_badge_offset_y">垂直偏移</string>
+    <string name="bookmark_badge_offset_origin">以正文区左上角为原点</string>
     <string name="menu_mark">笔记</string>
     <string name="bookmark_mark">划线标记</string>
     <string name="bookmark_mark_selection">选中文本</string>
@@ -1233,8 +1240,8 @@
     <string name="autobackup_fail">自动备份失败\n%s</string>
     <string name="end">结束</string>
     <string name="custom_group_summary">关闭替换分组/开启添加分组</string>
-    <string name="pref_media_button_per_next">媒体按钮 • 上一首|下一首</string>
-    <string name="pref_media_button_per_next_summary">上一段|下一段/上一章|下一章</string>
+    <string name="pref_media_button_per_next">媒体按钮按章节切换</string>
+    <string name="pref_media_button_per_next_summary">开启后，通知栏、锁屏和耳机键的上一/下一用于切换章节；关闭时用于段落快进/后退</string>
     <string name="read_aloud_by_page_summary">及时翻页，翻页时会停顿一下</string>
     <string name="check_source_show_debug_message">校验显示详细信息</string>
     <string name="check_source_show_debug_message_summary">书源校验时显示网络请求步骤和时间</string>
@@ -1956,6 +1963,8 @@
     <string name="custom_mode">自定义模式</string>
     <string name="be_swiped">仍可滑动切换页面</string>
     <string name="show_bottom_nav">显示导航栏</string>
+    <string name="use_pager_top_bar">横划顶栏</string>
+    <string name="use_pager_top_bar_summary">主页面使用 OxygenX 横划顶栏，并隐藏底部导航栏</string>
     <string name="floating_bottom_bar">悬浮底栏</string>
     <string name="floating_bottom_bar_summary">底部导航栏使用悬浮胶囊样式</string>
     <string name="coui_floating_bottom_bar_summary">COUI 的底部导航固定使用悬浮样式</string>
@@ -2675,6 +2684,8 @@
     <string name="bookshelf_grid_fixed_columns_summary">关闭后按封面宽度自动计算列数</string>
     <string name="bookshelf_grid_fixed_cover_width">固定封面宽度</string>
     <string name="bookshelf_grid_fixed_cover_width_summary">关闭后封面铺满列宽，随列数自动缩放</string>
+    <string name="bookshelf_grid_immersive">沉浸网格</string>
+    <string name="bookshelf_grid_immersive_summary">封面间距 1dp，去掉左右屏幕边距与封面圆角（紧凑、仅封面样式生效）</string>
     <string name="day_card_bg_color">日间卡片背景颜色</string>
     <string name="night_card_bg_color">夜间卡片背景颜色</string>
     <string name="compact_details">精简详情</string>
@@ -4055,4 +4066,25 @@
     <string name="read_record_total_duration">累计阅读 %1$s</string>
     <string name="read_record_last_read">最近阅读 %1$s</string>
     <string name="read_bg_palette_failed">先设置一张背景图，或换一张再试。</string>
+    <!-- 书架折叠收纳（同系列多卷） -->
+    <string name="bookshelf_series_count">%1$d 卷</string>
+    <string name="bookshelf_series_create">收纳为系列</string>
+    <string name="bookshelf_series_remove">移出系列</string>
+    <string name="bookshelf_series_rename">重命名系列</string>
+    <string name="bookshelf_series_dissolve">解散系列</string>
+    <string name="bookshelf_series_dissolve_message">解散「%1$s」后，%2$d 本书会回到书架，确定吗？</string>
+    <string name="bookshelf_series_name_label">系列名</string>
+    <string name="bookshelf_series_name_empty">系列名不能为空</string>
+    <string name="bookshelf_series_name_conflict">已存在同名系列</string>
+    <string name="bookshelf_series_created">已将 %2$d 本收纳为「%1$s」</string>
+    <string name="bookshelf_series_dissolved">已解散「%1$s」</string>
+    <string name="bookshelf_series_removed">已将 %1$d 本移出系列</string>
+    <string name="bookshelf_series_manage">管理系列书籍</string>
+    <string name="bookshelf_series_count_read">%1$d 卷 · 已读 %2$d</string>
+    <string name="bookshelf_series_progress_summary">已读 %1$d/%2$d</string>
+    <string name="bookshelf_series_reading_volume">在读第 %1$d 卷</string>
+    <string name="bookshelf_series_collapse">收起</string>
+    <string name="bookshelf_series_pick_cover">设置封面</string>
+    <string name="bookshelf_series_reset_cover">恢复卷封面</string>
+    <string name="bookshelf_series">书籍系列</string>
 </resources>
