@@ -22,5 +22,5 @@
     <string name="settings_search_prerequisite">To find %1$s, check %2$s first. It is hidden in the current configuration.</string>
     <string name="settings_search_unavailable">%1$s is unavailable in the current mode or configuration.</string>
     <string name="settings_search_theme_keywords">appearance theme skin display personalization</string>
-    <string name="settings_search_advanced_keywords">advanced other general language updates web service</string>
+    <string name="settings_search_advanced_keywords">advanced other general language updates web service splash opening text random quote calligraphy font typeface</string>
 </resources>

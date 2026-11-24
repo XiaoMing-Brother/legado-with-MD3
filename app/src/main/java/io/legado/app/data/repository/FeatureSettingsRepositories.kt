@@ -561,6 +561,11 @@ internal fun Preferences.toOtherSettings(): OtherSettings {
         calligraphySplashOncePerDay = compatDsBoolean(PreferKey.calligraphySplashOncePerDay) ?: false,
         calligraphySplashLastShownDay = compatDsInt(PreferKey.calligraphySplashLastShownDay) ?: 0,
         calligraphySplashText = compatDsString(PreferKey.calligraphySplashText) ?: "",
+        calligraphySplashRandomEnabled =
+            compatDsBoolean(PreferKey.calligraphySplashRandomEnabled) ?: false,
+        calligraphySplashTextPool = compatDsString(PreferKey.calligraphySplashTextPool) ?: "",
+        calligraphySplashCustomFontPath =
+            compatDsString(PreferKey.calligraphySplashCustomFontPath) ?: "",
     )
 }
 
@@ -596,6 +601,9 @@ internal fun OtherSettings.toPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.calligraphySplashOncePerDay to calligraphySplashOncePerDay,
     PreferKey.calligraphySplashLastShownDay to calligraphySplashLastShownDay,
     PreferKey.calligraphySplashText to calligraphySplashText,
+    PreferKey.calligraphySplashRandomEnabled to calligraphySplashRandomEnabled,
+    PreferKey.calligraphySplashTextPool to calligraphySplashTextPool,
+    PreferKey.calligraphySplashCustomFontPath to calligraphySplashCustomFontPath,
 )
 
 class OtherSettingsRepository : OtherSettingsGateway {

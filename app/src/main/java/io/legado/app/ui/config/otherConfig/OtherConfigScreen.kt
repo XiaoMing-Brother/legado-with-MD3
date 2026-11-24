@@ -144,6 +144,18 @@ fun OtherConfigScreen(
                     )
                 }
 
+                SearchableSetting("other.calligraphy_splash_random_title") {
+                    SwitchSettingItem(
+                        title = stringResource(R.string.calligraphy_splash_random_title),
+                        description = stringResource(R.string.calligraphy_splash_random_summary),
+                        checked = state.calligraphySplashRandomEnabled,
+                        enabled = state.calligraphySplashEnabled,
+                        onCheckedChange = {
+                            onIntent(OtherConfigIntent.CalligraphySplashRandomEnabledChanged(it))
+                        },
+                    )
+                }
+
                 SearchableSetting("other.calligraphy_splash_text_title") {
                     InputSettingItem(
                         title = stringResource(R.string.calligraphy_splash_text_title),
@@ -154,6 +166,50 @@ fun OtherConfigScreen(
                             onIntent(OtherConfigIntent.CalligraphySplashTextChanged(it))
                         },
                     )
+                }
+
+                SearchableSetting("other.calligraphy_splash_text_pool_title") {
+                    InputSettingItem(
+                        title = stringResource(R.string.calligraphy_splash_text_pool_title),
+                        value = state.calligraphySplashTextPool,
+                        defaultValue = "",
+                        description = stringResource(R.string.calligraphy_splash_text_pool_summary),
+                        onConfirm = {
+                            onIntent(OtherConfigIntent.CalligraphySplashTextPoolChanged(it))
+                        },
+                    )
+                }
+
+                SearchableSetting("other.calligraphy_splash_custom_font_title") {
+                    ClickableSettingItem(
+                        title = stringResource(R.string.calligraphy_splash_custom_font_title),
+                        description = stringResource(
+                            if (state.calligraphySplashCustomFontPath.isBlank()) {
+                                R.string.calligraphy_splash_custom_font_summary
+                            } else {
+                                R.string.calligraphy_splash_custom_font_selected
+                            }
+                        ),
+                        onClick = {
+                            onIntent(OtherConfigIntent.RequestCalligraphySplashFontPick)
+                        },
+                    )
+                }
+
+                if (state.calligraphySplashCustomFontPath.isNotBlank()) {
+                    SearchableSetting("other.calligraphy_splash_custom_font_reset") {
+                        ClickableSettingItem(
+                            title = stringResource(
+                                R.string.calligraphy_splash_custom_font_reset
+                            ),
+                            description = stringResource(
+                                R.string.calligraphy_splash_custom_font_reset_summary
+                            ),
+                            onClick = {
+                                onIntent(OtherConfigIntent.RequestCalligraphySplashFontReset)
+                            },
+                        )
+                    }
                 }
             }
 

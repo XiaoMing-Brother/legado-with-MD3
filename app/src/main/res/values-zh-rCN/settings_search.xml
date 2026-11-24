@@ -22,5 +22,5 @@
     <string name="settings_search_prerequisite">“%1$s”在当前配置下未显示，请先检查“%2$s”。</string>
     <string name="settings_search_unavailable">“%1$s”在当前模式或配置下不可用。</string>
     <string name="settings_search_theme_keywords">外观 主题 皮肤 界面 个性化</string>
-    <string name="settings_search_advanced_keywords">高级 其他 通用 语言 更新 网页服务</string>
+    <string name="settings_search_advanced_keywords">高级 其他 通用 语言 更新 网页服务 启动页 开屏 文字 随机 句子 书法 字体 欢迎屏</string>
 </resources>

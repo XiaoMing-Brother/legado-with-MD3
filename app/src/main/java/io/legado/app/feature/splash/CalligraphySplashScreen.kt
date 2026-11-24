@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
@@ -25,7 +26,7 @@ import androidx.compose.ui.unit.sp
 import io.legado.app.R
 
 /** 内置书法字体（Ma Shan Zheng / 马善政毛笔楷书，SIL OFL 1.1，见 assets/licenses）。 */
-private val SplashFontFamily = FontFamily(Font(R.font.splash_calligraphy))
+private val DefaultSplashFontFamily = FontFamily(Font(R.font.splash_calligraphy))
 
 /** 霞鹜篆书「朙」正篆字形的子集；“朙”是“明”的古字。 */
 private val SealFontFamily = FontFamily(Font(R.font.seal_ming))
@@ -33,7 +34,7 @@ private val SealFontFamily = FontFamily(Font(R.font.seal_ming))
 /** 未设置开屏文字时使用的默认诗句，换行即分列。 */
 private const val DEFAULT_SPLASH_TEXT = "欲买桂花同载酒\n终不似少年游"
 
-/** 竖排上限：最多 4 列，每列最多 12 字，超出截断，避免长文本溢出屏幕。 */
+/** 竖排上限：最多 4 列，每列最多 12 字；显式换行分列，超长单句自动折列。 */
 private const val MAX_COLUMNS = 4
 private const val MAX_CHARS_PER_COLUMN = 12
 
@@ -43,13 +44,21 @@ private const val MAX_CHARS_PER_COLUMN = 12
  * 纸色/墨色/印色分别走 `R.color.calligraphy_splash_paper`、`_ink`、`_seal`，
  * 三者都有 `values-night` 版本，深浅色由资源限定符自动切换，与系统启动窗口同调。
  * 文字来自 [io.legado.app.domain.model.settings.OtherSettings.calligraphySplashText]，可自定义。
+ * [customFontPath] 非空且可用时覆盖内置书法字体，否则回退内置字体。
  */
 @Composable
 fun CalligraphySplashScreen(
     modifier: Modifier = Modifier,
     text: String = "",
+    customFontPath: String = "",
 ) {
+    val context = LocalContext.current
     val columns = remember(text) { text.toSplashColumns() }
+    val textFontFamily = remember(context, customFontPath) {
+        CalligraphySplashFontStore.resolve(context, customFontPath)
+            ?.let { file -> runCatching { FontFamily(Font(file)) }.getOrNull() }
+            ?: DefaultSplashFontFamily
+    }
     val paperColor = colorResource(R.color.calligraphy_splash_paper)
     val inkColor = colorResource(R.color.calligraphy_splash_ink)
 
@@ -84,7 +93,7 @@ fun CalligraphySplashScreen(
                                 color = inkColor,
                                 fontSize = fontSize,
                                 lineHeight = fontSize * 1.08f,
-                                fontFamily = SplashFontFamily,
+                                fontFamily = textFontFamily,
                                 softWrap = false,
                             )
                         }
@@ -117,15 +126,34 @@ fun CalligraphySplashScreen(
     }
 }
 
-private fun String.toSplashColumns(): List<List<String>> =
-    ifBlank { DEFAULT_SPLASH_TEXT }
+private fun String.toSplashColumns(): List<List<String>> {
+    val lines = ifBlank { DEFAULT_SPLASH_TEXT }
         .replace("\r", "")
         .split('\n')
         .map { it.trim() }
         .filter { it.isNotEmpty() }
-        .take(MAX_COLUMNS)
-        .map { line -> line.toGlyphs().take(MAX_CHARS_PER_COLUMN) }
-        .ifEmpty { DEFAULT_SPLASH_TEXT.split('\n').map { line -> line.toGlyphs() } }
+    val columns = ArrayList<List<String>>(MAX_COLUMNS)
+    for (line in lines) {
+        val remainingColumns = MAX_COLUMNS - columns.size
+        if (remainingColumns <= 0) break
+        // 显式换行仍分列；超长单句在剩余列数内均衡折列，避免被截断或出现孤立单字。
+        val glyphs = line.toGlyphs().take(remainingColumns * MAX_CHARS_PER_COLUMN)
+        if (glyphs.isEmpty()) continue
+        val columnCount = ((glyphs.size + MAX_CHARS_PER_COLUMN - 1) / MAX_CHARS_PER_COLUMN)
+            .coerceIn(1, remainingColumns)
+        val baseSize = glyphs.size / columnCount
+        val extra = glyphs.size % columnCount
+        var start = 0
+        repeat(columnCount) { index ->
+            val size = baseSize + if (index < extra) 1 else 0
+            columns += glyphs.subList(start, start + size)
+            start += size
+        }
+    }
+    return columns.ifEmpty {
+        DEFAULT_SPLASH_TEXT.split('\n').map { line -> line.toGlyphs() }
+    }
+}
 
 /** 按码点拆分，保证 emoji 等代理对不被拆成半个字符。 */
 private fun String.toGlyphs(): List<String> {

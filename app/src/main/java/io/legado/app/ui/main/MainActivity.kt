@@ -113,6 +113,7 @@ import io.legado.app.ui.book.readaloud.morph.rememberReadAloudMorphState
 import io.legado.app.ui.book.readaloud.player.ReadAloudPlayerViewModel
 import io.legado.app.feature.splash.CalligraphySplashOverlay
 import io.legado.app.feature.splash.CalligraphySplashPolicy
+import io.legado.app.feature.splash.CalligraphySplashTextResolver
 import io.legado.app.ui.main.bookshelf.BookshelfCoverPreloader
 import io.legado.app.ui.theme.ComposeEngine
 import io.legado.app.ui.theme.LegadoTheme
@@ -153,6 +154,8 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
 
     private val calligraphySplashActive = AtomicBoolean(true)
     private var showCalligraphySplash = false
+    private var calligraphySplashText = ""
+    private var calligraphySplashCustomFontPath = ""
 
     private data class RouteEvent(
         val route: NavKey,
@@ -485,6 +488,13 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
         showCalligraphySplash = isColdStart && CalligraphySplashPolicy.shouldShow(
             otherSettingsGateway.currentSettings,
         )
+        if (showCalligraphySplash) {
+            calligraphySplashText = CalligraphySplashTextResolver.resolve(
+                otherSettingsGateway.currentSettings,
+            )
+            calligraphySplashCustomFontPath =
+                otherSettingsGateway.currentSettings.calligraphySplashCustomFontPath
+        }
         // 书法开屏用 Compose 全屏层绘制；系统启动窗口保持到该层画出首帧，
         // 首帧之后才淡出，避免纸色垫底、诗句迟到。
         if (showCalligraphySplash) {
@@ -600,7 +610,8 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
     override fun Content() {
         if (showCalligraphySplash) {
             CalligraphySplashOverlay(
-                text = otherSettingsGateway.currentSettings.calligraphySplashText,
+                text = calligraphySplashText,
+                customFontPath = calligraphySplashCustomFontPath,
                 onFirstFrame = { calligraphySplashActive.set(false) },
                 onFinished = {
                     lifecycleScope.launch {

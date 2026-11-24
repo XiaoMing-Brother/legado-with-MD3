@@ -34,4 +34,10 @@ data class OtherSettings(
     val calligraphySplashLastShownDay: Int = 0,
     /** 开屏竖排文字，空串表示使用内置默认诗句；用 \n 分列 */
     val calligraphySplashText: String = "",
+    /** 每次冷启动从句子库随机取一句；关闭时使用 [calligraphySplashText] */
+    val calligraphySplashRandomEnabled: Boolean = false,
+    /** 自定义随机句子库，用 | 分隔；空串表示使用内置句子库 */
+    val calligraphySplashTextPool: String = "",
+    /** 自定义开屏字体在应用私有目录内的相对路径；空串表示使用内置书法字体 */
+    val calligraphySplashCustomFontPath: String = "",
 )
