@@ -1,0 +1,7 @@
+汇文明朝体 (Huiwen Mincho)
+
+来源: https://github.com/bosswnx/huiwenmincho-improved
+许可: CC0 1.0 Universal（见 HuiwenMincho-CC0.txt）
+
+应用内字体为 GB2312 字符集 + 内置开屏句子库字形子集，使用 fonttools pyftsubset 生成；
+完整字库请从上述来源获取。

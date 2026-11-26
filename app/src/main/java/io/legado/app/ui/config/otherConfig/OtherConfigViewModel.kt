@@ -104,12 +104,6 @@ class OtherConfigViewModel(
                 updateOtherSetting { it.copy(calligraphySplashRandomEnabled = intent.value) }
             is OtherConfigIntent.CalligraphySplashTextPoolChanged ->
                 updateOtherSetting { it.copy(calligraphySplashTextPool = intent.value) }
-            is OtherConfigIntent.CalligraphySplashCustomFontPathChanged ->
-                updateOtherSetting { it.copy(calligraphySplashCustomFontPath = intent.value) }
-            OtherConfigIntent.RequestCalligraphySplashFontPick ->
-                _effects.tryEmit(OtherConfigEffect.PickCalligraphySplashFont)
-            OtherConfigIntent.RequestCalligraphySplashFontReset ->
-                _effects.tryEmit(OtherConfigEffect.ResetCalligraphySplashFont)
             is OtherConfigIntent.DefaultBookTreeUriChanged ->
                 updateOtherSetting { it.copy(defaultBookTreeUri = intent.value) }
             is OtherConfigIntent.AntiAliasChanged ->
@@ -370,7 +364,6 @@ private fun OtherSettings.toUiState(current: OtherConfigUiState): OtherConfigUiS
         calligraphySplashText = calligraphySplashText,
         calligraphySplashRandomEnabled = calligraphySplashRandomEnabled,
         calligraphySplashTextPool = calligraphySplashTextPool,
-        calligraphySplashCustomFontPath = calligraphySplashCustomFontPath,
 
         defaultBookTreeUri = defaultBookTreeUri,
         antiAlias = antiAlias,

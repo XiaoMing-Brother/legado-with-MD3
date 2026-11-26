@@ -73,7 +73,6 @@ private fun otherMappingSamples(): List<OtherSettings> {
             calligraphySplashRandomEnabled = true,
             calligraphySplashTextPool = "明月几时有|一蓑烟雨任平生",
         ),
-        base.copy(calligraphySplashCustomFontPath = "splash-fonts/splash-font.ttf"),
     )
 }
 
@@ -111,5 +110,4 @@ private fun OtherSettings.expectedPrefMap(): Map<String, Any?> = mapOf(
     PreferKey.calligraphySplashText to calligraphySplashText,
     PreferKey.calligraphySplashRandomEnabled to calligraphySplashRandomEnabled,
     PreferKey.calligraphySplashTextPool to calligraphySplashTextPool,
-    PreferKey.calligraphySplashCustomFontPath to calligraphySplashCustomFontPath,
 )

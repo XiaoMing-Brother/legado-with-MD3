@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
@@ -25,8 +24,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.legado.app.R
 
-/** 内置书法字体（Ma Shan Zheng / 马善政毛笔楷书，SIL OFL 1.1，见 assets/licenses）。 */
-private val DefaultSplashFontFamily = FontFamily(Font(R.font.splash_calligraphy))
+/**
+ * 内置开屏字体（汇文明朝体 Huiwen Mincho，CC0 1.0，见 assets/licenses）。
+ * 打包的是 GB2312 + 内置句子库字形子集；自定义开屏文字中的罕见字会回退系统字体。
+ */
+private val DefaultSplashFontFamily = FontFamily(Font(R.font.splash_huiwen_mincho))
 
 /** 霞鹜篆书「朙」正篆字形的子集；“朙”是“明”的古字。 */
 private val SealFontFamily = FontFamily(Font(R.font.seal_ming))
@@ -44,21 +46,13 @@ private const val MAX_CHARS_PER_COLUMN = 12
  * 纸色/墨色/印色分别走 `R.color.calligraphy_splash_paper`、`_ink`、`_seal`，
  * 三者都有 `values-night` 版本，深浅色由资源限定符自动切换，与系统启动窗口同调。
  * 文字来自 [io.legado.app.domain.model.settings.OtherSettings.calligraphySplashText]，可自定义。
- * [customFontPath] 非空且可用时覆盖内置书法字体，否则回退内置字体。
  */
 @Composable
 fun CalligraphySplashScreen(
     modifier: Modifier = Modifier,
     text: String = "",
-    customFontPath: String = "",
 ) {
-    val context = LocalContext.current
     val columns = remember(text) { text.toSplashColumns() }
-    val textFontFamily = remember(context, customFontPath) {
-        CalligraphySplashFontStore.resolve(context, customFontPath)
-            ?.let { file -> runCatching { FontFamily(Font(file)) }.getOrNull() }
-            ?: DefaultSplashFontFamily
-    }
     val paperColor = colorResource(R.color.calligraphy_splash_paper)
     val inkColor = colorResource(R.color.calligraphy_splash_ink)
 
@@ -93,7 +87,7 @@ fun CalligraphySplashScreen(
                                 color = inkColor,
                                 fontSize = fontSize,
                                 lineHeight = fontSize * 1.08f,
-                                fontFamily = textFontFamily,
+                                fontFamily = DefaultSplashFontFamily,
                                 softWrap = false,
                             )
                         }

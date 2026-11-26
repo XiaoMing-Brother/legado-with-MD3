@@ -19,7 +19,6 @@ data class OtherConfigUiState(
     val calligraphySplashText: String = "",
     val calligraphySplashRandomEnabled: Boolean = false,
     val calligraphySplashTextPool: String = "",
-    val calligraphySplashCustomFontPath: String = "",
 
     val defaultBookTreeUri: String? = null,
     val antiAlias: Boolean = false,
@@ -97,9 +96,6 @@ sealed interface OtherConfigIntent {
     data class CalligraphySplashTextChanged(val value: String) : OtherConfigIntent
     data class CalligraphySplashRandomEnabledChanged(val value: Boolean) : OtherConfigIntent
     data class CalligraphySplashTextPoolChanged(val value: String) : OtherConfigIntent
-    data class CalligraphySplashCustomFontPathChanged(val value: String) : OtherConfigIntent
-    data object RequestCalligraphySplashFontPick : OtherConfigIntent
-    data object RequestCalligraphySplashFontReset : OtherConfigIntent
 
     data class DefaultBookTreeUriChanged(val value: String?) : OtherConfigIntent
     data class AntiAliasChanged(val value: Boolean) : OtherConfigIntent
@@ -139,8 +135,6 @@ sealed interface OtherConfigIntent {
 sealed interface OtherConfigEffect {
 
     data object OpenSystemDirectory : OtherConfigEffect
-    data object PickCalligraphySplashFont : OtherConfigEffect
-    data object ResetCalligraphySplashFont : OtherConfigEffect
     data object RestartWebService : OtherConfigEffect
     data object RestartApp : OtherConfigEffect
 }

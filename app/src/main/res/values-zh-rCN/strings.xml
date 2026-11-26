@@ -1866,14 +1866,6 @@
     <string name="calligraphy_splash_text_summary">关闭随机时使用；竖排显示，换行可分列；留空使用默认诗句</string>
     <string name="calligraphy_splash_text_pool_title">自定义句子库</string>
     <string name="calligraphy_splash_text_pool_summary">随机开启时使用，用 | 分隔多句；留空使用内置古典句子库</string>
-    <string name="calligraphy_splash_custom_font_title">自定义开屏字体</string>
-    <string name="calligraphy_splash_custom_font_summary">默认使用内置书法体；可选择本地 TTF / OTF 字体，改善句子库中的生僻字覆盖（最大 40 MB）</string>
-    <string name="calligraphy_splash_custom_font_selected">已启用自定义字体，点击可更换</string>
-    <string name="calligraphy_splash_custom_font_reset">恢复默认字体</string>
-    <string name="calligraphy_splash_custom_font_reset_summary">删除已导入字体，重新使用内置书法体</string>
-    <string name="calligraphy_splash_custom_font_invalid">字体无效、文件过大或读取失败，仍使用原字体</string>
-    <string name="calligraphy_splash_custom_font_applied">已应用自定义开屏字体</string>
-    <string name="calligraphy_splash_custom_font_reset_done">已恢复默认开屏字体</string>
     <string name="read_theme">内置主题</string>
     <string name="read_theme_summary">日间与夜间分开选择：点按主题只应用到当前列表对应的模式，另一模式的背景保持不变。</string>
     <string name="read_theme_summary_title">主题说明</string>

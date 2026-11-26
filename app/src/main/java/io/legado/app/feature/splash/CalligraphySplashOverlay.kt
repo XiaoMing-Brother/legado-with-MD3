@@ -31,7 +31,6 @@ import kotlinx.coroutines.delay
 fun CalligraphySplashOverlay(
     onFinished: () -> Unit,
     text: String = "",
-    customFontPath: String = "",
     onFirstFrame: () -> Unit = {},
 ) {
     var visible by remember { mutableStateOf(true) }
@@ -81,7 +80,7 @@ fun CalligraphySplashOverlay(
                         onClick = ::dismiss,
                     ),
             ) {
-                CalligraphySplashScreen(text = text, customFontPath = customFontPath)
+                CalligraphySplashScreen(text = text)
             }
         }
     }

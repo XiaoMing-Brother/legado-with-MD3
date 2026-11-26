@@ -230,7 +230,6 @@ object PreferKey {
     const val calligraphySplashText = "calligraphySplashText"
     const val calligraphySplashRandomEnabled = "calligraphySplashRandomEnabled"
     const val calligraphySplashTextPool = "calligraphySplashTextPool"
-    const val calligraphySplashCustomFontPath = "calligraphySplashCustomFontPath"
     const val streamReadAloudAudio = "streamReadAloudAudio"
     const val pauseReadAloudWhilePhoneCalls = "pauseReadAloudWhilePhoneCalls"
     const val readAloudByMediaButton = "readAloudByMediaButton"

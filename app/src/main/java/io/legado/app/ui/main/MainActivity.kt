@@ -155,7 +155,6 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
     private val calligraphySplashActive = AtomicBoolean(true)
     private var showCalligraphySplash = false
     private var calligraphySplashText = ""
-    private var calligraphySplashCustomFontPath = ""
 
     private data class RouteEvent(
         val route: NavKey,
@@ -492,8 +491,6 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
             calligraphySplashText = CalligraphySplashTextResolver.resolve(
                 otherSettingsGateway.currentSettings,
             )
-            calligraphySplashCustomFontPath =
-                otherSettingsGateway.currentSettings.calligraphySplashCustomFontPath
         }
         // 书法开屏用 Compose 全屏层绘制；系统启动窗口保持到该层画出首帧，
         // 首帧之后才淡出，避免纸色垫底、诗句迟到。
@@ -611,7 +608,6 @@ open class MainActivity : BaseComposeActivity(), AudioPlay.CallBack {
         if (showCalligraphySplash) {
             CalligraphySplashOverlay(
                 text = calligraphySplashText,
-                customFontPath = calligraphySplashCustomFontPath,
                 onFirstFrame = { calligraphySplashActive.set(false) },
                 onFinished = {
                     lifecycleScope.launch {

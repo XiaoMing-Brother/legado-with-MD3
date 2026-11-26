@@ -7,7 +7,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
@@ -15,18 +14,14 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.legado.app.R
-import io.legado.app.feature.splash.CalligraphySplashFontStore
 import io.legado.app.service.WebService
 import io.legado.app.ui.widget.components.alert.AppAlertDialog
 import io.legado.app.ui.widget.components.filePicker.FilePickerSheet
 import io.legado.app.utils.BatteryOptimizationUtils
 import io.legado.app.utils.restart
 import io.legado.app.utils.takePersistablePermissionSafely
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -37,7 +32,6 @@ fun OtherConfigRouteScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
-    val scope = rememberCoroutineScope()
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -58,47 +52,10 @@ fun OtherConfigRouteScreen(
         }
     }
 
-    val selectSplashFont = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
-        scope.launch {
-            val imported = withContext(Dispatchers.IO) {
-                CalligraphySplashFontStore.import(context, uri)
-            }
-            val message = if (imported) {
-                viewModel.onIntent(
-                    OtherConfigIntent.CalligraphySplashCustomFontPathChanged(
-                        CalligraphySplashFontStore.RelativePath,
-                    )
-                )
-                R.string.calligraphy_splash_custom_font_applied
-            } else {
-                R.string.calligraphy_splash_custom_font_invalid
-            }
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-        }
-    }
-
     LaunchedEffect(viewModel, context) {
         viewModel.effects.collectLatest { effect ->
             when (effect) {
                 OtherConfigEffect.OpenSystemDirectory -> selectDocTree.launch(null)
-                OtherConfigEffect.PickCalligraphySplashFont ->
-                    selectSplashFont.launch(SplashFontMimeTypes)
-                OtherConfigEffect.ResetCalligraphySplashFont -> scope.launch {
-                    withContext(Dispatchers.IO) {
-                        CalligraphySplashFontStore.clear(context)
-                    }
-                    viewModel.onIntent(
-                        OtherConfigIntent.CalligraphySplashCustomFontPathChanged("")
-                    )
-                    Toast.makeText(
-                        context,
-                        R.string.calligraphy_splash_custom_font_reset_done,
-                        Toast.LENGTH_SHORT,
-                    ).show()
-                }
                 OtherConfigEffect.RestartWebService -> {
                     if (WebService.isRun) {
                         WebService.stop(context)
@@ -173,10 +130,3 @@ fun OtherConfigRouteScreen(
 }
 
 private const val RESTART_DELAY_MILLIS = 3_000L
-
-private val SplashFontMimeTypes = arrayOf(
-    "font/*",
-    "application/octet-stream",
-    "application/x-font-ttf",
-    "application/vnd.ms-opentype",
-)

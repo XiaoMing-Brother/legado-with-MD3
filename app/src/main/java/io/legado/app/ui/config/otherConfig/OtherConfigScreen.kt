@@ -179,38 +179,6 @@ fun OtherConfigScreen(
                         },
                     )
                 }
-
-                SearchableSetting("other.calligraphy_splash_custom_font_title") {
-                    ClickableSettingItem(
-                        title = stringResource(R.string.calligraphy_splash_custom_font_title),
-                        description = stringResource(
-                            if (state.calligraphySplashCustomFontPath.isBlank()) {
-                                R.string.calligraphy_splash_custom_font_summary
-                            } else {
-                                R.string.calligraphy_splash_custom_font_selected
-                            }
-                        ),
-                        onClick = {
-                            onIntent(OtherConfigIntent.RequestCalligraphySplashFontPick)
-                        },
-                    )
-                }
-
-                if (state.calligraphySplashCustomFontPath.isNotBlank()) {
-                    SearchableSetting("other.calligraphy_splash_custom_font_reset") {
-                        ClickableSettingItem(
-                            title = stringResource(
-                                R.string.calligraphy_splash_custom_font_reset
-                            ),
-                            description = stringResource(
-                                R.string.calligraphy_splash_custom_font_reset_summary
-                            ),
-                            onClick = {
-                                onIntent(OtherConfigIntent.RequestCalligraphySplashFontReset)
-                            },
-                        )
-                    }
-                }
             }
 
             SplicedColumnGroup(title = stringResource(R.string.read)) {
